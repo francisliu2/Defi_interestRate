@@ -1,0 +1,157 @@
+%%
+%% $Id: article.tex,v 1.1 2008/09/20 10:19:28 natalie Exp $
+%% $Source: /Users/natalie/cvs/tex/templates/article.tex,v $
+%% $Date: 2008/09/20 10:19:28 $
+%% $Revision: 1.1 $
+%%
+
+%\documentclass[a4paper,11pt,BCOR1cm,DIV11,headinclude]{scrbook}
+% bei 12pt ist DIV 12 default, bei 11pt ist es DIV 10
+% Textbereiche 
+% DIV 10: 147*207.9mm, DIV 11: 152.73*216mm, DIV 12:157.50*222.75
+% DIV 13: 161.54*228.46mm, DIV 14: 165*233.36mm
+
+\def\deftitle{Notes on Dynamics for cryptocurrency derivatives}
+% \def\defauthor{N.\ Packham}
+% \def\defauthor{nat}
+\def\defauthor{}
+
+%% option: largefont
+\documentclass[square]{article} %
+%% options: vscreen, garamond, wnotes, savespace
+\usepackage[vscreen]{nat}
+\usepackage[longnamesfirst]{natbib}
+\usepackage{booktabs}
+
+\bibpunct{(}{)}{;}{a}{,}{,}
+\usepackage{amsfonts,amssymb,amsthm} %
+\usepackage{mathrsfs}
+\usepackage[tbtags]{amsmath} %
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage{tabularx,ragged2e}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{subfig}
+\usepackage{enumitem}
+
+\newcolumntype{C}{>{\Centering\arraybackslash}X}
+\newcolumntype{s}{>{\hsize=.2\hsize \Centering\arraybackslash}X}
+% \usepackage{fullpage}
+\usepackage{footnote}
+\makesavenoteenv{tabular}
+
+\usepackage{cleveref}
+\newenvironment{delayedproof}[1]
+ {\begin{proof}[\raisedtarget{#1}Proof of \Cref{#1}]}
+ {\end{proof}}
+\newcommand{\raisedtarget}[1]{%
+  \raisebox{\fontcharht\font`P}[0pt][0pt]{\hypertarget{#1}{}}%
+}
+\newcommand{\proofref}[1]{\hyperlink{#1}{proof}}
+
+
+\usepackage{graphicx,color}
+\graphicspath{{./pics/}}
+\definecolor{BrickRed}{rgb}{.625,.25,.25}
+\providecommand{\red}[1]{\textcolor{BrickRed}{#1}}
+\definecolor{markergreen}{rgb}{0.6, 1.0, 0}
+\definecolor{darkgreen}{rgb}{0, .5, 0}
+\definecolor{darkred}{rgb}{.7,0,0}
+\definecolor{darkorange}{rgb}{1,0.3,0}
+\definecolor{darkblue}{rgb}{0,29,245}
+%\definecolor{orange}{rgb}{239, 133, 54}
+%\definecolor{lightblue}{rgb}{59, 188, 175}
+
+\providecommand{\marker}[1]{\fcolorbox{markergreen}{markergreen}{{#1}}}
+\providecommand{\natp}[1]{\textcolor{darkred}{#1}}
+\providecommand{\mj}[1]{\textcolor{darkred}{#1}}
+\providecommand{\francis}[1]{\textcolor{darkgreen}{#1}}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}%[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary} %%
+\newtheorem{lemma}[theorem]{Lemma} %%
+\theoremstyle{definition} %%
+\newtheorem{definition}{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{remarks}{Remarks}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{assumption}{Assumption}
+\setlength{\parindent}{0pt}
+
+\usepackage{amsmath}
+\input{definitions}
+\sloppy
+\begin{document}
+\setlength{\boxlength}{0.95\textwidth} %
+\title{\large{\bf\deftitle}} %
+\author{{\normalsize\bf\defauthor}}%
+\thispagestyle{empty}
+\addtocounter{page}{1}
+\maketitle
+\begin{abstract}
+ To be filled. 
+\end{abstract}
+% \keywords{keywords here} %%
+% \jel{jel here} %%
+\vspace{.5cm}
+\def\contentsname{Contents}
+\tableofcontents
+%%
+\vspace{.5cm}
+\section{Ideas}
+\subsection{Uncovered interest parity in the absence of bond}
+This section is mostly taken/copied from section 6.1 of \cite{gudgeon2020defi} for idea generation. 
+Uncovered interest parity (UIP) normally appear in the context of foreign exchange between two countries: domestic and foreign. 
+An investor has the choice of whether to hold domestic or foreign assets. 
+If the condition of UIP holds, a risk-neutral investor should be indifferent between holding the domestic or foreign assets because the exchange rate is expected to adjust such that returns are equivalent. \\
+
+Example
+An investor starting with 1m GBP at $t=0$ could either:
+\begin{itemize}
+  \item receive an annual interest rate of $i_\text{GBP}=3\%$, resulting in $1.03$m GBP at $t=1$
+  \item or, immediately buy $1.23$ USD at an exchange rate $S_{\text{GBP}/\text{USD}}=0.813$, and receive an annual interest rate of $i_\text{USD}=5\%$, resulting in 1.2915m USD at $t=1$. 
+  Then, convert the USD with the exchange rate at $t=1$, say $S_{\text{GBP}/\text{USD}}=0.7974$, and get $1.03$m GBP.
+\end{itemize}
+
+If UIP holds, despite the higher interest rate of the USD, the investor will be indifferent because the exchange rate between currencies offset the spread between interest rates. 
+Mathematically, UIP is stated as 
+\begin{align*}
+1+R^{(i)} = (1+R^{(j)})\frac{\mathbb{\sf E}S_{t+k}}{S_t},
+\end{align*}
+where $R^{(i/j)}$ is the interest rate payable on asset $i/j$ from time $t$ to $t+k$, and $S_t$ is the exchange rate ar time $t$. \\
+
+Now the question is both $R^{(i/j)}$ are not known in advance due to the lack of a liquid bond market that investors can secure the future payoff by holding a cryptocurrency. 
+However, the good news is that we have the observable historical short rate, $r_t^{(i)}$, and exchange rate $S_t^{(i/j)}$. 
+The UIP condition in this case have to be adjusted to incorporate the fact that the investor consider also the uncertainty of the domestic and foreign short rate, i.e.\footnote{The AAVE and Compound interest rate are compounded every second, which is close enough to model the short rate payoff in a continuous compounding scheme. }
+
+\begin{align*}
+  \mathbb{\sf E} \left(\exp{\int_0^T r^{(i)}_t \text{d}t}\right) = \mathbb{\sf E}\left(\exp{\int_0^T r^{(j)}_t\text{d}t}\frac{S_{t+k}}{S_t}\right).
+  \end{align*}
+
+The above UIP condition open quite some questions
+\begin{enumerate}
+  \item It seems necessary to model the joint dynamics of the foreign short rate and the exchange rate, such that the R.H.S. of the above equation can be evaluated.
+  \item Under which measure should we take the expectation of both sides? Any criteria of choosing the measure? No-arbitrage? 
+  \item When will the above equation hold? When will not?
+  \item If the condition does not hold, are there any arbitrage opportunities? 
+  \item What is the dynamics of $r^{(i/j)}$? For further development, we might want a parametrised stochastic model such that we can
+   (i) perform measure change, (ii) price bonds, swaps, or any other derivatives easily, (iii) capture the interest rate dynamics nicely.
+\end{enumerate}
+
+\section{Literatures}
+\subsection{Affine term structure models}
+\begin{enumerate}
+  \item The paper extends the affine class of term structure models to describe the joint dynamics of exchange rates and interest rates
+\end{enumerate}
+
+\bibliographystyle{abbrvnamed} %
+\bibliography{finance} %
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
