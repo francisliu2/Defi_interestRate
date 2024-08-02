@@ -128,7 +128,7 @@ However, the good news is that we have the observable historical short rate, $r_
 The UIP condition in this case have to be adjusted to incorporate the fact that the investor consider also the uncertainty of the domestic and foreign short rate, i.e.\footnote{The AAVE and Compound interest rate are compounded every second, which is close enough to model the short rate payoff in a continuous compounding scheme. }
 
 \begin{align*}
-  \mathbb{\sf E} \left(\exp{\int_0^T r^{(i)}_t \text{d}t}\right) = \mathbb{\sf E}\left(\exp{\int_0^T r^{(j)}_t\text{d}t}\frac{S_{t+k}}{S_t}\right).
+  \mathbb{\sf E} \left(\exp{\int_0^T r^{(i)}_t \text{d}t}\right) = \mathbb{\sf E}\left(\exp\left(\int_0^T r^{(j)}_t\text{d}t\right)\frac{S_{t+k}}{S_t}\right).
   \end{align*}
 
 The above UIP condition open quite some questions
@@ -139,6 +139,11 @@ The above UIP condition open quite some questions
   \item If the condition does not hold, are there any arbitrage opportunities? 
   \item What is the dynamics of $r^{(i/j)}$? For further development, we might want a parametrised stochastic model such that we can
    (i) perform measure change, (ii) price bonds, swaps, or any other derivatives easily, (iii) capture the interest rate dynamics nicely.
+  \item Another idea: Can we use machine learning method to get a good enough estimate of the L.H.S. and R.H.S. separately, and make a statistical argument over the difference between L.H.S. and R.H.S.?
+  \begin{align*}
+    \hat{\mathbb{\sf E}} \left(\exp{\int_0^T r^{(i)}_t \text{d}t}\right) = \hat{\mathbb{\sf E}}\left(\exp\left(\int_0^T r^{(j)}_t\text{d}t\right)\frac{S_{t+k}}{S_t}\right) + \varepsilon_{t, k}.
+  \end{align*}
+
 \end{enumerate}
 
 \section{Literatures}
