@@ -3,44 +3,46 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: notes.aux
 The style file: abbrvnamed.bst
 Database file #1: finance.bib
-You've used 2 entries,
+Warning--empty journal in cappiello2007uncovered
+You've used 4 entries,
             2456 wiz_defined-function locations,
-            569 strings with 4993 characters,
-and the built_in function-call counts, 1018 in all, are:
-= -- 109
-> -- 41
+            578 strings with 5204 characters,
+and the built_in function-call counts, 1586 in all, are:
+= -- 166
+> -- 61
 < -- 1
-+ -- 14
-- -- 14
-* -- 81
-:= -- 162
-add.period$ -- 6
-call.type$ -- 2
-change.case$ -- 15
-chr.to.int$ -- 2
-cite$ -- 2
-duplicate$ -- 38
-empty$ -- 75
-format.name$ -- 16
-if$ -- 216
++ -- 21
+- -- 20
+* -- 118
+:= -- 258
+add.period$ -- 12
+call.type$ -- 4
+change.case$ -- 25
+chr.to.int$ -- 4
+cite$ -- 5
+duplicate$ -- 66
+empty$ -- 120
+format.name$ -- 25
+if$ -- 331
 int.to.chr$ -- 1
 int.to.str$ -- 0
-missing$ -- 2
-newline$ -- 13
-num.names$ -- 6
-pop$ -- 14
+missing$ -- 5
+newline$ -- 23
+num.names$ -- 12
+pop$ -- 29
 preamble$ -- 1
-purify$ -- 17
+purify$ -- 30
 quote$ -- 0
-skip$ -- 32
+skip$ -- 54
 stack$ -- 0
-substring$ -- 68
-swap$ -- 12
+substring$ -- 79
+swap$ -- 15
 text.length$ -- 1
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 16
-warning$ -- 0
-while$ -- 9
-width$ -- 4
-write$ -- 28
+type$ -- 28
+warning$ -- 1
+while$ -- 13
+width$ -- 6
+write$ -- 51
+(There was 1 warning)
