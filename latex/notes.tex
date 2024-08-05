@@ -20,7 +20,7 @@
 \documentclass[square]{article} %
 %% options: vscreen, garamond, wnotes, savespace
 \usepackage[vscreen]{nat}
-\usepackage[longnamesfirst]{natbib}
+\usepackage[longnamesfirst,sort&compress]{natbib}
 \usepackage{booktabs}
 
 \bibpunct{(}{)}{;}{a}{,}{,}
@@ -33,6 +33,8 @@
 \usepackage[table,xcdraw]{xcolor}
 \usepackage{subfig}
 \usepackage{enumitem}
+\usepackage{csquotes}
+
 
 \newcolumntype{C}{>{\Centering\arraybackslash}X}
 \newcolumntype{s}{>{\hsize=.2\hsize \Centering\arraybackslash}X}
@@ -169,6 +171,102 @@ The above UIP condition open quite some questions
 \begin{enumerate}
   \item The paper extends the affine class of term structure models to describe the joint dynamics of exchange rates and interest rates
 \end{enumerate}
+
+\subsection{Interest rate derivatives in the crypto space}
+{\bf Inter-Protocol Offered Rate (IPOR)} \url{https://docs.ipor.io/}
+\begin{enumerate}
+  \item The IPOR company offers an interest rate benchmark (weighted average of DeFi interest rate) with the same name that 
+  summarizes the lending and borrowing interest rates of crypto loan platforms.
+  \item The company offers trading of fixed income derivatives, e.g. interest rate swap. 
+  The pricing and transaction are based on the IPOR rate and automated market maker. 
+  \item 
+\end{enumerate}
+
+
+
+
+\section{Backgrounds}
+\subsection{Short rate models}
+A quote from Section 10.1 of \cite{Shreve2004a} nicely summarise what is short rate traditionally:
+\begin{displayquote}
+  "The interest rate (sometimes called the short rate) is an {\color{red} idealization} corresponding to the shortest maturity yield or perhaps the overnight rate offered by the government, depending on the particular application."
+\end{displayquote}
+
+\begin{remark}In the crypto world, instead of using liquidly traded bonds and fixed-income products to infer the short rate (mainly its dynamics) and price more complex products,
+ the short rate itself is directly observable and impacts the growth rate of borrowing and lending accounts,
+ i.e. the growth of crypto borrowing and lending accounts is a {\color{red} realization} of the crypto short rate.
+ Beware that {\it all} borrowings in a lending pool, disregard of the identity of borrower and starting date of the borrowings (there is no maturity in crypto loans),
+ are growing at the {\it{same}} crypto borrowing rate. \end{remark}
+
+The simplest model for fixed income markets begin with a stochastic differential equation for the interest rate
+\begin{align*}
+  \dd r_t = \beta(t, r_t)\dd t + \gamma(t, r_t)\dd W_t.
+\end{align*}
+
+The zero-coupon bond pricing formula is
+\begin{align*}
+B(t,T) = \E_\mathbb{Q}\left[
+e^{-\int_t^T r_s \dd s}\big|\mathcal{F}_t
+\right],
+\end{align*}
+provided that $B(T,T)=1$. 
+
+Since $r_t$ is governed by a SDE, it is a Markov process and we must have
+\begin{align*}
+B(t,T) = f(t, r_t)
+\end{align*}
+
+By Feynman-Kac, we obtain the partial differential equation
+\begin{align*}
+\partial_t f(t,r) + \beta(t,r)\partial_r f(t,r)+ \frac{1}{2}\gamma^2(t,r)\partial_{rr}f(t,r) = r f(t,r),\  
+f(T, r)=1.
+\end{align*}
+
+{\bf Hull-White model}\\
+In the Hull-White model, the evolution of the interest rate is given by 
+\begin{align*}
+\dd r_t = \left(a(t)-b(t)r_t\right)\dd t \sigma(t) \dd W_t,
+\end{align*}
+where $a(t)$, $b(t)$, and $\sigma(t)$ are non-random positive functions of time.
+The PDE for the zero-coupon bond price becomes
+\begin{align*}
+  \partial_t f(t,r) + \left(a(t)-b(t)\right)\partial_r f(t,r)+ \frac{1}{2}\sigma^2(t)\partial_{rr}f(t,r) = r f(t,r),\  
+  f(T, r)=1.
+  \end{align*}
+By ansatz, the solution of the above PDE has a form 
+\begin{align*}
+f(t,r) = \exp\left(-r C(t,T)- A(t,T)\right).
+\end{align*}
+
+Let's work out the partial derivatives:
+\begin{align*}
+  \partial_t f &= \left(-r \partial_t C(t,T) - \partial_t A(t,T)\right) f\\
+  \partial_r f &= -C(t,T)f\\
+  \partial_{rr} f &= C^2(t,T)f.
+\end{align*}
+
+Substitute into the PDE gives
+\begin{align*}
+0=\Big[
+&\left(
+-\partial_t C+ b(t)C-1
+\right)r\\
+&-\partial_t A - a(t)C+\frac{1}{2}\sigma^2(t)C
+\Big]f(t,r).
+\end{align*}
+ 
+Since $f$ is nonzero and this equation must hold for all $r$, 
+\begin{align*}
+  -\partial_t C+ b(t)C-1 &=0\\
+  -\partial_t A - a(t)C+\frac{1}{2}\sigma^2(t)C &=0.
+\end{align*}
+
+Since $f(r,T)=1$, $C(T,T)=A(T,T)=0$. The solution of the above equations is 
+\begin{align*}
+  C(t,T) &= \int_t^T \exp\left(-]int_t^s b(v)\dd v\right)\dd s\\
+  A(t,T) &= \int_t^T \left(a(s) C(s,T)-\frac{1}{2}\sigma^2(s)C^2(s,T)\right)\dd s.
+\end{align*}
+
 
 \bibliographystyle{abbrvnamed} %
 \bibliography{finance} %

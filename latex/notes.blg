@@ -4,45 +4,45 @@ The top-level auxiliary file: notes.aux
 The style file: abbrvnamed.bst
 Database file #1: finance.bib
 Warning--empty journal in cappiello2007uncovered
-You've used 4 entries,
+You've used 5 entries,
             2456 wiz_defined-function locations,
-            578 strings with 5204 characters,
-and the built_in function-call counts, 1586 in all, are:
-= -- 166
-> -- 61
+            584 strings with 5291 characters,
+and the built_in function-call counts, 1853 in all, are:
+= -- 191
+> -- 68
 < -- 1
-+ -- 21
-- -- 20
-* -- 118
-:= -- 258
-add.period$ -- 12
-call.type$ -- 4
-change.case$ -- 25
-chr.to.int$ -- 4
-cite$ -- 5
-duplicate$ -- 66
-empty$ -- 120
-format.name$ -- 25
-if$ -- 331
++ -- 23
+- -- 22
+* -- 134
+:= -- 305
+add.period$ -- 15
+call.type$ -- 5
+change.case$ -- 29
+chr.to.int$ -- 5
+cite$ -- 6
+duplicate$ -- 81
+empty$ -- 145
+format.name$ -- 28
+if$ -- 386
 int.to.chr$ -- 1
 int.to.str$ -- 0
-missing$ -- 5
-newline$ -- 23
-num.names$ -- 12
-pop$ -- 29
+missing$ -- 7
+newline$ -- 28
+num.names$ -- 15
+pop$ -- 37
 preamble$ -- 1
-purify$ -- 30
+purify$ -- 36
 quote$ -- 0
-skip$ -- 54
+skip$ -- 63
 stack$ -- 0
-substring$ -- 79
-swap$ -- 15
+substring$ -- 84
+swap$ -- 17
 text.length$ -- 1
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 28
+type$ -- 32
 warning$ -- 1
-while$ -- 13
-width$ -- 6
-write$ -- 51
+while$ -- 15
+width$ -- 8
+write$ -- 63
 (There was 1 warning)

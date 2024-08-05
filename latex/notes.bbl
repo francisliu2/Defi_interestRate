@@ -27,4 +27,9 @@ Gudgeon, L., S.~Werner, D.~Perez, and W.~J. Knottenbelt.
 \newblock In {\em Proceedings of the 2nd ACM Conference on Advances in
   Financial Technologies}, pages 92--112, 2020.
 
+\bibitem[\protect\citeauthoryear{Shreve}{2004}]{Shreve2004a}
+Shreve, S.~E.
+\newblock {\em Stochastic Calculus for Finance {II}}.
+\newblock Springer, 2004.
+
 \end{thebibliography}
