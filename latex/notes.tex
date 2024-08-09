@@ -130,7 +130,7 @@ However, the good news is that we have the observable historical short rate, $r_
 The UIP condition in this case have to be adjusted to incorporate the fact that the investor consider also the uncertainty of the domestic and foreign short rate, i.e.\footnote{The AAVE and Compound interest rate are compounded every second, which is close enough to model the short rate payoff in a continuous compounding scheme. }
 
 \begin{align*}
-  \mathbb{\sf E} \left(\exp{\int_0^T r^{(i)}_t \text{d}t}\right) = \mathbb{\sf E}\left(\exp\left(\int_0^T r^{(j)}_t\text{d}t\right)\frac{S_{t+k}}{S_t}\right).
+  \mathbb{\sf E} \left(\exp{\int_0^T r^{(i)}_t \text{d}t}\right) = \mathbb{\sf E}\left(\exp\left(\int_0^T r^{(j)}_t\text{d}t\right)\frac{S_{T}}{S_t}\right).
   \end{align*}
 
 The above UIP condition open quite some questions
@@ -179,7 +179,16 @@ The above UIP condition open quite some questions
   summarizes the lending and borrowing interest rates of crypto loan platforms.
   \item The company offers trading of fixed income derivatives, e.g. interest rate swap. 
   The pricing and transaction are based on the IPOR rate and automated market maker. 
-  \item 
+  \item The main derivatives traded on IPOR is cancellable interest rate swaps.
+  \item IPOR uses Hull-White jump-diffusion model for rate simulation and Longstaff-Schwartz method for pricing (the cancellable part)
+  \item Criticisms
+  \begin{enumerate}
+    \item Complex product designs: cancellable swaps + Hull-White-jump-model + Longstaff-Schwartz 
+    \item Lack of market-involved pricing mechanism: the AMM takes the spread calculated only by the Hull-White model + Longstaff-Schwartz. 
+    \item Spread calculation often results in high spread that prohibits transactions. 
+    \item Max tenor is too short (90-day longest) 
+    \item See \url{https://scapital.medium.com/ipor-a-postmortem-for-the-interest-rate-swap-pioneer-5dc8492c2f7c}
+  \end{enumerate}
 \end{enumerate}
 
 
