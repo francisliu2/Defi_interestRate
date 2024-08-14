@@ -1,8 +1,9 @@
 \contentsline {section}{\numberline {1}Ideas}{3}{section.1}%
 \contentsline {subsection}{\numberline {1.1}Uncovered interest parity in the absence of bond}{3}{subsection.1.1}%
-\contentsline {section}{\numberline {2}Literatures}{5}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Uncovered Interest Parity and its variants}{5}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Affine term structure models}{5}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}Interest rate derivatives in the crypto space}{6}{subsection.2.3}%
-\contentsline {section}{\numberline {3}Backgrounds}{6}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Short rate models}{6}{subsection.3.1}%
+\contentsline {subsection}{\numberline {1.2}A crypto interest rate model}{5}{subsection.1.2}%
+\contentsline {section}{\numberline {2}Literatures}{6}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Uncovered Interest Parity and its variants}{6}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Affine term structure models}{7}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Interest rate derivatives in the crypto space}{7}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Backgrounds}{8}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Short rate models}{8}{subsection.3.1}%

@@ -148,6 +148,41 @@ The above UIP condition open quite some questions
 
 \end{enumerate}
 
+\subsection{A crypto interest rate model}
+This idea is motivated by a conversation in an interview with a team of quant working for a centralised crypto exchange (CEX).
+ The pricing of crypto derivatives requires a "risk-free" rate for each underlying,
+ e.g. a "risk-free" rate of holding BTC, another "risk-free" rate of holding ETH. \\
+ 
+I put quotation marks for the term risk-free rate because there is no consensus to what is the risk-free rate in the crypto market. 
+ In practice, there are four ways of getting a risk-free rate by viewing the risk-free rate as the opportunity cost of investing the 
+ holdings to the derivative market instead of earning a risk-free rate in another market. 
+ The four ways of getting a risk-free are referring to calibrating the risk-free rate to three different markets:
+ \begin{enumerate}
+  \item DeFi lending protocols, e.g. AAVE and Compound,
+  \item DeFi staking protocols, e.g. ETH POS, AQRU,
+  \item Futures traded on CEX,
+  \item Perpetual futures traded on CEX.
+ \end{enumerate} 
+
+The first two markets are not exactly risk-free since trading on DeFi protocols expose oneself to platform risk.
+ Although DeFi lending protocols enforce over-collateralisation, 
+ lenders still expose themselves to gap risk since there is a chance that the collateral value jump through the value of the borrowings and there is no way to force the borrower to pay back.\\ 
+
+The third and forth markets suffer from the platform risk. 
+ However, if a trader manage/hedge her exposure on CEX with other instruments traded on the same CEX, 
+ then we can argue that the platform risk is somehow offset. 
+ The perpetual futures market does not exempt carry trade traders from losses since funding rate can go negative. 
+ It turns out, after considering the pros and cons of the markets, 
+ the futures market traded on CEX is commonly used by the team of quant to get the risk-free rate to price their derivatives, which is also a common practice in the traditional market.  \\
+
+The key idea here is to have a CEX futures market centric view, i.e. considering the CEX futures market as risk-free,
+ and to study the differences of the rate dynamics among the markets. 
+ In order to do so, a common interest rate model for crypto is needed. 
+ It will be a challenge to have a single interest rate model that fits the rate dynamics in all the markets.
+ For example, the DeFi lending/staking rate is always positive, but the funding rate of perpetual futures can go negative.  
+ A possible solution is to discount the DeFi lending/staking rates by default intensity.
+
+
 \section{Literatures}
 \subsection{Uncovered Interest Parity and its variants}
 \cite{cappiello2007uncovered}
