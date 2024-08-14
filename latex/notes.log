@@ -2,7 +2,7 @@ This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**notes
+**ntoes
 (./notes.tex
 LaTeX2e <2020-10-01> patch level 4
 L3 programming layer <2021-02-18>
@@ -915,8 +915,8 @@ Package rerunfilecheck Info: File `notes.out' has not changed.
 (rerunfilecheck)             Checksum: 41BB3E22AF5D55B0DDA10C94F52B1E4F;1727.
  ) 
 Here is how much of TeX's memory you used:
- 15650 strings out of 479014
- 244368 string characters out of 5859149
+ 15651 strings out of 479014
+ 244373 string characters out of 5859149
  596892 words of memory out of 5000000
  32796 multiletter control sequences out of 15000+600000
  420154 words of font info for 90 fonts, out of 8000000 for 9000
@@ -944,7 +944,7 @@ exmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2020/te
 xmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2020/tex
 mf-dist/fonts/type1/public/amsfonts/symbols/msbm7.pfb></usr/local/texlive/2020/
 texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on notes.pdf (9 pages, 232764 bytes).
+Output written on notes.pdf (9 pages, 232806 bytes).
 PDF statistics:
  239 PDF objects out of 1000 (max. 8388607)
  204 compressed objects within 3 object streams
