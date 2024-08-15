@@ -182,6 +182,75 @@ The key idea here is to have a CEX futures market centric view, i.e. considering
  For example, the DeFi lending/staking rate is always positive, but the funding rate of perpetual futures can go negative.  
  A possible solution is to discount the DeFi lending/staking rates by the corresponding default intensity.
 
+\subsection{A model for perpetual futures}
+Suppose the price of the perpetual futures, $F_t$, is reverting to its underlying, $S_t$, with some Brownian noise involved, i.e.
+\begin{align*}
+\dd F_t = \kappa \left(\delta S_t - F_t \right)\dd t + \epsilon \dd W_t,
+\end{align*}
+where $\kappa>0$ is the mean reverting speed, $\delta \in \mathbb{R}$ is the spot-futures spread, and $\epsilon>0$ is the volatility.
+
+We derive the solution of the perpetual futures by applying Ito's lemma to $e^{\kappa t}F$:
+
+\begin{align*}
+\dd e^{\kappa t} F_t &= \left(\kappa e^{\kappa t}F_t+ \kappa \left(\delta S_t - F_t\right)e^{\kappa t}\right)\dd t + \epsilon e^{\kappa t}\dd W_t\\
+                      &= \kappa \delta S_t e^{\kappa t}\dd t + \epsilon e^{\kappa t}\dd W_t.
+\end{align*}
+
+The solution is obtained by integrating both sides from time $0$ to $T$,
+\begin{align*}
+  e^{\kappa T} F_T &= F_0 +  \kappa \delta \int_0^T S_t e^{\kappa t}\dd t + \int_0^T \epsilon e^{\kappa t}\dd W_t.
+  \end{align*}
+
+The expected value of $F_T$ under a risk-neutral measure $\mathbb{Q}$ is
+\begin{align*}
+  e^{\kappa T} \mathbb{\sf E}_\mathbb{Q} \left(F_T\right) &= F_0 +  \kappa \delta \int_0^T \mathbb{\sf E}_\mathbb{Q}\left(S_t\right) e^{\kappa t}\dd t\\
+                                                          &= F_0 +  \kappa \delta e^{rT}S_0 \int_0^T  e^{\kappa t}\dd t\\
+                                                          &= F_0 +  \delta e^{rT}S_0 \left(e^{\kappa T} - 1\right)\\
+               \mathbb{\sf E}_\mathbb{Q} \left(F_T\right) &= e^{-\kappa T}\left(F_0 - \delta e^{rT}S_0\right)  + \delta e^{rT}S_0.                              
+\end{align*}
+
+Suppose $e^{-rt} F_t$ is a martingale under $\mathbb{Q}$ (i.e. $\mathbb{\sf E}_\mathbb{Q} \left(F_T\right)= e^{rT}F_0$ ), 
+\begin{align*}
+  e^{r T} F_0 &= e^{-\kappa T}\left(F_0 - \delta e^{rT}S_0\right)  + \delta e^{rT}S_0.
+\end{align*}
+
+By such, we work out the formula for the spread $\delta$:
+\begin{align*}
+  \delta &= \frac{F_0}{S_0}\frac{\left(e^{rT}-e^{-\kappa T}\right)}{e^{rT}\left(1-e^{-\kappa T}\right)}\\
+         &= \frac{F_0}{S_0}\frac{\left(1-e^{-(\kappa+r) T}\right)}{1-e^{-\kappa T}}
+\end{align*}
+
+Observations
+\begin{enumerate}
+\item The spread $\delta $ depends on $\kappa$, $r$ (risk-free rate), and $T$ (can be considered as maturity)
+\item If $r > 0$, then $\delta$ is a time-increasing function
+\begin{align*}
+\frac{\partial \delta}{\partial T} &= \frac{F_0}{S_0}\frac{T e^{-r T}}{e^{\kappa T}-1}>0
+\end{align*}
+\item If $r=0$, then $\delta  = F_0/S_0$, meaning the spread is no longer depending on maturity
+\item If we send $T\rightarrow \infty$, then $\delta = F_0/S_0$ asymptotically. 
+\end{enumerate}
+Now, say the spread is a time-dependant deterministic function with a form
+\begin{align*}
+\delta(t) = Ce^{dt},
+\end{align*}
+where $C>0$ and $d \in \mathbb{R}$ are constants to be determined. One can think of $d$ as the rate of divergence between the spot and futures. 
+
+The price dynamics of the perpetual futures is 
+\begin{align*}
+  \dd F_t = \kappa \left(\delta(t) S_t - F_t \right)\dd t + \epsilon \dd W_t.
+  \end{align*}
+
+Again, by apply Ito's lemma to $e^{\kappa t}F_t$ and integration, we get the solution of $F_T$
+\begin{align*}
+e^{\kappa T}F_T & = F_0 + \kappa C \int_0^T S_t e^{(\kappa + d) t}\dd t + \int_0^T \epsilon e^{\kappa t}\dd W_t.
+\end{align*}
+
+Taking expectation under $\mathbb{Q}$ of both sides yields, 
+\begin{align*}
+  e^{\kappa T}\mathbb{\sf E}_\mathbb{Q}\left(F_T\right) & = F_0 + \kappa C S_0 e^{rT} \int_0^T e^{(\kappa + d) t}\dd t\\
+  e^{(\kappa + r) T}F_0 & = F_0 + \kappa C S_0 e^{rT} \frac{e^{(\kappa + d) T} - 1}{\kappa + d}
+\end{align*}
 
 \section{Literatures}
 \subsection{Uncovered Interest Parity and its variants}
