@@ -252,6 +252,20 @@ Taking expectation under $\mathbb{Q}$ of both sides yields,
   e^{(\kappa + r) T}F_0 & = F_0 + \kappa C S_0 e^{rT} \frac{e^{(\kappa + d) T} - 1}{\kappa + d}
 \end{align*}
 
+\subsection{Connection between the volatility of spot and level of borrowing rate}
+This is motivated by the observation that stable coins have higher borrowing rate, and other coins have lower. \\
+
+Say $B^{(i/j)}(T) = \exp\int_0^T r^{(i/j)}_t \dd t$ are the lending accounts levels if one lend out $i/j$ coins, 
+ the investor should be indifference in investing to $i$ or $j$ if the following condition holds.
+ \begin{align*}
+  \mathbb{\sf E}\left(B^{(i)}(T)\right) 
+  &= \mathbb{\sf E}\left(B^{(j)}(T)S_T/S_0\right)\\
+  &= \mathbb{\sf Cov}\left(B^{(j)}(T),\ S_T/S_0\right) + \mathbb{\sf E}\left(B^{(j)}(T)\right)\mathbb{\sf E}\left(S_T/S_0\right)\\
+  &= \mathbb{\sf Corr}\left(B^{(j)}(T),\ S_T/S_0\right) \sigma\left(B^{(j)}(T)\right) \sigma\left(S_T/S_0\right) + \mathbb{\sf E}\left(B^{(j)}(T)\right)\mathbb{\sf E}\left(S_T/S_0\right).
+\end{align*}
+
+Observation: If $\sigma\left(S_T/S_0\right)$ went up, $\sigma\left(B^{(j)}(T)\right)$ must go down for the equation to hold (while keeping all other variables fixed).
+
 \section{Literatures}
 \subsection{Uncovered Interest Parity and its variants}
 \cite{cappiello2007uncovered}
