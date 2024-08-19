@@ -204,53 +204,36 @@ The solution is obtained by integrating both sides from time $0$ to $T$,
 The expected value of $F_T$ under a risk-neutral measure $\mathbb{Q}$ is
 \begin{align*}
   e^{\kappa T} \mathbb{\sf E}_\mathbb{Q} \left(F_T\right) &= F_0 +  \kappa \delta \int_0^T \mathbb{\sf E}_\mathbb{Q}\left(S_t\right) e^{\kappa t}\dd t\\
-                                                          &= F_0 +  \kappa \delta e^{rT}S_0 \int_0^T  e^{\kappa t}\dd t\\
-                                                          &= F_0 +  \delta e^{rT}S_0 \left(e^{\kappa T} - 1\right)\\
-               \mathbb{\sf E}_\mathbb{Q} \left(F_T\right) &= e^{-\kappa T}\left(F_0 - \delta e^{rT}S_0\right)  + \delta e^{rT}S_0.                              
+                                                          &= F_0 +  \kappa \delta S_0 \int_0^T  e^{(r+\kappa) t}\dd t\\
+                                                          &= F_0 +  \frac{\kappa}{r+\kappa} \delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
 \end{align*}
 
 Suppose $e^{-rt} F_t$ is a martingale under $\mathbb{Q}$ (i.e. $\mathbb{\sf E}_\mathbb{Q} \left(F_T\right)= e^{rT}F_0$ ), 
 \begin{align*}
-  e^{r T} F_0 &= e^{-\kappa T}\left(F_0 - \delta e^{rT}S_0\right)  + \delta e^{rT}S_0.
+e^{(r+\kappa)T}F_0 &= F_0 +  \frac{\kappa}{r+\kappa} \delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
+\left(e^{(r+\kappa)T}-1\right)F_0 &=  \frac{\kappa}{r+\kappa}\delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
+\delta &= \frac{r+\kappa}{\kappa}\frac{F_0}{S_0}
 \end{align*}
 
-By such, we work out the formula for the spread $\delta$:
+In fact, we arrive with the same conclusion if we assume $\delta$ is time dependant (but still deterministic), i.e. $\delta(t): t \rightarrow \mathbb{R}^+$.
+ To see that, we start with 
+ \begin{align*}
+  e^{(r+\kappa) T} F_0 &= F_0 +  \kappa \delta S_0 \int_0^T \delta(t) e^{(r+\kappa) t}\dd t.
+\end{align*}
+
+Differentiating w.r.t. $T$ and evaluating at time $T$ yields,
 \begin{align*}
-  \delta &= \frac{F_0}{S_0}\frac{\left(e^{rT}-e^{-\kappa T}\right)}{e^{rT}\left(1-e^{-\kappa T}\right)}\\
-         &= \frac{F_0}{S_0}\frac{\left(1-e^{-(\kappa+r) T}\right)}{1-e^{-\kappa T}}
+  (r+\kappa) e^{(r+\kappa) T} F_0 &= \kappa \delta S_0 \delta(T) e^{(r+\kappa) T}\\
+  \delta(T) &= \frac{r+\kappa}{\kappa}\frac{F_0}{S_0}
 \end{align*}
 
 Observations
 \begin{enumerate}
-\item The spread $\delta $ depends on $\kappa$, $r$ (risk-free rate), and $T$ (can be considered as maturity)
-\item If $r > 0$, then $\delta$ is a time-increasing function
-\begin{align*}
-\frac{\partial \delta}{\partial T} &= \frac{F_0}{S_0}\frac{T e^{-r T}}{e^{\kappa T}-1}>0
-\end{align*}
-\item If $r=0$, then $\delta  = F_0/S_0$, meaning the spread is no longer depending on maturity
-\item If we send $T\rightarrow \infty$, then $\delta = F_0/S_0$ asymptotically. 
+\item The spread $\delta $ depends on $\kappa$ and $r$ (risk-free rate)
+\item If $r=0$, then $\delta  = F_0/S_0$
+\item If $\kappa \rightarrow \infty$, then $\delta  = F_0/S_0$.
+\item If $\kappa \rightarrow 0^+$, then $\delta  = F_0/S_0$, (Since $\dd F_t = \varepsilon \dd W_t$, the spread $\delta$ no longer has a meaning.)
 \end{enumerate}
-Now, say the spread is a time-dependant deterministic function with a form
-\begin{align*}
-\delta(t) = Ce^{dt},
-\end{align*}
-where $C>0$ and $d \in \mathbb{R}$ are constants to be determined. One can think of $d$ as the rate of divergence between the spot and futures. 
-
-The price dynamics of the perpetual futures is 
-\begin{align*}
-  \dd F_t = \kappa \left(\delta(t) S_t - F_t \right)\dd t + \epsilon \dd W_t.
-  \end{align*}
-
-Again, by apply Ito's lemma to $e^{\kappa t}F_t$ and integration, we get the solution of $F_T$
-\begin{align*}
-e^{\kappa T}F_T & = F_0 + \kappa C \int_0^T S_t e^{(\kappa + d) t}\dd t + \int_0^T \epsilon e^{\kappa t}\dd W_t.
-\end{align*}
-
-Taking expectation under $\mathbb{Q}$ of both sides yields, 
-\begin{align*}
-  e^{\kappa T}\mathbb{\sf E}_\mathbb{Q}\left(F_T\right) & = F_0 + \kappa C S_0 e^{rT} \int_0^T e^{(\kappa + d) t}\dd t\\
-  e^{(\kappa + r) T}F_0 & = F_0 + \kappa C S_0 e^{rT} \frac{e^{(\kappa + d) T} - 1}{\kappa + d}
-\end{align*}
 
 \subsection{Connection between the volatility of spot and level of borrowing rate}
 This is motivated by the observation that stable coins have higher borrowing rate, and other coins have lower. \\
