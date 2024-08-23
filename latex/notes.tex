@@ -208,7 +208,7 @@ The expected value of $F_T$ under a risk-neutral measure $\mathbb{Q}$ is
                                                           &= F_0 +  \frac{\kappa}{r+\kappa} \delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
 \end{align*}
 
-Suppose $e^{-rt} F_t$ is a martingale under $\mathbb{Q}$ (i.e. $\mathbb{\sf E}_\mathbb{Q} \left(F_T\right)= e^{rT}F_0$ ), 
+Suppose $e^{-rt} F_t$ is a martingale under $\mathbb{Q}$ (i.e. $\mathbb{\sf E}_\mathbb{Q} \left(F_T\right)= e^{rT}F_0$ {\color{red} This assumption disregards the funding cost of holding and shorting the perpetual futures}), 
 \begin{align*}
 e^{(r+\kappa)T}F_0 &= F_0 +  \frac{\kappa}{r+\kappa} \delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
 \left(e^{(r+\kappa)T}-1\right)F_0 &=  \frac{\kappa}{r+\kappa}\delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
@@ -218,12 +218,12 @@ e^{(r+\kappa)T}F_0 &= F_0 +  \frac{\kappa}{r+\kappa} \delta S_0 \left(e^{(r+\kap
 In fact, we arrive with the same conclusion if we assume $\delta$ is time dependant (but still deterministic), i.e. $\delta(t): t \rightarrow \mathbb{R}^+$.
  To see that, we start with 
  \begin{align*}
-  e^{(r+\kappa) T} F_0 &= F_0 +  \kappa \delta S_0 \int_0^T \delta(t) e^{(r+\kappa) t}\dd t.
+  e^{(r+\kappa) T} F_0 &= F_0 +  \kappa  S_0 \int_0^T \delta(t) e^{(r+\kappa) t}\dd t.
 \end{align*}
 
 Differentiating w.r.t. $T$ and evaluating at time $T$ yields,
 \begin{align*}
-  (r+\kappa) e^{(r+\kappa) T} F_0 &= \kappa \delta S_0 \delta(T) e^{(r+\kappa) T}\\
+  (r+\kappa) e^{(r+\kappa) T} F_0 &= \kappa S_0 \delta(T) e^{(r+\kappa) T}\\
   \delta(T) &= \frac{r+\kappa}{\kappa}\frac{F_0}{S_0}
 \end{align*}
 
@@ -234,6 +234,8 @@ Observations
 \item If $\kappa \rightarrow \infty$, then $\delta  = F_0/S_0$.
 \item If $\kappa \rightarrow 0^+$, then $\delta  = F_0/S_0$, (Since $\dd F_t = \varepsilon \dd W_t$, the spread $\delta$ no longer has a meaning.)
 \end{enumerate}
+
+% check also https://arxiv.org/pdf/2310.11771
 
 \subsection{Connection between the volatility of spot and level of borrowing rate}
 This is motivated by the observation that stable coins have higher borrowing rate, and other coins have lower. \\
