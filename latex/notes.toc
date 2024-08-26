@@ -7,5 +7,6 @@
 \contentsline {subsection}{\numberline {2.1}Uncovered Interest Parity and its variants}{8}{subsection.2.1}%
 \contentsline {subsection}{\numberline {2.2}Affine term structure models}{9}{subsection.2.2}%
 \contentsline {subsection}{\numberline {2.3}Interest rate derivatives in the crypto space}{9}{subsection.2.3}%
-\contentsline {section}{\numberline {3}Backgrounds}{10}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Short rate models}{10}{subsection.3.1}%
+\contentsline {subsection}{\numberline {2.4}Time-changed and fractional interest rate models}{10}{subsection.2.4}%
+\contentsline {section}{\numberline {3}Backgrounds}{11}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Short rate models}{11}{subsection.3.1}%

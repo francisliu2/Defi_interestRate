@@ -294,8 +294,39 @@ Observation: If $\sigma\left(S_T/S_0\right)$ went up, $\sigma\left(B^{(j)}(T)\ri
   \end{enumerate}
 \end{enumerate}
 
+\subsection{Time-changed and fractional interest rate models}
 
-
+\cite{shokrollahi2021time}
+\begin{enumerate}
+  \item Beware that the work is not peer-reviewed. 
+  \item They propose a time-changed fractional short rate model 
+  \begin{align*}
+    \dd r(T_\alpha(t)) = \mu \dd T_\alpha(t) + \sigma \dd B^H(T_\alpha (t)),
+  \end{align*}
+  where $\mu$ and $\sigma$ are constants, $B^H$ is a fractional Brownian motion with Hurst parameter $H\in[0.5,\ 1)$. 
+  $T_\alpha(t)$ is the inverse 
+  $\alpha$-stable subordinator with $\alpha \in(0,1)$ defined as 
+  \begin{align*}
+    T_\alpha(t) = \inf\left\{\tau > 0 : U_\alpha(\tau)>t\right\},
+  \end{align*}
+  where $\left\{\right\}$ is a $\alpha$-stable Levy process with non-negative increments and Laplace transform
+  \begin{align*}
+    \mathbb{\sf E}\left(\exp(-u U_\alpha(t))\right)= \exp(-ru^\alpha).
+  \end{align*}
+  Here, $T_\alpha(t)$ is assumed to be independent of $B^H$. 
+  \item The motivation of modelling beyond Markov models is the ongoing financial empricial evidence. 
+  \item It is also sensible to argue that the short rates are driven by macroeconomic variables, like 
+  domestic gross products, supply and demand rates or volatilities exhibit long range dependence. 
+  \item The price of a zero-coupon bond is given by 
+  \begin{align*}
+    P(r,t,T) = \exp\left[-r f_2(T-t) + f_1(T-t)\right],
+  \end{align*}
+  where 
+  \begin{align*}
+f_1(T-t) &= \frac{H \sigma^2}{\Gamma(\alpha)^{2H}}\int^{T-t}_0 (T-v)^{2\alpha H -1}v^2 \dd v\\
+f_2(T-t) & = T-t. 
+\end{align*}
+\end{enumerate}
 
 \section{Backgrounds}
 \subsection{Short rate models}

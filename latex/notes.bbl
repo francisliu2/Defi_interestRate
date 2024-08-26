@@ -27,6 +27,13 @@ Gudgeon, L., S.~Werner, D.~Perez, and W.~J. Knottenbelt.
 \newblock In {\em Proceedings of the 2nd ACM Conference on Advances in
   Financial Technologies}, pages 92--112, 2020.
 
+\bibitem[\protect\citeauthoryear{Shokrollahi and
+  Magdziarz}{2021}]{shokrollahi2021time}
+Shokrollahi, F. and M.~Magdziarz.
+\newblock Time-changed fractional black-scholes interest rate model for pricing
+  equity warrants.
+\newblock {\em Available at SSRN 3962881}, 2021.
+
 \bibitem[\protect\citeauthoryear{Shreve}{2004}]{Shreve2004a}
 Shreve, S.~E.
 \newblock {\em Stochastic Calculus for Finance {II}}.

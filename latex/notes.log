@@ -1,8 +1,8 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  20 AUG 2024 09:58
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  26 AUG 2024 18:26
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**n
+**notes
 (./notes.tex
 LaTeX2e <2020-10-01> patch level 4
 L3 programming layer <2021-02-18>
@@ -762,19 +762,19 @@ File: ursfs.fd 1998/03/24 rsfs font definition file (jk)
 
 Package xcolor Warning: Incompatible color definition on input line 103.
 
-(./notes.toc)
+(./notes.toc
+
+Package pdfscreen Warning: No overlay specified
+(pdfscreen)                output will have only background color on input line
+ 12.
+
+[2
+
+{/usr/local/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map}])
 \tf@toc=\write6
 \openout6 = `notes.toc'.
 
 
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 106.
-
-[2
-
-{/usr/local/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
 
 Package xcolor Warning: Incompatible color definition on input line 106.
 
@@ -854,80 +854,86 @@ Package pdfscreen Warning: No overlay specified
 
 [7]
 
-Package xcolor Warning: Incompatible color definition on input line 238.
+Package xcolor Warning: Incompatible color definition on input line 240.
 
 
-Package xcolor Warning: Incompatible color definition on input line 238.
+Package xcolor Warning: Incompatible color definition on input line 240.
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 239--240
+Underfull \hbox (badness 10000) in paragraph at lines 241--242
 
  []
 
 
-Package xcolor Warning: Incompatible color definition on input line 252.
+Package xcolor Warning: Incompatible color definition on input line 254.
 
 
-Package xcolor Warning: Incompatible color definition on input line 252.
+Package xcolor Warning: Incompatible color definition on input line 254.
 
 
-Package xcolor Warning: Incompatible color definition on input line 253.
+Package xcolor Warning: Incompatible color definition on input line 255.
 
 
-Package xcolor Warning: Incompatible color definition on input line 253.
+Package xcolor Warning: Incompatible color definition on input line 255.
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 257.
+ 259.
 
 [8]
 
-Package xcolor Warning: Incompatible color definition on input line 270.
+Package xcolor Warning: Incompatible color definition on input line 272.
 
 
-Package xcolor Warning: Incompatible color definition on input line 270.
+Package xcolor Warning: Incompatible color definition on input line 272.
 
 
-Package xcolor Warning: Incompatible color definition on input line 276.
+Package xcolor Warning: Incompatible color definition on input line 278.
 
 
-Package xcolor Warning: Incompatible color definition on input line 276.
+Package xcolor Warning: Incompatible color definition on input line 278.
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 283.
+ 285.
 
 [9]
-Overfull \hbox (50.52245pt too wide) in paragraph at lines 291--292
+Overfull \hbox (50.52245pt too wide) in paragraph at lines 293--294
 [][][]\OT1/cmr/m/n/10 See [][]$[][]\OT1/cmtt/m/n/10 https : / / scapital . medi
 um . com / ipor-[]a-[]postmortem-[]for-[]the-[]interest-[]rate-[]swap-[]pioneer
 -[]5dc8492c2f7c$[][] 
  []
 
 
-Package xcolor Warning: Incompatible color definition on input line 298.
+Package xcolor Warning: Incompatible color definition on input line 297.
 
 
-Package xcolor Warning: Incompatible color definition on input line 298.
-
-
-Package xcolor Warning: Incompatible color definition on input line 299.
-
-
-Package xcolor Warning: Incompatible color definition on input line 299.
+Package xcolor Warning: Incompatible color definition on input line 297.
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 309.
+ 311.
 
 [10]
 
+Package xcolor Warning: Incompatible color definition on input line 331.
+
+
+Package xcolor Warning: Incompatible color definition on input line 331.
+
+
+Package xcolor Warning: Incompatible color definition on input line 332.
+
+
+Package xcolor Warning: Incompatible color definition on input line 332.
+
+
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 349.
+ 336.
 
 [11]
 
@@ -935,7 +941,13 @@ Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
  378.
 
-[12] (./notes.bbl
+[12]
+
+Package pdfscreen Warning: No overlay specified
+(pdfscreen)                output will have only background color on input line
+ 411.
+
+[13] (./notes.bbl
 
 Package xcolor Warning: Incompatible color definition on input line 1.
 
@@ -943,20 +955,20 @@ Package xcolor Warning: Incompatible color definition on input line 1.
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 383.
+ 416.
 
-[13] (./notes.aux)
+[14] (./notes.aux)
 Package rerunfilecheck Info: File `notes.out' has not changed.
-(rerunfilecheck)             Checksum: 7F706F7C1672D0FFCAA342A8A93E1E25;2375.
+(rerunfilecheck)             Checksum: B1DA13629EA28C979BBC355E988EACD9;2688.
  ) 
 Here is how much of TeX's memory you used:
- 15662 strings out of 479014
- 244478 string characters out of 5859149
+ 15674 strings out of 479014
+ 244676 string characters out of 5859149
  597892 words of memory out of 5000000
- 32798 multiletter control sequences out of 15000+600000
+ 32803 multiletter control sequences out of 15000+600000
  420154 words of font info for 90 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 103i,25n,105p,469b,535s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 103i,25n,105p,473b,542s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc
 }</usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb>
 </usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><
@@ -980,10 +992,10 @@ xmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2020/tex
 mf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive/2020
 /texmf-dist/fonts/type1/public/amsfonts/symbols/msbm7.pfb></usr/local/texlive/2
 020/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on notes.pdf (12 pages, 245671 bytes).
+Output written on notes.pdf (13 pages, 253513 bytes).
 PDF statistics:
- 271 PDF objects out of 1000 (max. 8388607)
- 232 compressed objects within 3 object streams
- 63 named destinations out of 1000 (max. 500000)
- 89 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 290 PDF objects out of 1000 (max. 8388607)
+ 250 compressed objects within 3 object streams
+ 71 named destinations out of 1000 (max. 500000)
+ 97 words of extra memory for PDF output out of 10000 (max. 10000000)
 
