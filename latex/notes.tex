@@ -251,6 +251,34 @@ Say $B^{(i/j)}(T) = \exp\int_0^T r^{(i/j)}_t \dd t$ are the lending accounts lev
 
 Observation: If $\sigma\left(S_T/S_0\right)$ went up, $\sigma\left(B^{(j)}(T)\right)$ must go down for the equation to hold (while keeping all other variables fixed).
 
+\subsection{Optimal DeFi lending portfolio}
+AAVE and Compound offers a range of cryptos to be lend out to earn interest. 
+ Say you have some USDT and would like to invest on a portfolio of loans, what is the optimal portfolio weights?
+
+Let's look at the payoff of a simple portfolio of two loans first.
+ Say the investor has $1$ USDT, she converts $1-p$ amount of USDT to, say, ETH, and invest both coins to the corresponding lending pool at time $0$. 
+ At time $T$, she converts back the ETH principle and interest back to USDT. 
+\begin{align*}
+p\exp\left(\int_0^T r^{(\text{USDT})}_t \dd t\right) 1(\tau^{(\text{USDT})} > T) 
++ (1-p)\exp\left(\int_0^T r^{(\text{ETH})}_t \dd t\right)\frac{S^{(\text{ETH})}_T}{S^{(\text{ETH})}_0}1(\tau^{(\text{ETH})} > T)\\
+= p I^{(\text{USDT})}(T)1(\tau^{(\text{USDT})} > T)  + (1-p)I^{(\text{ETH})}(T)\frac{S^{(\text{ETH})}_T}{S^{(\text{ETH})}_0}1(\tau^{(\text{ETH})} > T)
+ \end{align*}
+ Here,  $r^{(\text{coin})}_t$ is the lending rate of the coin at time $t$, $S^{(\text{ETH})}_t$ is the ETH price in USDT at time $t$, and 
+ $\tau^{(coin)}$ is the default event time of the coin which cost all the principle and interest of the corresponding coin. 
+
+Assume the investor's utility is in a constant absolute risk aversion (CARA) form with parameter $\gamma$, 
+ her utility of investing to the loan portfolio is 
+ \begin{align*}
+  u(p) = -\gamma^{-1}\exp\left\{ -\gamma\left( p I^{(\text{USDT})}(T)1(\tau^{(\text{USDT})} > T)  + (1-p)I^{(\text{ETH})}(T)\frac{S^{(\text{ETH})}_T}{S^{(\text{ETH})}_0}1(\tau^{(\text{ETH})} > T)\right)\right\}.
+ \end{align*}
+
+ We are interested in maximising the investor's expected utility by searching for the optimal $p$, i.e.
+ \begin{align*}
+  p^* = \argmax_{p \in [0, 1]} \mathbb{\sf E}\left\{u(p)\right\}.
+ \end{align*}
+
+Upon defining the dynamics of $S$, $I$s, and $\tau$s, we can solve for $p^*$ by HJB equation, similar to the Merton's portfolio problem. 
+
 \section{Literatures}
 \subsection{Uncovered Interest Parity and its variants}
 \cite{cappiello2007uncovered}
