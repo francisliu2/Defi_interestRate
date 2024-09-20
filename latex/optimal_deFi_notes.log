@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  20 SEP 2024 12:08
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  20 SEP 2024 15:34
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -875,7 +875,7 @@ Package rerunfilecheck Warning: File `optimal_deFi_notes.out' has changed.
 (rerunfilecheck)                or use package `bookmark'.
 
 Package rerunfilecheck Info: Checksums for `optimal_deFi_notes.out':
-(rerunfilecheck)             Before: AD56E6CADEBFA767EDDEB7FAF8378A5B;1388
+(rerunfilecheck)             Before: 5D6050AE7D0660B8862B8B4254194CCA;1363
 (rerunfilecheck)             After:  445FA85814403A001B28A7EF57D3F937;1257.
  ) 
 Here is how much of TeX's memory you used:
@@ -906,7 +906,7 @@ ive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive
 0/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2020/
 texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive/2
 020/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on optimal_deFi_notes.pdf (7 pages, 171800 bytes).
+Output written on optimal_deFi_notes.pdf (7 pages, 171785 bytes).
 PDF statistics:
  153 PDF objects out of 1000 (max. 8388607)
  126 compressed objects within 2 object streams
