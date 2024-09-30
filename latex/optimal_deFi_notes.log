@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  20 SEP 2024 15:34
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  30 SEP 2024 15:03
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -769,19 +769,19 @@ Package xcolor Warning: Incompatible color definition on input line 101.
 
 
 
-Package xcolor Warning: Incompatible color definition on input line 106.
-
-
-Package xcolor Warning: Incompatible color definition on input line 106.
-
-
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 109.
+ 106.
 
 [2
 
 {/usr/local/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+
+Package xcolor Warning: Incompatible color definition on input line 106.
+
+
+Package xcolor Warning: Incompatible color definition on input line 106.
+
 
 Package xcolor Warning: Incompatible color definition on input line 110.
 
@@ -862,54 +862,69 @@ Underfull \hbox (badness 10000) in paragraph at lines 278--280
 
  []
 
-No file optimal_deFi_notes.bbl.
+
+Package xcolor Warning: Incompatible color definition on input line 287.
+
+
+Package xcolor Warning: Incompatible color definition on input line 287.
+
+
+Package xcolor Warning: Incompatible color definition on input line 288.
+
+
+Package xcolor Warning: Incompatible color definition on input line 288.
+
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
  294.
 
-[8] (./optimal_deFi_notes.aux)
+[8]
 
-Package rerunfilecheck Warning: File `optimal_deFi_notes.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
+Package xcolor Warning: Incompatible color definition on input line 310.
 
-Package rerunfilecheck Info: Checksums for `optimal_deFi_notes.out':
-(rerunfilecheck)             Before: 5D6050AE7D0660B8862B8B4254194CCA;1363
-(rerunfilecheck)             After:  445FA85814403A001B28A7EF57D3F937;1257.
+
+Package xcolor Warning: Incompatible color definition on input line 310.
+
+No file optimal_deFi_notes.bbl.
+
+Package pdfscreen Warning: No overlay specified
+(pdfscreen)                output will have only background color on input line
+ 318.
+
+[9] (./optimal_deFi_notes.aux)
+Package rerunfilecheck Info: File `optimal_deFi_notes.out' has not changed.
+(rerunfilecheck)             Checksum: 1F65509B2F3B4A59485A1D485C24D34E;1737.
  ) 
 Here is how much of TeX's memory you used:
- 15581 strings out of 479014
- 243671 string characters out of 5859149
+ 15588 strings out of 479014
+ 243749 string characters out of 5859149
  594903 words of memory out of 5000000
- 32768 multiletter control sequences out of 15000+600000
+ 32770 multiletter control sequences out of 15000+600000
  418433 words of font info for 84 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 103i,25n,105p,401b,504s stack positions out of 5000i,500n,10000p,200000b,80000s
-pdfTeX warning (dest): name{section.5} has been referenced but does not exist
-, replaced by a fixed one
-
-{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}<
-/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></
-usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></u
-sr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></us
-r/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr
-/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/l
-ocal/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/loc
-al/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local
-/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/t
-exlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texl
-ive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive
-/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmss10.pfb></usr/local/texlive/
-2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2
-020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/202
-0/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2020/
-texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive/2
-020/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on optimal_deFi_notes.pdf (7 pages, 171785 bytes).
+ 103i,25n,105p,411b,535s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc
+}</usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb>
+</usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><
+/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></
+usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></u
+sr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr
+/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/l
+ocal/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/loc
+al/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local
+/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/te
+xlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texli
+ve/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmss10.pfb></usr/local/texliv
+e/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive
+/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/2
+020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/202
+0/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive
+/2020/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
+Output written on optimal_deFi_notes.pdf (8 pages, 176823 bytes).
 PDF statistics:
- 153 PDF objects out of 1000 (max. 8388607)
- 126 compressed objects within 2 object streams
- 19 named destinations out of 1000 (max. 500000)
- 65 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 169 PDF objects out of 1000 (max. 8388607)
+ 141 compressed objects within 2 object streams
+ 24 named destinations out of 1000 (max. 500000)
+ 81 words of extra memory for PDF output out of 10000 (max. 10000000)
 
