@@ -18,6 +18,7 @@
 
 %% option: largefont
 \documentclass{article} %
+
 %% options: vscreen, garamond, wnotes, savespace
 \usepackage[vscreen]{nat}
 \usepackage[longnamesfirst,sort&compress]{natbib}
@@ -280,7 +281,7 @@ H_t = \frac{({\bf w}^l_t)^\top {\bf h} }{\|{\bf w}^b_t\|},
 \end{align*}
 where ${\bf w}^l_t =[w^{l}_{1,t}\ w^{l}_{2,t}\ ...\ w^{l}_{n,t}]^\top$ and ${\bf w}^b_t=[w^{b}_{1,t}\ w^{b}_{2,t}\ ...\ w^{b}_{n,t}]^\top$.
 
-\begin{algorithm}
+\begin{algorithm}[t]
   \caption{Calculation of Portfolio Weights After Liquidation. 
   During the liquidation process, 
   liquidators can repay debt and seize a specific borrowing-collateral pair at each liquidation call, based on their discretion. 
@@ -336,7 +337,7 @@ In practice, we can only estimate the objective function.
  \begin{align}
   \hat F({\bf w}) = {\bf w}^\top \hat {\bf \mu} - \alpha_1 {\bf w}^\top \hat {\bf \Sigma}{\bf w} - \alpha_2 \hat L({\bf w}),
  \end{align}
- where $\hat {\bf \mu}$, $\hat {\bf \Sigma}$, and $\hat L({\bf w})$ are the estimate counterparts of ${\bf \mu}$, ${\bf \Sigma}$, and $L({\bf w})$, respectively. \\
+ where $\hat {\bf \mu}$, $\hat {\bf \Sigma}$, and $\hat L({\bf w})$ are the estimate counterparts of ${\bf \mu}$, ${\bf \Sigma}$, and $L({\bf w})$ conditioned to all information available up to time $0$, respectively. \\
 
 The estimation of $\hat L({\bf w})$ is particularly tricky because of the complex liquidation loss calculation (as discussed in Algorithm \ref{alg:liquidation_weights}). 
  We propose a machine learning method which is detailed in Section \ref{sec:ML}, 
@@ -361,8 +362,7 @@ subjected to
 In light of the plentiful constraints, we propose a projected gradient ascent scheme to optimise the initial portfolio weights. 
  An overview of the projected gradient ascent algorithm is detailed in Algorithm \ref{alg:PGA}. 
  The detail of the projection step is documented in Algorithm \ref{alg:projection}.
-
-\begin{algorithm}
+\begin{algorithm}[th]
   \caption{Projected Gradient Ascent for Portfolio Weight Optimization}\label{alg:PGA}
   \begin{algorithmic}[1]
   \STATE \textbf{Input:} Objective function $\hat F({\bf w})$, learning rate $\eta$, initial portfolio weights ${\bf w}^{(0)}$, maximum iterations $K$, convergence threshold $\epsilon$
@@ -381,8 +381,7 @@ In light of the plentiful constraints, we propose a projected gradient ascent sc
   \end{algorithmic}
   \end{algorithm}
   
-
-  \begin{algorithm}
+  \begin{algorithm}[th]
     \caption{Projection with No Long-Short Constraint and Normalization}\label{alg:projection}
     \begin{algorithmic}[1]
     \STATE \textbf{Input:} 
@@ -393,9 +392,9 @@ In light of the plentiful constraints, we propose a projected gradient ascent sc
     $\frac{\partial \hat F}{\partial y_i}(y_i)$ for $i=1,2,...,n$.
 
     \STATE Clip the vectors element-wise to enforce non-negativity:
-    \[
+    \begin{align*}
     {\bf c} = \text{clip}({\bf c} , 0, \infty),\ {\bf w}^b = \text{clip}({\bf w}^b, 0, \infty),\ {\bf y} = \text{clip}( {\bf y}, 0, \infty)
-    \]
+    \end{align*}
     
     \STATE Enforce no long-short positions on the same asset by taking the steeper gradient:\\
     \INDSTATE a. Define two index sets
@@ -410,11 +409,13 @@ In light of the plentiful constraints, we propose a projected gradient ascent sc
     \INDSTATE b. Set $c_i=0$ for $i \in \mathcal{I}$\\
     \INDSTATE c. Set $w^b_j=0$ for $j \in \mathcal{J}$
     
-    \STATE Normalize $\mathbf{c}$: ${\bf c} = {\bf c} \odot (V_0/ \|{\bf c}\|) $
+    \STATE Normalize ${\bf c}$ to ensure all initial portfolio value are invested into lending pools
+    \begin{align*}{\bf c} = {\bf c} \odot (V_0/ \|{\bf c}\|) \end{align*}
     
-    \STATE Enforce aggregated short position is less than the total borrowing power
+    \STATE Enforce aggregated short position being less than the total borrowing power
     \IF{$\|{\bf w}^b\| > {\bf c}^\top {\bf m} $}
-        \STATE Normalize $\bf w^b$ by scaling with borrowing power:  ${\bf w}^b = {\bf w}^b \odot ({\bf c}^\top {\bf m}/ \|{\bf w}^b\|) $
+        \STATE Normalize ${\bf w}^b$ by scaling with borrowing power
+        \begin{align*}{\bf w}^b = {\bf w}^b \odot ({\bf c}^\top {\bf m}/ \|{\bf w}^b\|) \end{align*}
     \ENDIF
     
     \STATE Enforce no long-short on the same asset for ${\bf y}$:\\
@@ -427,11 +428,21 @@ In light of the plentiful constraints, we propose a projected gradient ascent sc
     \end{align*}
     \INDSTATE b. Set $y_k=0$ for $k \in \mathcal{K}$\\
     
-    \STATE Normalize ${\bf y}$ to ensure all the borrowed fund are invested into lending pools: ${\bf y} = {\bf y} \odot (\|{\bf w}^b\|/ \|{\bf y}\|)$
+    \STATE Normalize ${\bf y}$ to ensure all borrowed fund are invested into lending pools
+     \begin{align*}{\bf y} = {\bf y} \odot (\|{\bf w}^b\|/ \|{\bf y}\|)\end{align*}
     
     \STATE \textbf{Output:} Updated values for ${\bf c}$, ${\bf w}^b$, and ${\bf y}$
     \end{algorithmic}
-    \end{algorithm}
+  \end{algorithm}
+
+
+\subsection{Poor investors' objective function}
+The learning of $\hat L$ can be very expansive. 
+ One can replace $\hat L$ by health factor and obtain a \textit{poor investors' objective function}
+ \begin{align}
+  \tilde F({\bf w}) = {\bf w}^\top \hat {\bf \mu} - \alpha_1 {\bf w}^\top \hat {\bf \Sigma}{\bf w} + \alpha_3 H({\bf w}),
+ \end{align}
+ where $\alpha_3 \geq 0$ is the weight term to encourage a higher health factor, and $H({\bf w}) = ({\bf w}^l)^\top{\bf h}/\|{\bf w}^b\|$ is the health factor. 
 
 \section{Joint dynamics of crypto prices}
 ARIMA-GARCH with copula

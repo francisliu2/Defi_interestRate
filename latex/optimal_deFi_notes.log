@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  9 OCT 2024 15:34
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  9 OCT 2024 16:24
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -303,14 +303,14 @@ File: amsgen.sty 1999/11/30 v2.0 generic functions
 Package pdfscreen Info: no panel options loaded on input line 34.
 Package pdfscreen Info: LLX=0.0pt
 (pdfscreen)             LLY=0.0pt
-(pdfscreen)             URX=614.295pt
-(pdfscreen)             URY=451.6875pt
+(pdfscreen)             URX=597.6732pt
+(pdfscreen)             URY=844.83647pt
 (pdfscreen)             panelwidth=0.0pt
-(pdfscreen)             overlaywidth=614.295pt
-(pdfscreen)             textwidth=505.89pt
-(pdfscreen)             textheight=343.2825pt
-(pdfscreen)             paperwidth=614.295pt
-(pdfscreen)             paperheight=451.6875pt
+(pdfscreen)             overlaywidth=597.6732pt
+(pdfscreen)             textwidth=489.2682pt
+(pdfscreen)             textheight=736.43147pt
+(pdfscreen)             paperwidth=597.6732pt
+(pdfscreen)             paperheight=844.83647pt
 (pdfscreen)             calfactor=0.0pt
 (pdfscreen)             Panel=0 on input line 34.
 
@@ -648,24 +648,24 @@ File: l3backend-pdftex.def 2021-03-18 L3 backend support: PDF output (pdfTeX)
 (./optimal_deFi_notes.aux)
 \openout1 = `optimal_deFi_notes.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 94.
-LaTeX Font Info:    ... okay on input line 94.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 94.
-LaTeX Font Info:    ... okay on input line 94.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 94.
-LaTeX Font Info:    ... okay on input line 94.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 94.
-LaTeX Font Info:    ... okay on input line 94.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 94.
-LaTeX Font Info:    ... okay on input line 94.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 94.
-LaTeX Font Info:    ... okay on input line 94.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 94.
-LaTeX Font Info:    ... okay on input line 94.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 94.
-LaTeX Font Info:    ... okay on input line 94.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 94.
-LaTeX Font Info:    ... okay on input line 94.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
 
 (/usr/local/texlive/2020/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
@@ -681,7 +681,7 @@ LaTeX Font Info:    ... okay on input line 94.
 \makeMPintoPDFobject=\count324
 \everyMPtoPDFconversion=\toks41
 )
-Package hyperref Info: Link coloring ON on input line 94.
+Package hyperref Info: Link coloring ON on input line 95.
  (/usr/local/texlive/2020/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2021-04-02 v2.47 Cross-referencing by name of section
 
@@ -694,9 +694,9 @@ Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 )
 \c@section@level=\count325
 )
-LaTeX Info: Redefining \ref on input line 94.
-LaTeX Info: Redefining \pageref on input line 94.
-LaTeX Info: Redefining \nameref on input line 94.
+LaTeX Info: Redefining \ref on input line 95.
+LaTeX Info: Redefining \pageref on input line 95.
+LaTeX Info: Redefining \nameref on input line 95.
  (./optimal_deFi_notes.out) (./optimal_deFi_notes.out)
 \@outlinefile=\write4
 \openout4 = `optimal_deFi_notes.out'.
@@ -718,272 +718,216 @@ Configuring pdfsync
 **** pdfsync.sty: started
 
 ABD: EverySelectfont initializing macros
-LaTeX Info: Redefining \selectfont on input line 94.
+LaTeX Info: Redefining \selectfont on input line 95.
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: subfig package v1.3 is loaded.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 101
+LaTeX Font Info:    Trying to load font information for U+msa on input line 102
 .
 
 (/usr/local/texlive/2020/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 101
+LaTeX Font Info:    Trying to load font information for U+msb on input line 102
 .
 
 (/usr/local/texlive/2020/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    Trying to load font information for U+rsfs on input line 10
-1.
+2.
 
 (/usr/local/texlive/2020/texmf-dist/tex/latex/jknapltx/ursfs.fd
 File: ursfs.fd 1998/03/24 rsfs font definition file (jk)
 )
 
-Package xcolor Warning: Incompatible color definition on input line 106.
+Package xcolor Warning: Incompatible color definition on input line 107.
 
-(./optimal_deFi_notes.toc
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 12.
-
-[2
-
-{/usr/local/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map}])
+(./optimal_deFi_notes.toc)
 \tf@toc=\write6
 \openout6 = `optimal_deFi_notes.toc'.
 
 
 
-Package xcolor Warning: Incompatible color definition on input line 110.
+Package xcolor Warning: Incompatible color definition on input line 111.
 
 
-Package xcolor Warning: Incompatible color definition on input line 110.
+Package xcolor Warning: Incompatible color definition on input line 111.
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 128--130
+
+ []
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 124.
+ 130.
+
+[2
+
+{/usr/local/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+Underfull \hbox (badness 10000) in paragraph at lines 131--133
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 134--142
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 143--152
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 153--154
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 155--162
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 163--170
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 171--176
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 177--179
+
+ []
+
+
+Package pdfscreen Warning: No overlay specified
+(pdfscreen)                output will have only background color on input line
+ 180.
 
 [3]
-Underfull \hbox (badness 10000) in paragraph at lines 127--129
+
+Package xcolor Warning: Incompatible color definition on input line 190.
+
+
+Package xcolor Warning: Incompatible color definition on input line 190.
+
+
+Package xcolor Warning: Incompatible color definition on input line 192.
+
+
+Package xcolor Warning: Incompatible color definition on input line 192.
+
+
+Package xcolor Warning: Incompatible color definition on input line 194.
+
+
+Package xcolor Warning: Incompatible color definition on input line 194.
+
+
+Package xcolor Warning: Incompatible color definition on input line 196.
+
+
+Package xcolor Warning: Incompatible color definition on input line 196.
+
+
+Package xcolor Warning: Incompatible color definition on input line 200.
+
+
+Package xcolor Warning: Incompatible color definition on input line 200.
+
+
+Package xcolor Warning: Incompatible color definition on input line 201.
+
+
+Package xcolor Warning: Incompatible color definition on input line 201.
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 202--205
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 130--132
+Underfull \hbox (badness 10000) in paragraph at lines 210--213
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 133--141
+Underfull \hbox (badness 10000) in paragraph at lines 218--220
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 142--151
+Underfull \hbox (badness 10000) in paragraph at lines 225--227
 
  []
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 151.
+ 231.
 
 [4]
-Underfull \hbox (badness 10000) in paragraph at lines 152--153
+Underfull \hbox (badness 10000) in paragraph at lines 231--234
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 154--161
+Underfull \hbox (badness 10000) in paragraph at lines 248--250
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 162--169
+Underfull \hbox (badness 10000) in paragraph at lines 254--262
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 170--175
+Underfull \hbox (badness 10000) in paragraph at lines 270--272
 
  []
+
+Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
+put line 294.
+
+Package xcolor Warning: Incompatible color definition on input line 316.
+
+
+Package xcolor Warning: Incompatible color definition on input line 316.
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 175.
+ 331.
 
 [5]
-Underfull \hbox (badness 10000) in paragraph at lines 176--178
+Underfull \hbox (badness 10000) in paragraph at lines 339--341
 
  []
 
 
-Package xcolor Warning: Incompatible color definition on input line 189.
+Underfull \hbox (badness 10000) in paragraph at lines 342--346
 
-
-Package xcolor Warning: Incompatible color definition on input line 189.
-
-
-Package xcolor Warning: Incompatible color definition on input line 191.
-
-
-Package xcolor Warning: Incompatible color definition on input line 191.
-
-
-Package xcolor Warning: Incompatible color definition on input line 193.
-
-
-Package xcolor Warning: Incompatible color definition on input line 193.
+ []
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 195.
+ 356.
 
 [6]
 
-Package xcolor Warning: Incompatible color definition on input line 195.
+Package xcolor Warning: Incompatible color definition on input line 361.
 
 
-Package xcolor Warning: Incompatible color definition on input line 195.
+Package xcolor Warning: Incompatible color definition on input line 361.
 
-
-Package xcolor Warning: Incompatible color definition on input line 199.
-
-
-Package xcolor Warning: Incompatible color definition on input line 199.
-
-
-Package xcolor Warning: Incompatible color definition on input line 200.
-
-
-Package xcolor Warning: Incompatible color definition on input line 200.
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 201--204
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 209--212
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 217--219
-
- []
-
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 222.
-
-[7]
-Underfull \hbox (badness 10000) in paragraph at lines 224--226
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 230--233
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 247--249
-
- []
-
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 249.
-
-[8]
-Underfull \hbox (badness 10000) in paragraph at lines 253--261
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 269--271
-
- []
-
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 280.
-
-[9]
-Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
-put line 293.
-
-
-Package xcolor Warning: Incompatible color definition on input line 315.
-
-
-Package xcolor Warning: Incompatible color definition on input line 315.
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 338--340
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 341--345
-
- []
-
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 345.
-
-[10]
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 345.
-
-[11]
-
-Package xcolor Warning: Incompatible color definition on input line 360.
-
-
-Package xcolor Warning: Incompatible color definition on input line 360.
-
-
-LaTeX Warning: Float too large for page by 50.06285pt on input line 434.
-
-
-Package xcolor Warning: Incompatible color definition on input line 436.
-
-
-Package xcolor Warning: Incompatible color definition on input line 436.
-
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 439.
-
-[12]
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 439.
-
-[13]
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 439.
-
-[14]
 
 Package xcolor Warning: Incompatible color definition on input line 439.
 
@@ -991,47 +935,65 @@ Package xcolor Warning: Incompatible color definition on input line 439.
 Package xcolor Warning: Incompatible color definition on input line 439.
 
 
-Package xcolor Warning: Incompatible color definition on input line 442.
+Package xcolor Warning: Incompatible color definition on input line 447.
 
 
-Package xcolor Warning: Incompatible color definition on input line 442.
+Package xcolor Warning: Incompatible color definition on input line 447.
 
 
-Package xcolor Warning: Incompatible color definition on input line 443.
+Package xcolor Warning: Incompatible color definition on input line 450.
 
 
-Package xcolor Warning: Incompatible color definition on input line 443.
+Package xcolor Warning: Incompatible color definition on input line 450.
 
 
-Package xcolor Warning: Incompatible color definition on input line 444.
+Package xcolor Warning: Incompatible color definition on input line 453.
 
 
-Package xcolor Warning: Incompatible color definition on input line 444.
+Package xcolor Warning: Incompatible color definition on input line 453.
 
 
-Package xcolor Warning: Incompatible color definition on input line 446.
+Package xcolor Warning: Incompatible color definition on input line 454.
 
 
-Package xcolor Warning: Incompatible color definition on input line 446.
+Package xcolor Warning: Incompatible color definition on input line 454.
+
+
+Package xcolor Warning: Incompatible color definition on input line 455.
+
+
+Package xcolor Warning: Incompatible color definition on input line 455.
+
+
+Package xcolor Warning: Incompatible color definition on input line 457.
+
+
+Package xcolor Warning: Incompatible color definition on input line 457.
 
 No file optimal_deFi_notes.bbl.
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 450.
+ 461.
 
-[15] (./optimal_deFi_notes.aux)
+[7]
+
+Package pdfscreen Warning: No overlay specified
+(pdfscreen)                output will have only background color on input line
+ 461.
+
+[8] (./optimal_deFi_notes.aux)
 Package rerunfilecheck Info: File `optimal_deFi_notes.out' has not changed.
-(rerunfilecheck)             Checksum: A6A717A25261E198B14A4754C1B3830D;2545.
+(rerunfilecheck)             Checksum: 5F2CEB407AF3A727919A3E746D3013E2;2782.
  ) 
 Here is how much of TeX's memory you used:
- 15641 strings out of 479014
- 244176 string characters out of 5859149
- 607077 words of memory out of 5000000
- 32772 multiletter control sequences out of 15000+600000
+ 15637 strings out of 479014
+ 244170 string characters out of 5859149
+ 613077 words of memory out of 5000000
+ 32773 multiletter control sequences out of 15000+600000
  418042 words of font info for 83 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 103i,27n,105p,1104b,692s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 103i,27n,105p,1103b,752s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc
 }</usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb>
 </usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><
@@ -1052,10 +1014,10 @@ ive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive
 /texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2020/
 texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2020/t
 exmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on optimal_deFi_notes.pdf (14 pages, 230328 bytes).
+Output written on optimal_deFi_notes.pdf (7 pages, 228706 bytes).
 PDF statistics:
- 295 PDF objects out of 1000 (max. 8388607)
- 257 compressed objects within 3 object streams
- 79 named destinations out of 1000 (max. 500000)
- 121 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 271 PDF objects out of 1000 (max. 8388607)
+ 240 compressed objects within 3 object streams
+ 74 named destinations out of 1000 (max. 500000)
+ 129 words of extra memory for PDF output out of 10000 (max. 10000000)
 
