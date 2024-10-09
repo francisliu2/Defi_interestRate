@@ -1,10 +1,15 @@
-\contentsline {section}{\numberline {1}Objective of the research}{3}{section.1}%
-\contentsline {section}{\numberline {2}AAVE and Compound Interest Rate Mechanism}{3}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Interest Rate Mechanism}{3}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}The intended impact on Borrowers and Lenders}{4}{subsection.2.2}%
-\contentsline {section}{\numberline {3}Problem statement}{5}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Wealth Process}{5}{subsection.3.1}%
-\contentsline {section}{\numberline {4}Solution}{7}{section.4}%
-\contentsline {section}{\numberline {5}What is the risk beared by the lender?}{8}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Bad debt}{8}{subsection.5.1}%
-\contentsline {subsection}{\numberline {5.2}Systemic risk}{9}{subsection.5.2}%
+\contentsline {section}{\numberline {1}Introduction}{3}{section.1}%
+\contentsline {section}{\numberline {2}Important Features}{6}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Determination and Accrual of Borrowing and Lending Interest}{6}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Borrowing power}{7}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Liquidation Procedure}{7}{subsection.2.3}%
+\contentsline {section}{\numberline {3}The portfolio problem}{7}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Crypto portfolio on a lending platform}{7}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Objective function}{10}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Optimisation scheme}{12}{subsection.3.3}%
+\contentsline {section}{\numberline {4}Joint dynamics of crypto prices}{15}{section.4}%
+\contentsline {section}{\numberline {5}Learning scheme of liquidation loss}{15}{section.5}%
+\contentsline {section}{\numberline {6}Empirical results}{15}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Data}{15}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Backtesting procedure}{15}{subsection.6.2}%
+\contentsline {section}{\numberline {7}Discussion}{15}{section.7}%
