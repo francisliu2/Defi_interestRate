@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  9 OCT 2024 15:31
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  9 OCT 2024 15:34
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -763,66 +763,72 @@ Package xcolor Warning: Incompatible color definition on input line 110.
 Package xcolor Warning: Incompatible color definition on input line 110.
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 129--131
-
- []
-
-
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 131.
+ 124.
 
 [3]
-Underfull \hbox (badness 10000) in paragraph at lines 132--134
+Underfull \hbox (badness 10000) in paragraph at lines 127--129
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 135--143
+Underfull \hbox (badness 10000) in paragraph at lines 130--132
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 144--153
+Underfull \hbox (badness 10000) in paragraph at lines 133--141
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 142--151
 
  []
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 153.
+ 151.
 
 [4]
-Underfull \hbox (badness 10000) in paragraph at lines 154--155
+Underfull \hbox (badness 10000) in paragraph at lines 152--153
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 156--163
+Underfull \hbox (badness 10000) in paragraph at lines 154--161
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 164--171
+Underfull \hbox (badness 10000) in paragraph at lines 162--169
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 172--177
+Underfull \hbox (badness 10000) in paragraph at lines 170--175
 
  []
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 177.
+ 175.
 
 [5]
-Underfull \hbox (badness 10000) in paragraph at lines 178--180
+Underfull \hbox (badness 10000) in paragraph at lines 176--178
 
  []
 
 
+Package xcolor Warning: Incompatible color definition on input line 189.
+
+
+Package xcolor Warning: Incompatible color definition on input line 189.
+
+
 Package xcolor Warning: Incompatible color definition on input line 191.
 
 
@@ -833,162 +839,168 @@ Package xcolor Warning: Incompatible color definition on input line 193.
 
 
 Package xcolor Warning: Incompatible color definition on input line 193.
-
-
-Package xcolor Warning: Incompatible color definition on input line 195.
-
-
-Package xcolor Warning: Incompatible color definition on input line 195.
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 197.
+ 195.
 
 [6]
 
-Package xcolor Warning: Incompatible color definition on input line 197.
+Package xcolor Warning: Incompatible color definition on input line 195.
 
 
-Package xcolor Warning: Incompatible color definition on input line 197.
+Package xcolor Warning: Incompatible color definition on input line 195.
 
 
-Package xcolor Warning: Incompatible color definition on input line 201.
+Package xcolor Warning: Incompatible color definition on input line 199.
 
 
-Package xcolor Warning: Incompatible color definition on input line 201.
+Package xcolor Warning: Incompatible color definition on input line 199.
 
 
-Package xcolor Warning: Incompatible color definition on input line 202.
+Package xcolor Warning: Incompatible color definition on input line 200.
 
 
-Package xcolor Warning: Incompatible color definition on input line 202.
+Package xcolor Warning: Incompatible color definition on input line 200.
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 203--206
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 211--214
+Underfull \hbox (badness 10000) in paragraph at lines 201--204
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 219--221
+Underfull \hbox (badness 10000) in paragraph at lines 209--212
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 217--219
 
  []
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 224.
+ 222.
 
 [7]
-Underfull \hbox (badness 10000) in paragraph at lines 226--228
+Underfull \hbox (badness 10000) in paragraph at lines 224--226
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 232--235
+Underfull \hbox (badness 10000) in paragraph at lines 230--233
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 249--251
+Underfull \hbox (badness 10000) in paragraph at lines 247--249
 
  []
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 251.
+ 249.
 
 [8]
-Underfull \hbox (badness 10000) in paragraph at lines 255--263
+Underfull \hbox (badness 10000) in paragraph at lines 253--261
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 271--273
+Underfull \hbox (badness 10000) in paragraph at lines 269--271
 
  []
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 282.
+ 280.
 
 [9]
 Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
-put line 295.
+put line 293.
 
 
-Package xcolor Warning: Incompatible color definition on input line 317.
+Package xcolor Warning: Incompatible color definition on input line 315.
 
 
-Package xcolor Warning: Incompatible color definition on input line 317.
+Package xcolor Warning: Incompatible color definition on input line 315.
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 340--342
+Underfull \hbox (badness 10000) in paragraph at lines 338--340
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 343--347
+Underfull \hbox (badness 10000) in paragraph at lines 341--345
 
  []
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 347.
+ 345.
 
 [10]
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 347.
+ 345.
 
 [11]
 
-Package xcolor Warning: Incompatible color definition on input line 362.
+Package xcolor Warning: Incompatible color definition on input line 360.
 
 
-Package xcolor Warning: Incompatible color definition on input line 362.
+Package xcolor Warning: Incompatible color definition on input line 360.
 
 
-LaTeX Warning: Float too large for page by 50.06285pt on input line 436.
+LaTeX Warning: Float too large for page by 50.06285pt on input line 434.
 
 
-Package xcolor Warning: Incompatible color definition on input line 438.
+Package xcolor Warning: Incompatible color definition on input line 436.
 
 
-Package xcolor Warning: Incompatible color definition on input line 438.
+Package xcolor Warning: Incompatible color definition on input line 436.
 
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 441.
+ 439.
 
 [12]
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 441.
+ 439.
 
 [13]
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 441.
+ 439.
 
 [14]
 
-Package xcolor Warning: Incompatible color definition on input line 441.
+Package xcolor Warning: Incompatible color definition on input line 439.
 
 
-Package xcolor Warning: Incompatible color definition on input line 441.
+Package xcolor Warning: Incompatible color definition on input line 439.
+
+
+Package xcolor Warning: Incompatible color definition on input line 442.
+
+
+Package xcolor Warning: Incompatible color definition on input line 442.
+
+
+Package xcolor Warning: Incompatible color definition on input line 443.
+
+
+Package xcolor Warning: Incompatible color definition on input line 443.
 
 
 Package xcolor Warning: Incompatible color definition on input line 444.
@@ -997,28 +1009,16 @@ Package xcolor Warning: Incompatible color definition on input line 444.
 Package xcolor Warning: Incompatible color definition on input line 444.
 
 
-Package xcolor Warning: Incompatible color definition on input line 445.
-
-
-Package xcolor Warning: Incompatible color definition on input line 445.
-
-
 Package xcolor Warning: Incompatible color definition on input line 446.
 
 
 Package xcolor Warning: Incompatible color definition on input line 446.
-
-
-Package xcolor Warning: Incompatible color definition on input line 448.
-
-
-Package xcolor Warning: Incompatible color definition on input line 448.
 
 No file optimal_deFi_notes.bbl.
 
 Package pdfscreen Warning: No overlay specified
 (pdfscreen)                output will have only background color on input line
- 452.
+ 450.
 
 [15] (./optimal_deFi_notes.aux)
 Package rerunfilecheck Info: File `optimal_deFi_notes.out' has not changed.
@@ -1027,7 +1027,7 @@ Package rerunfilecheck Info: File `optimal_deFi_notes.out' has not changed.
 Here is how much of TeX's memory you used:
  15641 strings out of 479014
  244176 string characters out of 5859149
- 606077 words of memory out of 5000000
+ 607077 words of memory out of 5000000
  32772 multiletter control sequences out of 15000+600000
  418042 words of font info for 83 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -1052,7 +1052,7 @@ ive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive
 /texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2020/
 texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2020/t
 exmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on optimal_deFi_notes.pdf (14 pages, 230065 bytes).
+Output written on optimal_deFi_notes.pdf (14 pages, 230328 bytes).
 PDF statistics:
  295 PDF objects out of 1000 (max. 8388607)
  257 compressed objects within 3 object streams
