@@ -10,7 +10,7 @@
 \contentsline {subsection}{\numberline {3.4}Poor investors' objective function}{7}{subsection.3.4}%
 \contentsline {section}{\numberline {4}Joint dynamics of crypto prices}{7}{section.4}%
 \contentsline {section}{\numberline {5}Learning scheme of liquidation loss}{7}{section.5}%
-\contentsline {section}{\numberline {6}Empirical results}{7}{section.6}%
-\contentsline {subsection}{\numberline {6.1}Data}{7}{subsection.6.1}%
-\contentsline {subsection}{\numberline {6.2}Backtesting procedure}{7}{subsection.6.2}%
-\contentsline {section}{\numberline {7}Discussion}{7}{section.7}%
+\contentsline {section}{\numberline {6}Empirical results}{8}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Data}{8}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Backtesting procedure}{8}{subsection.6.2}%
+\contentsline {section}{\numberline {7}Discussion}{8}{section.7}%
