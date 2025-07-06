@@ -1,0 +1,324 @@
+%%
+%% $Id: article.tex,v 1.1 2008/09/20 10:19:28 natalie Exp $
+%% $Source: /Users/natalie/cvs/tex/templates/article.tex,v $
+%% $Date: 2008/09/20 10:19:28 $
+%% $Revision: 1.1 $
+%%
+
+%\documentclass[a4paper,11pt,BCOR1cm,DIV11,headinclude]{scrbook}
+% bei 12pt ist DIV 12 default, bei 11pt ist es DIV 10
+% Textbereiche 
+% DIV 10: 147*207.9mm, DIV 11: 152.73*216mm, DIV 12:157.50*222.75
+% DIV 13: 161.54*228.46mm, DIV 14: 165*233.36mm
+
+\def\deftitle{Notes on Dynamics for cryptocurrency derivatives}
+% \def\defauthor{N.\ Packham}
+% \def\defauthor{nat}
+\def\defauthor{}
+
+%% option: largefont
+\documentclass{article} %
+%% options: vscreen, garamond, wnotes, savespace
+\usepackage[vscreen]{nat}
+\usepackage[longnamesfirst,sort&compress]{natbib}
+\usepackage{booktabs}
+
+\bibpunct{(}{)}{;}{a}{,}{,}
+\usepackage{amsfonts,amssymb,amsthm} %
+\usepackage{mathrsfs}
+\usepackage[tbtags]{amsmath} %
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage{tabularx,ragged2e}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{subfig}
+\usepackage{enumitem}
+\usepackage{csquotes}
+
+
+\newcolumntype{C}{>{\Centering\arraybackslash}X}
+\newcolumntype{s}{>{\hsize=.2\hsize \Centering\arraybackslash}X}
+% \usepackage{fullpage}
+\usepackage{footnote}
+\makesavenoteenv{tabular}
+
+\usepackage{cleveref}
+\newenvironment{delayedproof}[1]
+ {\begin{proof}[\raisedtarget{#1}Proof of \Cref{#1}]}
+ {\end{proof}}
+\newcommand{\raisedtarget}[1]{%
+  \raisebox{\fontcharht\font`P}[0pt][0pt]{\hypertarget{#1}{}}%
+}
+\newcommand{\proofref}[1]{\hyperlink{#1}{proof}}
+
+
+\usepackage{graphicx,color}
+\graphicspath{{./pics/}}
+\definecolor{BrickRed}{rgb}{.625,.25,.25}
+\providecommand{\red}[1]{\textcolor{BrickRed}{#1}}
+\definecolor{markergreen}{rgb}{0.6, 1.0, 0}
+\definecolor{darkgreen}{rgb}{0, .5, 0}
+\definecolor{darkred}{rgb}{.7,0,0}
+\definecolor{darkorange}{rgb}{1,0.3,0}
+\definecolor{darkblue}{rgb}{0,29,245}
+%\definecolor{orange}{rgb}{239, 133, 54}
+%\definecolor{lightblue}{rgb}{59, 188, 175}
+
+\providecommand{\marker}[1]{\fcolorbox{markergreen}{markergreen}{{#1}}}
+\providecommand{\natp}[1]{\textcolor{darkred}{#1}}
+\providecommand{\mj}[1]{\textcolor{darkred}{#1}}
+\providecommand{\francis}[1]{\textcolor{darkgreen}{#1}}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}%[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary} %%
+\newtheorem{lemma}[theorem]{Lemma} %%
+\theoremstyle{definition} %%
+\newtheorem{definition}{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{remarks}{Remarks}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{assumption}{Assumption}
+\setlength{\parindent}{0pt}
+
+\usepackage{amsmath}
+\input{definitions}
+\sloppy
+\begin{document}
+\setlength{\boxlength}{0.95\textwidth} %
+\title{\large{\bf\deftitle}} %
+\author{{\normalsize\bf\defauthor}}%
+\thispagestyle{empty}
+\addtocounter{page}{1}
+\maketitle
+
+% \keywords{keywords here} %%
+% \jel{jel here} %%
+\vspace{.5cm}
+\def\contentsname{Contents}
+\tableofcontents
+%%
+\vspace{.5cm}
+
+
+\section{Objective of the research}
+
+The objective of this research is to study the optimal portfolio of loans in DeFi (Decentralized Finance) and to evaluate the current interest rate mechanisms in the DeFi lending space. This includes understanding how to maximize investor wealth while accounting for risk factors like price volatility and defaults in both USDT and ETH lending pools.
+
+\section{AAVE and Compound Interest Rate Mechanism}
+
+AAVE and Compound are two of the most widely used decentralized lending platforms in the DeFi space. Both platforms provide interest rates based on the utilization of liquidity pools, where users can lend and borrow cryptocurrencies. While they share some common features, their mechanisms for determining borrowing rates have important distinctions.
+
+\subsection{Interest Rate Mechanism}
+
+AAVE and Compounds employ a dynamic interest rate mechanism, which adjusts rates based on the supply and demand for liquidity in a specific pool.
+ AAVE’s \textbf{borrowing} rates are determined using the utilization rate \(U_t\), defined as:
+
+\[
+U_t = \frac{\text{Borrowed Funds}}{\text{Total Liquidity}} = \frac{\text{Total Borrows}}{\text{Total Liquidity Available}}.
+\]
+
+The borrowing rate on the platforms varies depending on whether the utilization rate \( U_t \) is below or above an optimal threshold \( U_{\text{optimal}} \):
+
+\[
+r_b = 
+\begin{cases} 
+\text{Base Rate} + a_1 \cdot \frac{U_t}{U_{\text{optimal}}}, & \text{if } U_t < U_{\text{optimal}} \\
+\text{Base Rate} + a_1 + a_2 \cdot \frac{U_t - U_{\text{optimal}}}{1 - U_{\text{optimal}}}, & \text{if } U_t \geq U_{\text{optimal}}
+\end{cases}
+\]
+
+Where:
+\begin{itemize}
+    \item \textbf{Base Rate}: The minimum interest rate, set by AAVE, which applies when utilization is low.
+    \item \( a_1, a_2 \): Constants that determine the sensitivity of the interest rate to changes in the utilization rate.
+    \item \( U_{\text{optimal}} \): The target utilization rate, above which interest rates increase more steeply to encourage additional liquidity.
+\end{itemize}
+
+The interest rate mechanism incentivises liquidity provision by adjusting rates in response to utilization: higher borrowing activity increases rates,
+ encouraging depositors to supply more liquidity, while lower borrowing activity reduces rates to attract more borrowers.
+
+ The \textbf{lending} rate \(r_l\) in AAVE is directly related to the borrowing rate \(r_b\), adjusted by the utilization rate \(U_t\) and the protocol’s reserve factor. The reserve factor represents the portion of the borrowing interest set aside by the protocol for reserves, which typically protects against bad debt. The lending rate is given by:
+
+\[
+r_l = r_b \cdot (1 - \text{reserve factor}) \cdot U_t
+\]
+
+Where:
+\begin{itemize}
+    \item \( r_l \) is the interest paid to lenders (depositors).
+    \item \( \text{reserve factor} \) is a percentage (e.g., 10\%) retained by AAVE for protocol reserves.
+\end{itemize}
+
+\subsection{The intended impact on Borrowers and Lenders}
+
+The interest rate mechanisms on AAVE and Compound are designed to impact both borrowers and lenders:
+\begin{itemize}
+    \item \textbf{Borrowers}: High utilization in the lending pool increases borrowing rates, leading to higher costs for borrowers when liquidity is scarce. Borrowers on AAVE may also opt for stable interest rates to hedge against volatility in borrowing costs.
+    \item \textbf{Lenders}: Lenders benefit from increased returns when the utilization rate is high,
+     as interest rates increase with demand for liquidity. 
+    However, lower utilization may result in lower returns as interest rates decrease.
+\end{itemize}
+
+Both mechanisms aim to maintain liquidity in their respective platforms while providing an interest rate structure that balances the needs of borrowers and lenders in a dynamic market environment.
+
+
+\section{Problem statement}
+We challenge the designated impact of the interest rate mechanism to the lenders: 
+We question the if it is generally true that lenders will always attracted by a higher lending rate. 
+
+There are two pivotal factors to be considered:
+\begin{enumerate}
+  \item the relationship between default probability of a lending pool
+  \item the risk aversion of lenders
+ \end{enumerate}
+
+In the following, we define the wealth process of a lender who form an optimal portfolio of DeFi loans. 
+Then, by assuming a utility function, we work out the corresponding optimal portfolio weights using the HJB equation.
+
+\subsection{Wealth Process}
+
+We aim to model the wealth dynamics of an investor lending in both USDT and ETH pools. For simplicity (which we will need to discuss), 
+assume the dynamics of the lending rates $r^{(1)}_t$ (USDT rate), $r^{(2)}_t$ (ETH rate), and the price $S_t$ of ETH follow the stochastic differential equations:
+\begin{align*}
+  \dd S_t &= \mu(S_t) \dd t + \sigma(S_t) \dd W_t \quad \text{(ETH price dynamics)}, \\
+  \dd r^{(1/2)}_t &= \kappa^{(1/2)} \left(\theta^{(1/2)} - r_t^{(1/2)}\right) \dd t + \sigma^{(1/2)} \dd W^{(1/2)}_t \quad \text{(lending rate dynamics)},
+\end{align*}
+where:
+\begin{itemize}
+    \item $\mu(S_t)$ and $\sigma(S_t)$ are the drift and volatility of ETH price, respectively.
+    \item $W_t$ and $W^{(1/2)}_t$ are independent Brownian motions.
+    \item $\kappa^{(1/2)}$ and $\theta^{(1/2)}$ represent the mean-reversion rates and the long-term lending rates for USDT and ETH.
+    \item $X_t$ represents the investor's total wealth, with proportions $p_t$ allocated to the USDT lending pool and $1 - p_t$ to the ETH lending pool.
+\end{itemize}
+
+The change in the investor’s wealth is influenced by the accrual of interest and potential defaults in both lending pools:
+
+\begin{itemize}
+    \item \textbf{USDT lending pool}:
+    \[
+    \dd \left[p_t X_t\right] = p_t X_t \left(r^{(1)}_t \dd t - \dd N^{(1)}_t \right),
+    \]
+    where $N^{(1)}_t$ is the counting process for USDT pool defaults.
+
+    \item The default intensity of the USDT pool is assumed to be $\lambda^{(1)}\in \mathbb{R}^+$.
+
+    \item \textbf{ETH lending pool} (accounting for foreign interest rate):
+    \[
+    \dd \left[(1-p_t)X_t \frac{1}{S_{t}} S_t\right] = (1-p_t) X_t \left[(r^{(2)}_t + \mu(S_t)) \dd t + \sigma(S_t) \dd W_t - \dd N^{(2)}_t \right],
+    \]
+    where $N^{(2)}_t$ accounts for defaults in the ETH pool.
+
+    \item The default intensity of the ETH pool is assumed to be $\lambda^{(2)}\in \mathbb{R}^+$.
+\end{itemize}
+
+Grouping terms gives us the total wealth dynamics:
+\[
+\dd X_t = X_t \left[p_t (r^{(1)}_t - r^{(2)}_t - \mu(S_t)) + r^{(2)}_t + \mu(S_t) \right] \dd t + (1 - p_t) X_t \sigma(S_t) \dd W_t - p_t X_t \dd N^{(1)}_t - (1-p_t) X_t \dd N^{(2)}_t.
+\]
+
+Next, we define a \textbf{value function}:
+\[
+V(t, x, r_1, r_2, s) = \sup_{p \in [0,1]} \mathbb{\sf E}_t \left[ U(X_T) \,|\, X_0 = x, r^{(1)}_0 = r_1, r^{(2)}_0 = r_2, S_0 = s \right],
+\]
+where $U(\cdot)$ is a utility function representing investor preferences.
+
+The \textbf{HJB (Hamilton-Jacobi-Bellman) equation} for optimizing the value function is derived as:
+\[
+0 = \partial_t V + H,
+\]
+where $H$ is the Hamiltonian.
+
+\section{Solution}
+Suppose we know the utility function $U(x)$,
+ we solve the problem of finding the optimal portfolio $p^*$ by the HJB equation.
+
+We postulate the value function has the form:
+\[
+V(t, x, r_1, r_2, s) = U(x) f(t, r_1, r_2, s),
+\]
+where $f(t, r_1, r_2, s)>0$ is a function of time, lending rates, and ETH price.
+
+The HJB equation simplifies to:
+\begin{align*}
+\sup_{p \in [0, 1]} 
+\Big[ &x \left\{ p \left( r_1 - r_2 - \mu(s) \right) + r_2 + \mu(s) \right\}\partial_x U f\\
+&+\frac{1}{2}(1-p)^2x^2 \sigma^2(s) \partial_{xx}U(x)f\\
+&+\lambda^{(1)}\left\{U((1-p)x) - U(x)\right\}f
++\lambda^{(2)}\left\{U(px) - U(x)\right\}f
+\Big]
+\end{align*}
+
+The \textbf{first-order condition} for the optimal $p^*$ is given by:
+\begin{align*}
+x(r_1 - r_2 - \mu(s))\partial_xU(x) &+\lambda^{(2)}x\partial_xU(p^*x)\\
+- (1-p^*)x^2\sigma^2(s)\partial_{xx}U(x)
+&-\lambda^{(1)}x\partial_xU((1-p^*)x)
+=0
+\end{align*}
+This gives us the equation to solve for $p^*$, the optimal allocation between the USDT and ETH pools.\\
+
+\textbf{Constant absolute risk aversion}
+\begin{align*}
+  U(x) = -e^{-\gamma x},
+  \end{align*}
+  where $\gamma>0$ is a constant that represents the degree of risk preferenece.\\
+
+The $p^*$ satisfies the first order condition
+\begin{align*}
+  \lambda^{(1)} e^{\gamma p^*x}
+  - \lambda^{(2)} e^{-\gamma x (p^*-1)} = (r_1 - r_2 - \mu(s)) + (1-p^*)x\sigma^2(s) \gamma.  
+\end{align*}
+
+\textbf{Constant relative risk aversion}
+\begin{align*}
+  U(x) = \frac{x^\gamma}{\gamma}, 
+\end{align*}
+where $\gamma > 0$ is a constant that represents the degree of risk preference. \\
+
+The $p^*$ satisfies the first order condition
+\begin{align*}
+  \lambda^{(1)}(1-p^*)^{\gamma-1} - \lambda^{(2)}(p^*)^{\gamma-1}=r_1-r_2 - \mu(s) - (1-p^*)\sigma^2(s) (\gamma - 1) 
+\end{align*}
+
+
+\section{What is the risk beared by the lender?}
+\subsection{Bad debt}
+Bad debt refers to situations where when the value of the collateral provided by a borrower does not cover the borrowed amount.
+ 
+ Bad debt can be incurred by 
+ \begin{enumerate}
+  \item \textbf{Collateral Shortfall} -- This happens when the value of the collateral decreases or the borrowed assets appreciate sharply, leading to a situation where the collateral is fully liquidated, yet a portion of the debt remains unpaid.
+  \item \textbf{Liquidation Inefficiencies} -- Liquidation becomes unattractive to liquidators when the potential profit does not justify the risks involved. 
+  This can occur if the collateral has low liquidity, exposing liquidators to inventory risk, or when high transaction fees (e.g., during network congestion) significantly reduce potential profits.
+\end{enumerate}
+
+% https://dl.acm.org/doi/abs/10.1145/3487552.3487811?casa_token=IW1KGwV2fa4AAAAA:Oodjv92G94qv5j2Z6Y9QqLldax8mbErF7OnFSTUj0xv0p1fwNsPBN5jeZQf9RngupBNV5Lm8me4
+
+
+\textbf{Collateral Shortfall}
+https://arxiv.org/pdf/2212.07306
+
+Bad debt instead of default
+https://blockworks.co/news/aave-curve-bad-debt
+https://medium.com/risk-dao/on-insolvency-tackling-bad-debt-in-defi-6c2ac5028348
+
+\textbf{Liquidation Inefficiencies}
+
+
+\subsection{Systemic risk}
+\textbf{Protocol losses} -- These occur when the lending platform fails to manage its risk exposure properly, leading to systemic losses. An example is when a protocol freezes a lending pool for specific assets in response to potential exploits or market manipulation.
+Aave froze the lending pool for REN – the asset Eisenberg suggested for the attackand a few other assets [4].
+
+
+
+\bibliographystyle{abbrvnamed} %
+\bibliography{finance} %
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

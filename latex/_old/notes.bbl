@@ -1,0 +1,42 @@
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Anderson \bgroup \em et al.\egroup
+  }{2010}]{anderson2010affine}
+Anderson, B., P.~J. Hammond, and C.~A. Ramezani.
+\newblock Affine models of the joint dynamics of exchange rates and interest
+  rates.
+\newblock {\em Journal of Financial and Quantitative Analysis},
+  45(5):1341--1365, 2010.
+
+\bibitem[\protect\citeauthoryear{Back}{2010}]{back2010asset}
+Back, K.
+\newblock {\em Asset pricing and portfolio choice theory}.
+\newblock Oxford University Press, 2010.
+
+\bibitem[\protect\citeauthoryear{Cappiello and
+  De~Santis}{2007}]{cappiello2007uncovered}
+Cappiello, L. and R.~A. De~Santis.
+\newblock The uncovered return parity condition.
+\newblock 2007.
+
+\bibitem[\protect\citeauthoryear{Gudgeon \bgroup \em et al.\egroup
+  }{2020}]{gudgeon2020defi}
+Gudgeon, L., S.~Werner, D.~Perez, and W.~J. Knottenbelt.
+\newblock Defi protocols for loanable funds: Interest rates, liquidity and
+  market efficiency.
+\newblock In {\em Proceedings of the 2nd ACM Conference on Advances in
+  Financial Technologies}, pages 92--112, 2020.
+
+\bibitem[\protect\citeauthoryear{Shokrollahi and
+  Magdziarz}{2021}]{shokrollahi2021time}
+Shokrollahi, F. and M.~Magdziarz.
+\newblock Time-changed fractional black-scholes interest rate model for pricing
+  equity warrants.
+\newblock {\em Available at SSRN 3962881}, 2021.
+
+\bibitem[\protect\citeauthoryear{Shreve}{2004}]{Shreve2004a}
+Shreve, S.~E.
+\newblock {\em Stochastic Calculus for Finance {II}}.
+\newblock Springer, 2004.
+
+\end{thebibliography}

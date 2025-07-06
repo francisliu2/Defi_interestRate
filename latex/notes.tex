@@ -11,17 +11,23 @@
 % DIV 10: 147*207.9mm, DIV 11: 152.73*216mm, DIV 12:157.50*222.75
 % DIV 13: 161.54*228.46mm, DIV 14: 165*233.36mm
 
-\def\deftitle{Notes on Dynamics for cryptocurrency derivatives}
+\def\deftitle{Markowitz Portfolio on DeFi Loan Platforms}
 % \def\defauthor{N.\ Packham}
 % \def\defauthor{nat}
 \def\defauthor{}
 
 %% option: largefont
-\documentclass[square]{article} %
+\documentclass{article} %
+
 %% options: vscreen, garamond, wnotes, savespace
 \usepackage[vscreen]{nat}
 \usepackage[longnamesfirst,sort&compress]{natbib}
-\usepackage{booktabs}
+
+\usepackage{algorithm}  % For algorithm environment
+\usepackage{algorithmic}
+\newcommand{\INDSTATE}[1][1]{\hspace{#1\algorithmicindent}}
+
+% \usepackage{booktabs}
 
 \bibpunct{(}{)}{;}{a}{,}{,}
 \usepackage{amsfonts,amssymb,amsthm} %
@@ -93,9 +99,7 @@
 \thispagestyle{empty}
 \addtocounter{page}{1}
 \maketitle
-\begin{abstract}
- To be filled. 
-\end{abstract}
+
 % \keywords{keywords here} %%
 % \jel{jel here} %%
 \vspace{.5cm}
@@ -103,547 +107,233 @@
 \tableofcontents
 %%
 \vspace{.5cm}
-\section{Ideas}
-\subsection{Uncovered interest parity in the absence of bond}
-This section is mostly taken/copied from section 6.1 of \cite{gudgeon2020defi} for idea generation. 
-Uncovered interest parity (UIP) normally appear in the context of foreign exchange between two countries: domestic and foreign. 
-An investor has the choice of whether to hold domestic or foreign assets. 
-If the condition of UIP holds, a risk-neutral investor should be indifferent between holding the domestic or foreign assets because the exchange rate is expected to adjust such that returns are equivalent. \\
 
-Example
-An investor starting with 1m GBP at $t=0$ could either:
-\begin{itemize}
-  \item receive an annual interest rate of $i_\text{GBP}=3\%$, resulting in $1.03$m GBP at $t=1$
-  \item or, immediately buy $1.23$ USD at an exchange rate $S_{\text{GBP}/\text{USD}}=0.813$, and receive an annual interest rate of $i_\text{USD}=5\%$, resulting in 1.2915m USD at $t=1$. 
-  Then, convert the USD with the exchange rate at $t=1$, say $S_{\text{GBP}/\text{USD}}=0.7974$, and get $1.03$m GBP.
-\end{itemize}
-
-If UIP holds, despite the higher interest rate of the USD, the investor will be indifferent because the exchange rate between currencies offset the spread between interest rates. 
-Mathematically, UIP is stated as 
-\begin{align*}
-1+R^{(i)} = (1+R^{(j)})\frac{\mathbb{\sf E}S_{t+k}}{S_t},
-\end{align*}
-where $R^{(i/j)}$ is the interest rate payable on asset $i/j$ from time $t$ to $t+k$, and $S_t$ is the exchange rate ar time $t$. \\
-
-Now the question is both $R^{(i/j)}$ are not known in advance due to the lack of a liquid bond market that investors can secure the future payoff by holding a cryptocurrency. 
-However, the good news is that we have the observable historical short rate, $r_t^{(i)}$, and exchange rate $S_t^{(i/j)}$. 
-The UIP condition in this case have to be adjusted to incorporate the fact that the investor consider also the uncertainty of the domestic and foreign short rate, i.e.\footnote{The AAVE and Compound interest rate are compounded every second, which is close enough to model the short rate payoff in a continuous compounding scheme. }
-
-\begin{align*}
-  \mathbb{\sf E} \left(\exp{\int_0^T r^{(i)}_t \text{d}t}\right) = \mathbb{\sf E}\left(\exp\left(\int_0^T r^{(j)}_t\text{d}t\right)\frac{S_{T}}{S_t}\right).
-  \end{align*}
-
-The above UIP condition open quite some questions
+\section{Introduction}
+FL to team: 
 \begin{enumerate}
-  \item It seems necessary to model the joint dynamics of the foreign short rate and the exchange rate, such that the R.H.S. of the above equation can be evaluated.
-  \item Under which measure should we take the expectation of both sides? Any criteria of choosing the measure? No-arbitrage? 
-  \item When will the above equation hold? When will not?
-  \item If the condition does not hold, are there any arbitrage opportunities? 
-  \item What is the dynamics of $r^{(i/j)}$? For further development, we might want a parametrised stochastic model such that we can
-   (i) perform measure change, (ii) price bonds, swaps, or any other derivatives easily, (iii) capture the interest rate dynamics nicely.
-  \item Another idea: Can we use machine learning method to get a good enough estimate of the L.H.S. and R.H.S. separately, and make a statistical argument over the difference between L.H.S. and R.H.S.?
-  \begin{align*}
-    \hat{\mathbb{\sf E}} \left(\exp{\int_0^T r^{(i)}_t \text{d}t}\right) = \hat{\mathbb{\sf E}}\left(\exp\left(\int_0^T r^{(j)}_t\text{d}t\right)\frac{S_{t+k}}{S_t}\right) + \varepsilon_{t, k}.
-  \end{align*}
-
-\end{enumerate}
-
-\subsection{A crypto interest rate model}
-This idea is motivated by a conversation in an interview with a team of quant working for a centralised crypto exchange (CEX).
- The pricing of crypto derivatives requires a "risk-free" rate for each underlying,
- e.g. a "risk-free" rate of holding BTC, another "risk-free" rate of holding ETH. \\
- 
-I put quotation marks for the term risk-free rate because there is no consensus to what is the risk-free rate in the crypto market. 
- In practice, there are four ways of getting a risk-free rate by viewing the risk-free rate as the opportunity cost of investing the 
- holdings to the derivative market instead of earning a risk-free rate in another market. 
- The four ways of getting a risk-free are referring to calibrating the risk-free rate to three different markets:
- \begin{enumerate}
-  \item DeFi lending protocols, e.g. AAVE and Compound,
-  \item DeFi staking protocols, e.g. ETH POS, AQRU,
-  \item Futures traded on CEX,
-  \item Perpetual futures traded on CEX.
- \end{enumerate} 
-
-The first two markets are not exactly risk-free since trading on DeFi protocols expose oneself to platform risk.
- Although DeFi lending protocols enforce over-collateralisation, 
- lenders still expose themselves to gap risk since there is a chance that the collateral value jump through the value of the borrowings and there is no way to force the borrower to pay back.\\ 
-
-The third and forth markets suffer from the platform risk. 
- However, if a trader manage/hedge her exposure on CEX with other instruments traded on the same CEX, 
- then we can argue that the platform risk is somehow offset. 
- The perpetual futures market does not exempt carry trade traders from losses since funding rate can go negative. 
- It turns out, after considering the pros and cons of the markets, 
- the futures market traded on CEX is commonly used by the team of quant to get the risk-free rate to price their derivatives, which is also a common practice in the traditional market.  \\
-
-The key idea here is to have a CEX futures market centric view, i.e. considering the CEX futures market as risk-free,
- and to study the differences of the rate dynamics among the markets. 
- In order to do so, a common interest rate model for crypto is needed. 
- It will be a challenge to have a single interest rate model that fits the rate dynamics in all the markets.
- For example, the DeFi lending/staking rate is always positive, but the funding rate of perpetual futures can go negative.  
- A possible solution is to discount the DeFi lending/staking rates by the corresponding default intensity.
-
-\subsection{A model for perpetual futures}
-Suppose the price of the perpetual futures, $F_t$, is reverting to its underlying, $S_t$, with some Brownian noise involved, i.e.
-\begin{align*}
-\dd F_t = \kappa \left(\delta S_t - F_t \right)\dd t + \epsilon \dd W_t,
-\end{align*}
-where $\kappa>0$ is the mean reverting speed, $\delta \in \mathbb{R}$ is the spot-futures spread, and $\epsilon>0$ is the volatility.
-
-We derive the solution of the perpetual futures by applying Ito's lemma to $e^{\kappa t}F$:
-
-\begin{align*}
-\dd e^{\kappa t} F_t &= \left(\kappa e^{\kappa t}F_t+ \kappa \left(\delta S_t - F_t\right)e^{\kappa t}\right)\dd t + \epsilon e^{\kappa t}\dd W_t\\
-                      &= \kappa \delta S_t e^{\kappa t}\dd t + \epsilon e^{\kappa t}\dd W_t.
-\end{align*}
-
-The solution is obtained by integrating both sides from time $0$ to $T$,
-\begin{align*}
-  e^{\kappa T} F_T &= F_0 +  \kappa \delta \int_0^T S_t e^{\kappa t}\dd t + \int_0^T \epsilon e^{\kappa t}\dd W_t.
-  \end{align*}
-
-The expected value of $F_T$ under a risk-neutral measure $\mathbb{Q}$ is
-\begin{align*}
-  e^{\kappa T} \mathbb{\sf E}_\mathbb{Q} \left(F_T\right) &= F_0 +  \kappa \delta \int_0^T \mathbb{\sf E}_\mathbb{Q}\left(S_t\right) e^{\kappa t}\dd t\\
-                                                          &= F_0 +  \kappa \delta S_0 \int_0^T  e^{(r+\kappa) t}\dd t\\
-                                                          &= F_0 +  \frac{\kappa}{r+\kappa} \delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
-\end{align*}
-
-Suppose $e^{-rt} F_t$ is a martingale under $\mathbb{Q}$ (i.e. $\mathbb{\sf E}_\mathbb{Q} \left(F_T\right)= e^{rT}F_0$ {\color{red} This assumption disregards the funding cost of holding and shorting the perpetual futures}), 
-\begin{align*}
-e^{(r+\kappa)T}F_0 &= F_0 +  \frac{\kappa}{r+\kappa} \delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
-\left(e^{(r+\kappa)T}-1\right)F_0 &=  \frac{\kappa}{r+\kappa}\delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
-\delta &= \frac{r+\kappa}{\kappa}\frac{F_0}{S_0}
-\end{align*}
-
-In fact, we arrive with the same conclusion if we assume $\delta$ is time dependant (but still deterministic), i.e. $\delta(t): t \rightarrow \mathbb{R}^+$.
- To see that, we start with 
- \begin{align*}
-  e^{(r+\kappa) T} F_0 &= F_0 +  \kappa  S_0 \int_0^T \delta(t) e^{(r+\kappa) t}\dd t.
-\end{align*}
-
-Differentiating w.r.t. $T$ and evaluating at time $T$ yields,
-\begin{align*}
-  (r+\kappa) e^{(r+\kappa) T} F_0 &= \kappa S_0 \delta(T) e^{(r+\kappa) T}\\
-  \delta(T) &= \frac{r+\kappa}{\kappa}\frac{F_0}{S_0}
-\end{align*}
-
-Observations
-\begin{enumerate}
-\item The spread $\delta $ depends on $\kappa$ and $r$ (risk-free rate)
-\item If $r=0$, then $\delta  = F_0/S_0$
-\item If $\kappa \rightarrow \infty$, then $\delta  = F_0/S_0$.
-\item If $\kappa \rightarrow 0^+$, then $\delta  = F_0/S_0$, (Since $\dd F_t = \varepsilon \dd W_t$, the spread $\delta$ no longer has a meaning.)
-\end{enumerate}
-
-% check also https://arxiv.org/pdf/2310.11771
-
-\subsection{Connection between the volatility of spot and level of borrowing rate}
-This is motivated by the observation that stable coins have higher borrowing rate, and other coins have lower. \\
-
-Say $B^{(i/j)}(T) = \exp\int_0^T r^{(i/j)}_t \dd t$ are the lending accounts levels if one lend out $i/j$ coins, 
- the investor should be indifference in investing to $i$ or $j$ if the following condition holds.
- \begin{align*}
-  \mathbb{\sf E}\left(B^{(i)}(T)\right) 
-  &= \mathbb{\sf E}\left(B^{(j)}(T)S_T/S_0\right)\\
-  &= \mathbb{\sf Cov}\left(B^{(j)}(T),\ S_T/S_0\right) + \mathbb{\sf E}\left(B^{(j)}(T)\right)\mathbb{\sf E}\left(S_T/S_0\right)\\
-  &= \mathbb{\sf Corr}\left(B^{(j)}(T),\ S_T/S_0\right) \sigma\left(B^{(j)}(T)\right) \sigma\left(S_T/S_0\right) + \mathbb{\sf E}\left(B^{(j)}(T)\right)\mathbb{\sf E}\left(S_T/S_0\right).
-\end{align*}
-
-Observation: If $\sigma\left(S_T/S_0\right)$ went up, $\sigma\left(B^{(j)}(T)\right)$ must go down for the equation to hold (while keeping all other variables fixed).
-
-\subsection{Optimal DeFi lending portfolio}
-AAVE and Compound offers a range of cryptos to be lend out to earn interest. 
- Say you have some USDT and would like to invest on a portfolio of loans, what is the optimal portfolio weights?
-
-Let's look at the payoff of a simple portfolio of two loans first.
- Say the investor has $1$ USDT, she converts $1-p$ amount of USDT to, say, ETH, and invest both coins to the corresponding lending pool at time $0$. 
- At time $T$, she converts back the ETH principle and interest back to USDT. 
-\begin{align*}
-p\exp\left(\int_0^T r^{(\text{USDT})}_t \dd t\right) 1(\tau^{(\text{USDT})} > T) 
-+ (1-p)\exp\left(\int_0^T r^{(\text{ETH})}_t \dd t\right)\frac{S^{(\text{ETH})}_T}{S^{(\text{ETH})}_0}1(\tau^{(\text{ETH})} > T)\\
-= p I^{(\text{USDT})}(T)1(\tau^{(\text{USDT})} > T)  + (1-p)I^{(\text{ETH})}(T)\frac{S^{(\text{ETH})}_T}{S^{(\text{ETH})}_0}1(\tau^{(\text{ETH})} > T)
- \end{align*}
- Here,  $r^{(\text{coin})}_t$ is the lending rate of the coin at time $t$, $S^{(\text{ETH})}_t$ is the ETH price in USDT at time $t$, and 
- $\tau^{(coin)}$ is the default event time of the coin which cost all the principle and interest of the corresponding coin. 
-
-Assume the investor's utility is in a constant absolute risk aversion (CARA) form with parameter $\gamma$, 
- her utility of investing to the loan portfolio is 
- \begin{align*}
-  u(p) = -\gamma^{-1}\exp\left\{ -\gamma\left( p I^{(\text{USDT})}(T)1(\tau^{(\text{USDT})} > T)  + (1-p)I^{(\text{ETH})}(T)\frac{S^{(\text{ETH})}_T}{S^{(\text{ETH})}_0}1(\tau^{(\text{ETH})} > T)\right)\right\}.
- \end{align*}
-
- We are interested in maximising the investor's expected utility by searching for the optimal $p$, i.e.
- \begin{align*}
-  p^* = \argmax_{p \in [0, 1]} \mathbb{\sf E}\left\{u(p)\right\}.
- \end{align*}
-
-Upon defining the dynamics of $S$, $I$s, and $\tau$s, we can solve for $p^*$ by HJB equation, similar to the Merton's portfolio problem. 
-
-\subsection{Modelling the wealth process}
-For simplicity (which we must discuss if this makes sense), 
-suppose the dynamics of 
-$r^{(1)}_t$, $r^{(2)}_t$, and $S_t$ are as follows.
- \begin{align*}
-  \dd S_t &= \mu S_t \dd t + \sigma S_t \dd W_t \\ 
-  \dd r_t^{(1/2)} &= \kappa^{(1/2)}\left(\theta^{(1/2)}-r_t^{(1/2)}\right)\dd t + \sigma^{(1/2)}\dd W^{(1/2)}_t,
- \end{align*}
-where $\mu$ is the drift of the ETH price, $\sigma$ is ETH price's volatility,
-$\nu \geq 0$ is the elasticity, 
-$W_t$ and $W^{(1/2)}$s are independent brownian motions, 
-$\kappa^{(1/2)}$s and $\theta^{(1/2)}$ are the mean reversion rates and long term mean of lending rate of USDT and ETH. 
-
-Let $X_t$ denote the total wealth of the investor at time $t$, and let
-\begin{itemize}
-\item $p_t$ represent the proportion of wealth invested in the USDT lending pool at time $t$
-\item $1-p_t$ represent the proportion of wealth invested in the ETH lending pool at time $t$
- \end{itemize}
-
-The change in wealth due to the accruing of interest in the USDT lending pool is
-\begin{align*}
-\dd \left[p_t X_t\right] &= p_t X_t r^{(1)}_t \dd t - p_t X_t \dd N^{(1)}_t\\
-&= p_t X_t \left(r^{(1)}_t\dd t - \dd N^{(1)}_t\right),
-\end{align*}
-where $N^{(1)}$ is the counting process for the default of USDT lending pool. 
-$\dd N^{(1)}_s = 1$ when there is a default happen at time $s$.\\
-
-
-The change in wealth due to the accruing of interest in the ETH lending pool is a bit tricky. 
-We get that step by step:
-\begin{enumerate}
-\item Say at time $t-$, the investor has $(1-p_t)X_{t-}$ USDT worth ETH in the lending pool
-\item This is equivalent of having $(1-p_t)X_{t-}\frac{1}{S_{t-}}$ ETH in the lending pool
-\item Since $r^{(2)}_t$ is a foreign rate (accuring ETH interest), the investor's ETH in the lending pool change due to interest rate is
-\begin{align*}
-  \dd \left[(1-p_t)X_{t-}\frac{1}{S_{t-}}\right] = (1-p_t)X_{t-}\frac{1}{S_{t-}} \left(r^{(2)}_t\dd t - \dd N^{(2)}_t\right),
-\end{align*}
-where $N^{(2)}$ is the counting process for the default of ETH lending pool.
-\item We are interested in the change of wealth in USDT. By Ito's product rule
-\begin{align*}
-  \dd \left[(1-p_t)X_{t-}\frac{1}{S_{t-}}S_t\right]
-  &= (1-p_t)X_t \left[
-  (r^{(2)}_t + \mu) \dd t + \sigma \dd W_t - \dd N_t^{(2)}
-  \right]
-\end{align*}
-\end{enumerate}
-
-Therefore, the overall change in wealth is
-\begin{align*}
-\dd X_t = p_t X_t \left(r^{(1)}_t \dd t- \dd N^{(1)}_t\right)
-+ (1-p_t)X_t\left[
-(r^{(2)}_t+\mu)\dd t + \sigma \dd W_t - \dd N^{(2)}_t
-\right].
-\end{align*}
-
-Grouping terms, we have
-\begin{align*}
-  \dd X_t &= \left[
-  p_t X_t r^{(1)}_t + (1-p_t)X_t (r^{(2)}_t + \mu)
-  \right]\dd t \\
-  &+(1-p_t)X_t \sigma \dd W_t \\
-  &-p_t X_t \dd N^{(1)}\\
-  &-(1-p_t) X_t \dd N^{(2)}\\
-  &= X_t\left[
-  p_t  \left(
-    r^{(1)}_t - r^{(2)}_t - \mu
-    \right)
-    + r^{(2)}+\mu
-  \right]\dd t\\
-  &+(1-p_t)X_t \sigma \dd W_t \\
-  &-p_t X_t \dd N^{(1)}\\
-  &-(1-p_t) X_t \dd N^{(2)}
-  \end{align*}
-
-Next, we introduce the value function. 
-\begin{align*}
-V(t, x, r_1, r_2, s) = \sup_{p \in [0,1]}\mathbb{\sf E}_t\left[
-U\left(X_T\right) \big| X_0=x, r^{(1)}_0=r_1, r^{(2)}_0=r_2, S_0 = s
-\right],
-\end{align*}
-where $U(\cdot)$ is the utility function. \\
-
-The HJB equation to solve the optimization problem above is
-\begin{align*}
-0&=\partial_t V + \sup_{p\in[0,1]}
-\Big\{
-x\left[p \left(r_1 - r_2 - \mu \right)+r_2 + \mu \right]\partial_X V\\
-&+ \frac{1}{2} (1-p)^2x^2\sigma^2 \partial_X^2 V \\ 
-&+\lambda^{(1)}\left(V(x-px, r_1, r_2, s) - V\right)\\
-&+\lambda^{(2)}\left(V(x-(1-p)x, r_1, r_2, s) - V\right)
-\Big\}\\
-&=\partial_t V + H,
-\end{align*}
-where $H$ is the Hamiltonian. \\
-
-\subsubsection{Constant absolute risk aversion utility function}
-In this section, we focus on the constant absolute risk aversion (CARA) utility 
-\begin{align*}
-U(x) = -e^{-\gamma x},
-\end{align*}
-where $\gamma>0$ is a constant that respresents the degree of risk preferenece.\\
-
-The terminal condition of $V$ is
-\begin{align*}
-  V(T, x, r_1, r_2, s) = U(x) = -e^{-\gamma x}.
-\end{align*}
-
-
-By observing the terminal condition of $V$ and the HJB equation, we postulate the form of $V(t, x, r_1, r_2, s)$, 
-\begin{align*}
-V(t, x, r_1, r_2, s) = -e^{-\gamma x}f(t, r_1, r_2, s),
-\end{align*}
-where $f$ is a function depends on time, the lending rates, and the ETH price. \\
-
-The partial derivatives of $V$ are
-\begin{align*}
-\partial_t V &= -e^{-\gamma x}\partial_t f\\
-\partial_x V &= -\gamma V\\
-\partial^2_x V &= \gamma^2 V.
-\end{align*}
-
-The change in $V$ due to defaults are
-\begin{align*}
-V(t, x-px, r_1, r_2, s) - V &= V\left(e^{\gamma px}-1\right) \\
-V(t, x-(1-p)x, r_1, r_2, s) - V &= V \left(e^{-\gamma x (p-1)}-1\right) \\
-\end{align*}
-
-
-Plugging everything into $H$, we have
-\begin{align*}
-H &= \sup_{p\in[0,1]}
-\Big\{
-x\left[p \left(r_1 - r_2 - \mu \right)+r_2 + \mu \right](-\gamma)V\\
-&+ \frac{1}{2} (1-p)^2x^2\sigma^2 \gamma^2 V \\ 
-&+\lambda^{(1)} V\left(e^{\gamma px}-1\right) \\ 
-&+\lambda^{(2)} V\left(e^{-\gamma x (p-1)}-1\right)
-\Big\}.
-\end{align*}
-
-The first order condition is
-\begin{align*}
-  \partial_p H &= 
-  -x \left(r_1 - r_2 - \mu \right)\gamma V\\
-  &- (1-p^*)x^2\sigma^2 \gamma^2 V \\ 
-  &+\lambda^{(1)} V\gamma xe^{\gamma p^*x} \\ 
-  &+\lambda^{(2)} V\left(-\gamma x e^{-\gamma x (p^*-1)}\right) = 0.
-  \end{align*}
-
-Therefore, $p^*$ satisfies the following equation
-\begin{align*}
-  \lambda^{(1)} e^{\gamma p^*x}
-  - \lambda^{(2)} e^{-\gamma x (p^*-1)} = (r_1 - r_2 - \mu) + (1-p^*)x\sigma^2 \gamma.  
-\end{align*}
-
-
-\subsubsection{Constant relative risk aversion utility function}
-In this section, we focus on the constant relative risk aversion utility fuction (CRRA)
-\begin{align*}
-  U(x) = \frac{x^\gamma}{\gamma}, 
-\end{align*}
-where $\gamma > 0$ is a constant that represents the degree of risk preference. \\
-
-The terminal condition of $V$ is 
-\begin{align*}
-V(T, x, r_1, r_2, s) = U(x) = \frac{x^\gamma}{\gamma}.
-\end{align*}
-
-By observing the terminal condition of $V$ and the HJB equation, we postulate that $V$ has the form
-\begin{align*}
-V(t, x, r_1, r_2, s) = \frac{x^\gamma}{\gamma}f(t, r_1, r_2, s),
-\end{align*}
-where $f$ is a function that depends on time, the lendings rates, and the ETH price. \\
-
-The partial derivatives of $V$ are
-\begin{align*}
-\partial_t V &= \frac{x^\gamma}{\gamma}\partial_t f\\
-\partial_x V &= \frac{\gamma}{x}V\\
-\partial^2_xV &= \left(\frac{\gamma^2 - \gamma}{x^2}\right)V.
-\end{align*}
-
-The change in $V$ due to defaults are
-\begin{align*}
-V(x-px) - V(x)&=\left((1-p)^\gamma - 1\right) V\\
-V(x-(1-p)x) - V(x) &= (p^\gamma-1) V.
-\end{align*}
-
-Plugging everything into $H$, we have
-\begin{align*}
-H = \sup_{x\in[0,1]}
-\Big\{
-&\left(p(r_1 - r_2 - \mu) + r_2 + \mu\right)\gamma V\\
-&+\frac{1}{2}(1-p)^2\sigma^2 (\gamma^2-\gamma)V \\ 
-&+ \lambda^{(1)}\left[(1-p)^\gamma - 1 \right]V\\
-&+ \lambda^{(2)}(p^\gamma -1)V
-\Big\}
-\end{align*}
-
-The optimal $p^*$ satisfies the first order condition, i.e.
-\begin{align*}
-0=r_1-r_2 - \mu - (1-p^*)\sigma^2 (\gamma - 1) - \lambda^{(1)}(1-p^*)^{\gamma-1} + \lambda^{(2)}(p^*)^{\gamma-1}.
-\end{align*}
-
-
-
-
-
-\section{Literatures}
-\subsection{Uncovered Interest Parity and its variants}
-\cite{cappiello2007uncovered}
-\begin{enumerate}
-  \item This paper proposes an extension of UIP called the Uncovered Return Parity (URP)
-  \item The URP condition is 
-  \begin{align*}
-    \mathbb{\sf E}\left(R_{t+1}\frac{S_{t+1}}{S_t}m_{t+1}\Big|\mathcal{F}_t\right)=1,
-  \end{align*}
-  where $R_{t+1}$ is the gross return on a foreign asset denominated in a foreign currency, and $S_{t+1}$ is the spot exchange rate, defined as the number of units of domestic currency exchanged for one unit of foreign currency. 
-  \item The R.H.S. (=1) of the above equation stemmed from definition of stochastic discount factor, see Section 3.1 of \cite{back2010asset}. 
-  \item Then the authors assume that there exist a foreign risk-free bond (which we do not have that in the cryptomarket) and yield the following
-  \begin{align*}
-    \mathbb{\sf E}\left(\frac{S_{t+1}}{S_t}m_{t+1}\Big|\mathcal{F}_t\right) = \frac{1}{R_{f,t}}.
-  \end{align*}
-  \item The remaining paper is about estimation of URP. The authors estimate the SDF via GMM. 
-\end{enumerate}
-
-\subsection{Affine term structure models}
-\cite{anderson2010affine}
-\begin{enumerate}
-  \item The paper extends the affine class of term structure models to describe the joint dynamics of exchange rates and interest rates
-\end{enumerate}
-
-\subsection{Interest rate derivatives in the crypto space}
-{\bf Inter-Protocol Offered Rate (IPOR)} \url{https://docs.ipor.io/}
-\begin{enumerate}
-  \item The IPOR company offers an interest rate benchmark (weighted average of DeFi interest rate) with the same name that 
-  summarizes the lending and borrowing interest rates of crypto loan platforms.
-  \item The company offers trading of fixed income derivatives, e.g. interest rate swap. 
-  The pricing and transaction are based on the IPOR rate and automated market maker. 
-  \item The main derivatives traded on IPOR is cancellable interest rate swaps.
-  \item IPOR uses Hull-White jump-diffusion model for rate simulation and Longstaff-Schwartz method for pricing (the cancellable part)
-  \item Criticisms
+  \item This notes extends the last idea (presented by TG) of forming a loan portfolio by further utilising the deposit as collateral to gain borrowing power.
+  \item By using the deposit as collateral, users can short/borrow other crypto on the lending platform.
+  \item An intricate balance must be maintained among the mean return, volatility, and the potential loss due to liquidation
+  \item One critical difference between the last idea and the idea in this notes is that we do not rebalance the portfolio weights continuously in time.
+  Instead, we fix the weights at the beginning and let the portfolio value changes according the the assets returns and the enforcement of liquidation. 
+  \item There are some advantages if we pursue in this direction
   \begin{enumerate}
-    \item Complex product designs: cancellable swaps + Hull-White-jump-model + Longstaff-Schwartz 
-    \item Lack of market-involved pricing mechanism: the AMM takes the spread calculated only by the Hull-White model + Longstaff-Schwartz. 
-    \item Spread calculation often results in high spread that prohibits transactions. 
-    \item Max tenor is too short (90-day longest) 
-    \item See \url{https://scapital.medium.com/ipor-a-postmortem-for-the-interest-rate-swap-pioneer-5dc8492c2f7c}
+    \item The result is comparable to any other portfolio optimisation scheme (it is a Markowitz portfolio anyway)
+    \item There is a practical relevancy to investors. Our work is beneficial to the DeFi lending platforms as we detail the scheme to form a portfolio on the lending platform. 
+    We should consider apply the AAVE research grant \url{https://aavegrants.org/}.
+    \item We will use machine learning algorithms, e.g. NN, XGBoost, along the way, so we can use the buzz word "machine learning" when we market our work. 
   \end{enumerate}
 \end{enumerate}
 
-\subsection{Time-changed and fractional interest rate models}
+AAVE and Compound are decentralized finance (DeFi) platforms originally designed to facilitate the borrowing and lending of crypto assets. 
+ These platforms have become dominant players in the DeFi ecosystem, with total value locked (TVL) reaching over \$10 billion across both platforms, showcasing their significant influence and adoption in the market. \\
 
-\cite{shokrollahi2021time}
-\begin{enumerate}
-  \item Beware that the work is not peer-reviewed. 
-  \item They propose a time-changed fractional short rate model 
-  \begin{align*}
-    \dd r(T_\alpha(t)) = \mu \dd T_\alpha(t) + \sigma \dd B^H(T_\alpha (t)),
-  \end{align*}
-  where $\mu$ and $\sigma$ are constants, $B^H$ is a fractional Brownian motion with Hurst parameter $H\in[0.5,\ 1)$. 
-  $T_\alpha(t)$ is the inverse 
-  $\alpha$-stable subordinator with $\alpha \in(0,1)$ defined as 
-  \begin{align*}
-    T_\alpha(t) = \inf\left\{\tau > 0 : U_\alpha(\tau)>t\right\},
-  \end{align*}
-  where $\left\{\right\}$ is a $\alpha$-stable Levy process with non-negative increments and Laplace transform
-  \begin{align*}
-    \mathbb{\sf E}\left(\exp(-u U_\alpha(t))\right)= \exp(-ru^\alpha).
-  \end{align*}
-  Here, $T_\alpha(t)$ is assumed to be independent of $B^H$. 
-  \item The motivation of modelling beyond Markov models is the ongoing financial empricial evidence. 
-  \item It is also sensible to argue that the short rates are driven by macroeconomic variables, like 
-  domestic gross products, supply and demand rates or volatilities exhibit long range dependence. 
-  \item The price of a zero-coupon bond is given by 
-  \begin{align*}
-    P(r,t,T) = \exp\left[-r f_2(T-t) + f_1(T-t)\right],
-  \end{align*}
-  where 
-  \begin{align*}
-f_1(T-t) &= \frac{H \sigma^2}{\Gamma(\alpha)^{2H}}\int^{T-t}_0 (T-v)^{2\alpha H -1}v^2 \dd v\\
-f_2(T-t) & = T-t. 
-\end{align*}
-\end{enumerate}
+Although initially developed for decentralized lending, the platforms' functionalities are surprisingly well-suited for implementing sophisticated portfolio management strategies.
+ In particular, there are two core features make these platforms appealing to users looking to build and manage diversified crypto portfolios.\\
 
-\section{Backgrounds}
-\subsection{Short rate models}
-A quote from Section 10.1 of \cite{Shreve2004a} nicely summarise what is short rate traditionally:
-\begin{displayquote}
-  "The interest rate (sometimes called the short rate) is an {\color{red} idealization} corresponding to the shortest maturity yield or perhaps the overnight rate offered by the government, depending on the particular application."
-\end{displayquote}
+{\bf Interest-bearing collateral}. 
+ Assets deposited into these platforms can be used as collateral for loans while also accruing interest. 
+ This dual functionality enables an efficient capital utilization. 
+ For example, users can maintain long positions in assets they expect to appreciate, while using those same assets as collateral to borrow other assets.
+ This borrowed capital can be redeployed for short positions or to diversify into other investments, providing an opportunity to form a wide range of portfolio strategies. 
+ In addition to the potential profit generated from the price appreciation of long-held assets, users also benefit from passive income in the form of interest,
+ as collateralized assets accrue interest via interest-bearing tokens like \texttt{aTokens} in AAVE or \texttt{cTokens} in Compound.
+ This combination of borrowing power and interest generation allows users to simultaneously enhance their portfolio's earning potential while maintaining exposure to the crypto assets they favor. \\
 
-\begin{remark}In the crypto world, instead of using liquidly traded bonds and fixed-income products to infer the short rate (mainly its dynamics) and price more complex products,
- the short rate itself is directly observable and impacts the growth rate of borrowing and lending accounts,
- i.e. the growth of crypto borrowing and lending accounts is a {\color{red} realization} of the crypto short rate.
- Beware that {\it all} borrowings in a lending pool, disregard of the identity of borrower and starting date of the borrowings (there is no maturity in crypto loans),
- are growing at the {\it{same}} crypto borrowing rate. \end{remark}
+{\bf Unified margin assessment}.
+Users can borrow and lend multiple assets simultaneously, whereas debt and collateral across all crypto holdings within an account are collectively assessed. 
+ This enables the diversification of portfolio in two important ways. 
+ First, it allows users to reduce the overall portfolio volatility by holding a mix of negatively correlated assets.
+ Second, the aggregation of collateral and debt mitigates the risk of liquidation, 
+ as the platform evaluates the entire portfolio's performance rather than individual assets.
+ This means that a decline in the value of one asset or an increase in the price of a borrowed asset is less likely to trigger a liquidation event,
+ as other assets in the portfolio may offset the change in leverage. 
+ This feature is particularly crucial in the crypto market, where prices are notoriously volatile and fluctuations can be sudden and severe. \\ 
 
-The simplest model for fixed income markets begin with a stochastic differential equation for the interest rate
-\begin{align*}
-  \dd r_t = \beta(t, r_t)\dd t + \gamma(t, r_t)\dd W_t.
-\end{align*}
+Nonetheless, there are notable constraints and risks associated with overcollateralization, liquidation, interest rate risk, and bad debt risk. \\ 
 
-The zero-coupon bond pricing formula is
-\begin{align*}
-B(t,T) = \E_\mathbb{Q}\left[
-e^{-\int_t^T r_s \dd s}\big|\mathcal{F}_t
-\right],
-\end{align*}
-provided that $B(T,T)=1$. 
+{\bf Overcollateralization} is a fundamental requirement on DeFi lending platforms to financially bind the borrowers to repay the loan in an anonymous and non-recourse environment.
+ Users must provide collateral that exceeds the value of the assets they wish to borrow in prior, often ranging from 120\% to 150\% of the loan value, depending on the collateral asset \red{(Need some references here)}.
+ Overcollateralization reduces capital efficiency for users by locking up more assets than they can borrow.
+ Platforms generally impose a larger haircut on volatile assets, meaning that holding long positions in such assets provides less borrowing power.
+ In the crypto market, research \red{(Need some references here)} has shown that volatility is positively correlated with price drift, often driven by herding effects.
+ This means that more volatile assets, while potentially more profitable, offer less borrowing power,
+ creating a trade-off between profits and borrowing power for users. \\
+  
+{\bf Liquidation risk} is another significant concern. 
+ If a position's health factor falls below a critical threshold, the position becomes undercollateralized, and the platform initiates liquidation.
+ During liquidation, a portion of the collateral is sold off to cover the debt, and borrowers incur liquidation penalties. 
+ In highly volatile crypto markets, where prices can fluctuate rapidly, liquidation risk becomes particularly acute.
+ One solution to mitigate this risk is to closely monitor the position and either supply additional collateral or repay part of their debt as needed to maintain sufficient collateralization. 
+ Alternatively, users can form a diversified portfolio of collateral in advance to reduce the likelihood of liquidation. 
+ The former approach requires additional funds or the unwinding of part of the portfolio, while the latter involves constructing a portfolio that balances potential returns with reduced liquidation risk. \\
 
-Since $r_t$ is governed by a SDE, it is a Markov process and we must have
-\begin{align*}
-B(t,T) = f(t, r_t)
-\end{align*}
-
-By Feynman-Kac, we obtain the partial differential equation
-\begin{align*}
-\partial_t f(t,r) + \beta(t,r)\partial_r f(t,r)+ \frac{1}{2}\gamma^2(t,r)\partial_{rr}f(t,r) = r f(t,r),\  
-f(T, r)=1.
-\end{align*}
-
-{\bf Hull-White model}\\
-In the Hull-White model, the evolution of the interest rate is given by 
-\begin{align*}
-\dd r_t = \left(a(t)-b(t)r_t\right)\dd t \sigma(t) \dd W_t,
-\end{align*}
-where $a(t)$, $b(t)$, and $\sigma(t)$ are non-random positive functions of time.
-The PDE for the zero-coupon bond price becomes
-\begin{align*}
-  \partial_t f(t,r) + \left(a(t)-b(t)\right)\partial_r f(t,r)+ \frac{1}{2}\sigma^2(t)\partial_{rr}f(t,r) = r f(t,r),\  
-  f(T, r)=1.
-  \end{align*}
-By ansatz, the solution of the above PDE has a form 
-\begin{align*}
-f(t,r) = \exp\left(-r C(t,T)- A(t,T)\right).
-\end{align*}
-
-Let's work out the partial derivatives:
-\begin{align*}
-  \partial_t f &= \left(-r \partial_t C(t,T) - \partial_t A(t,T)\right) f\\
-  \partial_r f &= -C(t,T)f\\
-  \partial_{rr} f &= C^2(t,T)f.
-\end{align*}
-
-Substitute into the PDE gives
-\begin{align*}
-0=\Big[
-&\left(
--\partial_t C+ b(t)C-1
-\right)r\\
-&-\partial_t A - a(t)C+\frac{1}{2}\sigma^2(t)C
-\Big]f(t,r).
-\end{align*}
+{\bf Interest rate risk} is a critical aspect that borrowers must account for when using AAVE or Compound.
+ Interest rates on borrowed assets are variable and fluctuate based on supply and demand within the platform.
+ When demand for borrowing is high, interest rates can rise sharply, increasing the cost of maintaining a borrowed position.
+ If the interest rate on borrowed assets increases beyond the returns generated by those assets, the debt can become increasingly expensive to service, 
+ eroding potential profits and putting additional pressure on users to repay or refinance their loans. \\
  
-Since $f$ is nonzero and this equation must hold for all $r$, 
-\begin{align*}
-  -\partial_t C+ b(t)C-1 &=0\\
-  -\partial_t A - a(t)C+\frac{1}{2}\sigma^2(t)C &=0.
-\end{align*}
+{\bf Bad debt risk} refers to the possibility (to be finished)\\%that users may accumulate unmanageable debt if the value of their borrowed assets drops significantly,
+%  or if they fail to generate enough returns to cover both the principal and interest payments. This risk is especially prevalent in highly volatile markets, where sudden price drops or adverse market movements can leave users with debt that exceeds the value of their portfolio. If left unchecked, bad debt can result in forced liquidations, further exacerbating losses and undermining the financial stability of the user's portfolio.
 
-Since $f(r,T)=1$, $C(T,T)=A(T,T)=0$. The solution of the above equations is 
-\begin{align*}
-  C(t,T) &= \int_t^T \exp\left(-\int_t^s b(v)\dd v\right)\dd s\\
-  A(t,T) &= \int_t^T \left(a(s) C(s,T)-\frac{1}{2}\sigma^2(s)C^2(s,T)\right)\dd s.
-\end{align*}
+In this paper, we propose a method for constructing a Markowitz-type crypto portfolio that leverages the functionalities of DeFi lending platforms, 
+ with a focus on carefully balancing risk and return under the constraints imposed by the platforms. 
+ Achieving this balance requires accounting for several factors intrinsic to the crypto market. 
+ First, the joint dynamics of crypto asset prices, characterized by high volatility and intricate dependency structures, must be modeled accurately. 
+ We approach this by modeling individual price dynamics using ARIMA-GARCH models and capturing the dependency structure through an appropriate copula {\red{To Team: This is to be discussed}}.
+ Additionally, potential losses from liquidation events must be carefully calculated, as these can significantly erode portfolio value if not properly managed.
+ To estimate potential liquidation losses, we employ machine learning methods—such as neural networks or XGBoost {\red{To Team: This is to be discussed}}—to learn from simulated portfolio returns.
+ Finally, we propose a projected gradient ascent method to search for an optimal portfolio allocation under the constraints imposed by the platforms. 
 
+
+\section{Literature review}
+Petri Julhä: leverage constraints faced by investors may explain the empirical failure of the capital asset pricing model
+Measure of borrowing constrains: active management of the minimum initial margin requirement by the Federal Reserve. 
+Federal Reserve changed 22 times the marign reuqirement, ranging between 40\% to 100\%. 
+
+
+Frazzini and Pedersen (2013) provide a more realistic treatment of the effects of borrowing constraints on the cross-sectional price of risk. 
+Portfolio returns are negatively correlated with the spread between Eurodollar and Trasury bill rates (TED spread), which in accordance to CAPM prediction, should be positive. 
+Explaination: TED is a measure for the change in funding conditions rather than a measure of the funding conditions themselves. 
+
+The involvement of borrowing introduce the third dimension to the mean-variance plot. 
+ The third dimension can be 1. health factor, 2. historical number of default, 3. historical total loss due to default. 
+ All of them have their own problem.
+ Health factor is not a unique measure to risk. portfolios with the same health factor can lead to substantially difference portfolio performance and liquidation risk.
+ 2 and 3 will also contribute to variance, they are not independent to vairance
+
+Poor out-of-sample performance of the plug-in approach: Frost and Savarrion (1986, 1988); Best and Grauer (1991); Chopra and Ziemba (1993); Broadie (1993); 
+Litterman (2004); Merton (1980); 
+Michaud (1989): influence of the mean error as "error-maximization"
+Jagannathan and Ma (2003) error of mean estimation is so large that nothing is lost when one ignores the mean at all
+
+
+\section{Important Features}
+(to be filled)
+\subsection{Determination and Accrual of Borrowing and Lending Interest}
+(to be filled)
+\subsection{Borrowing power}
+(to be filled)
+\subsection{Liquidation Procedure}
+(to be filled)
+
+
+\section{The portfolio problem}
+\subsection{Price Processes and Log Health Factor}
+We model asset prices $S_i(t)$ for long assets $(i = 1,\dots,d_L)$ and $S_j(t)$ for short assets $(j = 1,\dots,d_S)$ via geometric Brownian motions with jumps:
+\[
+d\log S_k(t) = \mu_k dt + \sum_{\ell} \sigma_{k\ell} dW_\ell(t) + J_k dN_k(t)
+\]
+
+Drift $\mu_k$ captures the expected return, volatility $\sigma_{k\ell}$ captures market uncertainty, 
+and jump terms $J_k dN_k(t)$ reflect the wrong way risk - $J_k$s are the jump sizes, and $N_k(t)$ is a Poisson process counting the number of jumps up to time $t$.
+For long assets, the jumps $J_k$ are assumed to be negative as it is the wrong way to the portfolio. 
+For short assets, it is the other way around - the jumps $J_j$ are positive.
+In this work, we assume that the jumps are independent across assets and follow a shifted exponential distribution.
+
+Next, we form a long-short portfolio and track the wealth process and the health factor process.
+
+Let $w^L \in \mathbb{R}^{d_L}$ denotes the portfolio weights for long assets and $w^S \in \mathbb{R}^{d_S}$ for short assets.
+The wealth process $W(t)$ is defined as
+
+\begin{align}
+\mathcal{W}(t) &= \sum_{k=1}^{d_L} w_k^L S_k(t) + \sum_{j=1}^{d_S} w_j^S S_j(t) \\
+&= \tilde{w}^\top S(t) dt + \tilde{w}^\top J(t) dN(t)
+\end{align}
+
+where $w = \begin{bmatrix} w^L \ (-1)w^S \end{bmatrix}^\top \in \mathbb{R}^{d_L + d_S}$ is the portfolio weights,
+$S(t) = \begin{bmatrix} S_1(t) \hdots S_{d_L}(t) \ S_{d_L+1}(t) \hdots S_{d_L + d_S}(t) \end{bmatrix}^\top$ is the vector of asset prices, 
+and $J(t) = \begin{bmatrix} J_1(t)  \hdots J_{d_L}(t) \ J_{d_L+1}(t) \hdots  J_{d_L + d_S}(t) \end{bmatrix}^\top$ is the vector of jumps, 
+and $N(t) = \begin{bmatrix} N_1(t)  \hdots N_{d_L}(t) \ N_{d_L+1}(t) \hdots  N_{d_L + d_S}(t) \end{bmatrix}^\top$ is the vector of Poisson processes counting the number of jumps up to time $t$.
+
+The health factor $H(t)$ is defined as the ratio between the effective borrowing power and the total debt
+\[
+H(t) = \frac{\sum_{k=1}^{d_L} \tilde{w}_k S_k(t)}{\sum_{j=1}^{d_S} w_j S_j(t)}, 
+\]  
+where $\tilde{w}^L = b^L \odot w^L$ is the effective borrowing power of the long assets. $\odot$ denotes element-wise multiplication.
+
+To have a compact notation, we define a vector of effective weights $\tilde{w} \in \mathbb{R}^{d_L + d_S}$, 
+\[
+\tilde{w} = \begin{bmatrix}\tilde{w}^L \\ -w^S\end{bmatrix}.
+\]
+
+
+
+Notice that the health factor is a ratio of two stochastic processes, which can be difficult to analyse directly. 
+To simplify, we take the logarithm of the health factor 
+
+\[Y(t) \overset{\text{def}}{=}\log H(t). \]
+
+By Ito's lemma, the log health factor $Y(t)$ evolves according to
+\[
+dY(t) = \mu_Y dt + \sigma_Y dW_t + \sum_k J_k dN_k(t), \ Y(0) = \log H(0),
+\]
+where
+\[
+\mu_Y = \tilde{w}^\top \mu, \quad \sigma_Y^2 = \tilde{w}^\top \Sigma \tilde{w}.
+\]
+
+
+\subsection{Portfolio Optimisation Framework}
+The optimisation objective balances returns, volatility, and the potential loss caused by liquidation. 
+\[
+\max_{\tilde{w}} \quad \mu_{\tilde{w}} - \rho_1 \sigma_{\tilde{w}} - \rho_2 L(\tilde{w})
+\]
+
+Constraints on leverage, budget, and positions ensure practical viability.
+
+
+\subsection{First Hitting Time and Laplace Transform}
+The liquidation occurs when the health factor drop below one, which corresponds to the log health factor reaching zero. 
+\[
+\tau = \inf\{ t \geq 0 : Y(t) \leq 0 \}
+\]
+
+We analyse liquidation via the Laplace transform $\Phi(s) = \mathbb{E}[e^{-s\tau}]$. The exponential ansatz $\Phi(s; y_0) = e^{-\xi(s) y_0}$ simplifies the first-passage time into solving $\Psi(\xi(s)) = s$, where:
+\[
+\Psi(u) = \mu_Y u + \frac{1}{2}\sigma_Y^2 u^2 + \sum_k \lambda_k\left(\mathbb{E}[e^{u J_k}] - 1\right)
+\]
+For shifted exponential jumps $J_k \sim \text{ShiftedExp}(\eta_k, \nu_k)$:
+\[
+\mathbb{E}[e^{u J_k}] = \frac{\nu_k}{\nu_k - u}e^{-u\eta_k}, \quad u < \nu_k
+\]
+
+Liquidation probability within horizon $T$ is approximated as:
+\[
+\mathbb{P}[\tau \leq T] \approx 1 - \Phi(1/T)
+\]
+
+Tail uncertainty in $\tau$ is quantified by the squared coefficient of variation:
+\[
+\text{Tail}^2(\tau) = \frac{\Phi''(0)}{\Phi'(0)^2}-1
+\]
+
+Derivatives are:
+\[
+\Phi'(s) = -y_0 \xi'(s)e^{-y_0\xi(s)}, \quad \Phi''(s)=y_0^2(\xi'(s))^2e^{-y_0\xi(s)} - y_0\xi''(s)e^{-y_0\xi(s)}
+\]
+
+
+\section{Conclusion}
+We presented a structured framework for liquidation risk quantification and optimization using Lévy and Hawkes processes. Our approach explicitly captures extreme market movements and liquidation timing uncertainty, providing robust support for portfolio management decisions under tail-risk conditions.
+
+\section{Empirical results}
+\subsection{Data}
+\subsection{Backtesting procedure}
+
+\section{Discussion}
+
+
+\section{Extension to Hawkes-Driven Jump Intensity}
+Financial data exhibits jump clustering, motivating Hawkes jump intensities:
+\[
+d\lambda_k(t) = -\beta_k(\lambda_k(t)-\lambda_k^0)dt + \sum_j \alpha_{kj}dN_j(t)
+\]
+Approximating $\lambda_k$ by its expected path $\bar{\lambda}_k$ yields:
+\[
+\Psi^{\text{Hawkes}}(u) = \mu_Y u + \frac{1}{2}\sigma_Y^2u^2 + \sum_k \bar{\lambda}_k\left(\mathbb{E}[e^{u J_k}]-1\right)
+\]
 
 \bibliographystyle{abbrvnamed} %
 \bibliography{finance} %
