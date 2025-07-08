@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99d (TeX Live 2020)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: notes.aux
+The style file: abbrvnamed.bst
+Database file #1: finance.bib
+Warning--empty journal in cappiello2007uncovered
+You've used 6 entries,
+            2456 wiz_defined-function locations,
+            589 strings with 5463 characters,
+and the built_in function-call counts, 2157 in all, are:
+= -- 224
+> -- 81
+< -- 1
++ -- 27
+- -- 26
+* -- 155
+:= -- 359
+add.period$ -- 18
+call.type$ -- 6
+change.case$ -- 35
+chr.to.int$ -- 6
+cite$ -- 7
+duplicate$ -- 94
+empty$ -- 165
+format.name$ -- 34
+if$ -- 447
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 8
+newline$ -- 33
+num.names$ -- 18
+pop$ -- 42
+preamble$ -- 1
+purify$ -- 43
+quote$ -- 0
+skip$ -- 74
+stack$ -- 0
+substring$ -- 89
+swap$ -- 19
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 40
+warning$ -- 1
+while$ -- 17
+width$ -- 10
+write$ -- 75
+(There was 1 warning)

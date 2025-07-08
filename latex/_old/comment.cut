@@ -1,0 +1,53 @@
+  \begin{algorithm}
+    \caption{Projection with No Long-Short Constraint and Normalization}\label{alg:projection}
+    \begin{algorithmic}[1]
+    \STATE \textbf{Input:}
+    Initial portfolio value $V_0$, maximum LTV vector ${\bf m}$,
+    capital vector ${\bf c}$, borrowing weights ${\bf w}^b$, allocation of borrowed fund $\bf{y}$,
+    and the gradients
+    $\frac{\partial \hat F}{\partial c_i}(c_i)$, $\frac{\partial \hat F}{\partial w^b_i}(w^b_i)$, and
+    $\frac{\partial \hat F}{\partial y_i}(y_i)$ for $i=1,2,...,n$.
+
+    \STATE Clip the vectors element-wise to enforce non-negativity:
+    \begin{align*}
+    {\bf c} = \text{clip}({\bf c} , 0, \infty),\ {\bf w}^b = \text{clip}({\bf w}^b, 0, \infty),\ {\bf y} = \text{clip}( {\bf y}, 0, \infty)
+    \end{align*}
+
+    \STATE Enforce no long-short positions on the same asset by taking the steeper gradient:\\
+    \INDSTATE a. Define two index sets
+    \begin{align*}
+    \mathcal{I} &= \left\{
+      i=1,2,...,n: c_i w^b_i\neq 0\ \cap
+    \frac{\partial \hat F}{\partial c_i}(c_i) + \frac{\partial \hat F}{\partial y_i}(y_i) < \frac{\partial \hat F}{\partial w^b_i}(w^b_i)
+    \right\}\\
+    \mathcal{J} &= \left\{j=1,2,...,n: c_jw^b_j\neq 0\ \cap
+    \frac{\partial \hat F}{\partial c_j}(c_j) + \frac{\partial \hat F}{\partial y_j}(y_j) \geq \frac{\partial \hat F}{\partial w^b_j}(w^b_j)\right\}
+  \end{align*}\\
+    \INDSTATE b. Set $c_i=0$ for $i \in \mathcal{I}$\\
+    \INDSTATE c. Set $w^b_j=0$ for $j \in \mathcal{J}$
+
+    \STATE Normalize $\mathbf{c}$ to ensure all initial portfolio value are invested into lending pools
+    \begin{align*}{\bf c} = {\bf c} \odot (V_0/ \|{\bf c}\|) \end{align*}
+
+    \STATE Enforce aggregated short position being less than the total borrowing power
+    \IF{$\|{\bf w}^b\| > {\bf c}^\top {\bf m} $}
+        \STATE Normalize $\bf w^b$ by scaling with borrowing power
+        \begin{align*}{\bf w}^b = {\bf w}^b \odot ({\bf c}^\top {\bf m}/ \|{\bf w}^b\|) \end{align*}
+    \ENDIF
+
+    \STATE Enforce no long-short on the same asset for ${\bf y}$:\\
+    \INDSTATE a. Define an index set (with the updated ${\bf w}^b$)
+    \begin{align*}
+      \mathcal{K} = \left\{
+        k=1,2,...,n: y_k w^b_k\neq 0\ \cap
+      \frac{\partial \hat F}{\partial c_k}(c_k) + \frac{\partial \hat F}{\partial y_k}(y_k) < \frac{\partial \hat F}{\partial w^b_k}(w^b_k)
+      \right\}
+    \end{align*}
+    \INDSTATE b. Set $y_k=0$ for $k \in \mathcal{K}$\\
+
+    \STATE Normalize ${\bf y}$ to ensure all borrowed fund are invested into lending pools
+     \begin{align*}{\bf y} = {\bf y} \odot (\|{\bf w}^b\|/ \|{\bf y}\|)\end{align*}
+
+    \STATE \textbf{Output:} Updated values for ${\bf c}$, ${\bf w}^b$, and ${\bf y}$
+    \end{algorithmic}
+  \end{algorithm}
