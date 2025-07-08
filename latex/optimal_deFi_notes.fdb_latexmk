@@ -1,14 +1,14 @@
 # Fdb version 4
-["bibtex optimal_deFi_notes"] 1751485389.38422 "optimal_deFi_notes.aux" "optimal_deFi_notes.bbl" "optimal_deFi_notes" 1751485390.3775 0
+["bibtex optimal_deFi_notes"] 1751961335.01126 "optimal_deFi_notes.aux" "optimal_deFi_notes.bbl" "optimal_deFi_notes" 1751961371.3407 0
   "./abbrvnamed.bst" 1751484817.68674 23110 ba6f4882f936ef020d521746f9e16ab2 ""
   "./finance.bib" 1751484817.6881 572329 f5a334e28e0224a8bc6bbdd75bc431a6 ""
-  "optimal_deFi_notes.aux" 1751485390.14138 5261 27f4108e6e6768cb34e6df5a367dae14 "pdflatex"
+  "optimal_deFi_notes.aux" 1751961371.09499 5391 7d58e6a8ef5cd55af0522d5e0b888014 "pdflatex"
   (generated)
   "optimal_deFi_notes.bbl"
   "optimal_deFi_notes.blg"
   (rewritten before read)
-["pdflatex"] 1751485389.50574 "/Users/tedig/Defi_interestRate-2/latex/optimal_deFi_notes.tex" "optimal_deFi_notes.pdf" "optimal_deFi_notes" 1751485390.37765 0
-  "/Users/tedig/Defi_interestRate-2/latex/optimal_deFi_notes.tex" 1751484817.69207 27003 0db4b661f5e77be3c5aafd3af3769e40 ""
+["pdflatex"] 1751961370.39751 "/Users/tedig/Defi_interestRate-2/latex/optimal_deFi_notes.tex" "optimal_deFi_notes.pdf" "optimal_deFi_notes" 1751961371.34085 0
+  "/Users/tedig/Defi_interestRate-2/latex/optimal_deFi_notes.tex" 1751961370.27069 27812 854658f074a142ab59c096743b6979c3 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1136768653 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
@@ -163,11 +163,11 @@
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
   "definitions.tex" 1751484817.68693 6638 c5a0ab76500db4706dfbf7c292fae596 ""
   "nat.sty" 1751484817.68857 3714 9cb493d2d19c5cf4bea366c08fb4c972 ""
-  "optimal_deFi_notes.aux" 1751485390.14138 5261 27f4108e6e6768cb34e6df5a367dae14 "pdflatex"
-  "optimal_deFi_notes.bbl" 1751485389.50357 49 0eba253fc001332e731e8aba3f23127b "bibtex optimal_deFi_notes"
-  "optimal_deFi_notes.out" 1751485390.14201 2782 5f2ceb407af3a727919a3e746d3013e2 "pdflatex"
-  "optimal_deFi_notes.tex" 1751484817.69207 27003 0db4b661f5e77be3c5aafd3af3769e40 ""
-  "optimal_deFi_notes.toc" 1751485390.14223 1359 5f31d3d71cea544836724142d79ad5ae "pdflatex"
+  "optimal_deFi_notes.aux" 1751961371.09499 5391 7d58e6a8ef5cd55af0522d5e0b888014 "pdflatex"
+  "optimal_deFi_notes.bbl" 1751961335.14217 49 0eba253fc001332e731e8aba3f23127b "bibtex optimal_deFi_notes"
+  "optimal_deFi_notes.out" 1751961371.09562 2961 fa3a39b2accefcab727ef53bfe9fea77 "pdflatex"
+  "optimal_deFi_notes.tex" 1751961370.27069 27812 854658f074a142ab59c096743b6979c3 ""
+  "optimal_deFi_notes.toc" 1751961371.09585 1448 5e0575c394c1cba116724af760ae703c "pdflatex"
   (generated)
   "optimal_deFi_notes.aux"
   "optimal_deFi_notes.log"

@@ -8,8 +8,9 @@
 \contentsline {subsection}{\numberline {3.2}Objective function}{6}{subsection.3.2}%
 \contentsline {subsection}{\numberline {3.3}Optimisation scheme}{7}{subsection.3.3}%
 \contentsline {subsection}{\numberline {3.4}Poor investors' objective function}{7}{subsection.3.4}%
-\contentsline {section}{\numberline {4}Joint dynamics of crypto prices}{7}{section.4}%
-\contentsline {section}{\numberline {5}Learning scheme of liquidation loss}{7}{section.5}%
+\contentsline {subsection}{\numberline {3.5}Wealth process dynamics}{7}{subsection.3.5}%
+\contentsline {section}{\numberline {4}Joint dynamics of crypto prices}{8}{section.4}%
+\contentsline {section}{\numberline {5}Learning scheme of liquidation loss}{8}{section.5}%
 \contentsline {section}{\numberline {6}Empirical results}{8}{section.6}%
 \contentsline {subsection}{\numberline {6.1}Data}{8}{subsection.6.1}%
 \contentsline {subsection}{\numberline {6.2}Backtesting procedure}{8}{subsection.6.2}%
