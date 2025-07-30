@@ -111,11 +111,11 @@
 \section{Introduction}
 FL to team: 
 \begin{enumerate}
-  \item This notes extends the last idea (presented by TG) of forming a loan portfolio by further utilising the deposit as collateral to gain borrowing power.
+  \item This notes extend the idea of forming a loan portfolio by further utilising the deposit as collateral to gain borrowing power.
   \item By using the deposit as collateral, users can short/borrow other crypto on the lending platform.
   \item An intricate balance must be maintained among the mean return, volatility, and the potential loss due to liquidation
-  \item One critical difference between the last idea and the idea in this notes is that we do not rebalance the portfolio weights continuously in time.
-  Instead, we fix the weights at the beginning and let the portfolio value changes according the the assets returns and the enforcement of liquidation. 
+  \item One critical aspect in this notes is that we do not rebalance the portfolio weights continuously in time.
+  Instead, we fix the weights at the beginning and let the portfolio value change according the the assets returns and the enforcement of liquidation. 
   \item There are some advantages if we pursue in this direction
   \begin{enumerate}
     \item The result is comparable to any other portfolio optimisation scheme (it is a Markowitz portfolio anyway)
@@ -126,7 +126,7 @@ FL to team:
 \end{enumerate}
 
 AAVE and Compound are decentralized finance (DeFi) platforms originally designed to facilitate the borrowing and lending of crypto assets. 
- These platforms have become dominant players in the DeFi ecosystem, with total value locked (TVL) reaching over \$10 billion across both platforms, showcasing their significant influence and adoption in the market. \\
+ These platforms have become dominant players in the DeFi ecosystem, with total value locked (TVL) reaching over \$20 billion across both platforms, showcasing their significant influence and adoption in the market. \\
 
 Although initially developed for decentralized lending, the platforms' functionalities are surprisingly well-suited for implementing sophisticated portfolio management strategies.
  In particular, there are two core features make these platforms appealing to users looking to build and manage diversified crypto portfolios.\\
@@ -201,7 +201,7 @@ The involvement of borrowing introduce the third dimension to the mean-variance 
  The third dimension can be 1. health factor, 2. historical number of default, 3. historical total loss due to default. 
  All of them have their own problem.
  Health factor is not a unique measure to risk. portfolios with the same health factor can lead to substantially difference portfolio performance and liquidation risk.
- 2 and 3 will also contribute to variance, they are not independent to vairance
+ 2 and 3 will also contribute to variance, they are not independent to variance
 
 Poor out-of-sample performance of the plug-in approach: Frost and Savarrion (1986, 1988); Best and Grauer (1991); Chopra and Ziemba (1993); Broadie (1993); 
 Litterman (2004); Merton (1980); 
@@ -338,7 +338,7 @@ H_t = \frac{({\bf w}^l_t)^\top {\bf h} }{\|{\bf w}^b_t\|}.
   \end{algorithm}
 
 \subsection{Objective function}
-We form a portfolio that the mean return of the portfolio is maximised while keeping the variance and loss due to liquidation at balanced levels.
+We form a portfolio such that the mean return of the portfolio is maximised while keeping the variance and loss due to liquidation at balanced levels.
  The objective function of interest is
  \begin{align}
   F({\bf w}_0) = {\bf w}^\top_0 {\bf \mu} - \alpha_1 {\bf w}^\top_0 {\bf \Sigma}{\bf w}_0 - \alpha_2 L({\bf w}_0),
@@ -498,7 +498,7 @@ In light of the plentiful constraints, we propose a projected gradient ascent sc
 
 
 \subsection{Poor investors' objective function}
-The learning of $\hat L$ can be very expansive. 
+The learning of $\hat L$ can be very costly. 
  One can replace $\hat L$ by health factor and obtain a \textit{poor investors' objective function}
  \begin{align}
   \tilde F({\bf w}) = {\bf w}^\top \hat {\bf \mu} - \alpha_1 {\bf w}^\top \hat {\bf \Sigma}{\bf w} + \alpha_3 H({\bf w}),
@@ -506,19 +506,29 @@ The learning of $\hat L$ can be very expansive.
  where $\alpha_3 \geq 0$ is the weight term to encourage a higher health factor, and $H({\bf w}) = ({\bf w}^l)^\top{\bf h}/\|{\bf w}^b\|$ is the health factor. 
 
  \subsection{Wealth process dynamics}
- In the formulation of Aït-Sahalia, Cacho-Diaz and Hurd (2009), the asset prices follow the dynamics:
+ In the formulation of~\cite{Ait_Sahalia_2009} the asset prices follow the dynamics:
  \[
 \frac{dS_{i,t}}{S_{i,t^-}} = (r + R_i)\,dt + \sum_{j=1}^n \sigma_{i,j} \, dW_{j,t} + J_i \, dY_t, \quad i = 1, \dots, n
 \]
-where $S_{i,t}$ is the price of asset $i$ at time $t$, $r$ is the risk-free rate, $R_i$ is the risk premium, $W_{j,t}$ is a Wiener process, $J_i$ is the jump size of asset $i$ 
+where $S_{i,t}$ is the price of asset $i$ at time $t$, $r$ is the risk-free rate, $R_i$ is the lending/borrowing return, $W_{j,t}$ is a Wiener process, $J_i$ is the jump size of asset $i$ 
 and $Y_t$ is a Lévy process.
-Given that we use fixed weights and we do not have a riskless asset, the wealth process has from the above paper is slightly modified and follows the dynamics:
+Given that we use fixed weights, we have invested all of the initial capital and we do not have a riskless asset, the dynamics of the wealth process from the above paper are modified:
 \[
-\frac{dV_t}{V_t} = \sum_{i=1}^n w^{l/b}_{i,t} V_t \frac{dS_{i,t}}{S_{i,t^-}}
+\frac{dV_t}{V_t} = \sum_{i=1}^n \, w^{l/b}_{i,t} \, \frac{dS_{i,t}}{S_{i,t^-}}
 \]
 \[
-=(w^{l/b}_{i,t} R V_t)dt + V_t w^{l/b}_{i,t} \sigma dW_t + V_t w^{l/b}_{i,t} JdY_t
+=(w^{l/b}_{i,t} \,r^{l/b}_{i,t})dt + w^{l/b}_{i,t} \, \sigma_i dW_t + w^{l/b}_{i,t}\, J_i dY_{i,t}
 \]
+\[
+= \sum_{i=1}^n \, w^{l/b}_{i,t} \, (r^{l/b}_{i,t} + \sigma_i dW_{i,t} + J_i dY_{i,t} )
+\]
+Or, using vectors we get:
+\[
+\frac{dV_t}{V_t} = {\bf{w}}_t^\top ( {\bf{R}}dt + {\bf{\sigma}} d{\bf{W}}_t + {\bf{J}} d {\bf{Y}}_t) 
+\]
+
+Where {\bf R} represents the return lending/borrowing return vector, {\bf W} is a vector of Wiener processes,
+ {bf J} is the vector of jump magnitudes and {\bf Y} is the vector of jump processes.
 
 
 \section{Joint dynamics of crypto prices}
