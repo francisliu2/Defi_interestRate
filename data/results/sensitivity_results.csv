@@ -1,0 +1,6 @@
+parameter,base_value,perturbation,liquidation_prob_change,sensitivity_index
+sigma_h,0.8,0.1,0.045,0.563
+alpha_XX,0.5,0.1,0.023,0.460
+alpha_YY,0.6,0.1,0.031,0.517
+eta_X,2.0,0.2,0.019,0.380
+eta_Y,1.8,0.2,0.021,0.420

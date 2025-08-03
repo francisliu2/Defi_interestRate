@@ -1,0 +1,82 @@
+# Model parameters for Hawkes jump-diffusion process
+# Configuration file for first passage time analysis
+
+# Health factor parameters
+health_factor:
+  initial_value: 1.25  # h_0: Initial health factor
+  liquidation_threshold: 1.0  # Liquidation occurs when h_t <= 1.0
+  
+# Diffusion parameters
+diffusion:
+  volatility: 0.8  # sigma_h: Health factor volatility
+  
+# Drift parameters (interest rate dynamics)
+drift:
+  collateral_rate: 0.02  # mu_X: Collateral lending rate (annual)
+  borrowed_rate: 0.05   # mu_Y: Borrowed asset rate (annual)
+  
+# Jump size parameters
+jump_sizes:
+  # Collateral asset (X) downward jumps
+  eta_X: 2.0        # Shape parameter for exponential distribution
+  delta_X: 0.08     # Minimum jump size (shifting parameter)
+  
+  # Borrowed asset (Y) upward jumps  
+  eta_Y: 1.8        # Shape parameter for exponential distribution
+  delta_Y: 0.08     # Minimum jump size (shifting parameter)
+
+# Hawkes intensity parameters
+hawkes_intensities:
+  # Baseline intensities
+  mu_X_lambda: 2.0  # Baseline intensity for X jumps (per day)
+  mu_Y_lambda: 2.0  # Baseline intensity for Y jumps (per day)
+  
+  # Decay parameters
+  beta_X: 1.5       # Decay rate for X intensity
+  beta_Y: 1.5       # Decay rate for Y intensity
+  
+  # Self-excitation parameters
+  alpha_XX: 0.5     # X jumps excite X intensity
+  alpha_YY: 0.6     # Y jumps excite Y intensity
+  
+  # Cross-excitation parameters
+  alpha_XY: 0.3     # X jumps excite Y intensity (spillover)
+  alpha_YX: 0.3     # Y jumps excite X intensity (spillover)
+
+# Initial intensity values
+initial_intensities:
+  lambda_X0: 2.0    # Initial X jump intensity
+  lambda_Y0: 2.0    # Initial Y jump intensity
+
+# Simulation parameters
+simulation:
+  time_horizon: 30  # Days
+  dt: 0.01         # Time step for simulation
+  n_paths: 10000   # Number of Monte Carlo paths
+  
+# Calibration parameters
+calibration:
+  pot_threshold_quantile: 0.95  # Quantile for Peak-Over-Threshold
+  min_jump_size: 0.01          # Minimum jump size to consider
+  mle_max_iter: 1000           # Maximum iterations for MLE
+  mle_tolerance: 1e-6          # Convergence tolerance for MLE
+  
+# Gil-Pelaez CDF parameters
+gil_pelaez:
+  integration_limit: 50.0    # Upper limit for integration
+  n_integration_points: 1000 # Number of points for numerical integration
+  damping_factor: 0.75       # Damping factor for oscillations
+
+# Riccati ODE solver parameters
+riccati_solver:
+  method: "RK45"           # ODE solver method
+  rtol: 1e-8              # Relative tolerance
+  atol: 1e-10             # Absolute tolerance  
+  max_step: 0.1           # Maximum step size
+  
+# Output parameters
+output:
+  save_results: true
+  results_dir: "results/"
+  figure_format: "png"
+  figure_dpi: 300

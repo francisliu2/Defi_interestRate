@@ -1,0 +1,342 @@
+%%
+%% $Id: article.tex,v 1.1 2008/09/20 10:19:28 natalie Exp $
+%% $Source: /Users/natalie/cvs/tex/templates/article.tex,v $
+%% $Date: 2008/09/20 10:19:28 $
+%% $Revision: 1.1 $
+%%
+
+%\documentclass[a4paper,11pt,BCOR1cm,DIV11,headinclude]{scrbook}
+% bei 12pt ist DIV 12 default, bei 11pt ist es DIV 10
+% Textbereiche 
+% DIV 10: 147*207.9mm, DIV 11: 152.73*216mm, DIV 12:157.50*222.75
+% DIV 13: 161.54*228.46mm, DIV 14: 165*233.36mm
+
+\def\deftitle{Markowitz Portfolio on DeFi Loan Platforms}
+% \def\defauthor{N.\ Packham}
+% \def\defauthor{nat}
+\def\defauthor{}
+
+%% option: largefont
+\documentclass{article} %
+
+%% options: vscreen, garamond, wnotes, savespace
+\usepackage[vscreen]{nat}
+\usepackage[longnamesfirst,sort&compress]{natbib}
+
+\usepackage{algorithm}  % For algorithm environment
+\usepackage{algorithmic}
+\newcommand{\INDSTATE}[1][1]{\hspace{#1\algorithmicindent}}
+
+% \usepackage{booktabs}
+
+\bibpunct{(}{)}{;}{a}{,}{,}
+\usepackage{amsfonts,amssymb,amsthm} %
+\usepackage{mathrsfs}
+\usepackage[tbtags]{amsmath} %
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage{tabularx,ragged2e}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{subfig}
+\usepackage{enumitem}
+\usepackage{csquotes}
+
+
+\newcolumntype{C}{>{\Centering\arraybackslash}X}
+\newcolumntype{s}{>{\hsize=.2\hsize \Centering\arraybackslash}X}
+% \usepackage{fullpage}
+\usepackage{footnote}
+\makesavenoteenv{tabular}
+
+\usepackage{cleveref}
+\newenvironment{delayedproof}[1]
+ {\begin{proof}[\raisedtarget{#1}Proof of \Cref{#1}]}
+ {\end{proof}}
+\newcommand{\raisedtarget}[1]{%
+  \raisebox{\fontcharht\font`P}[0pt][0pt]{\hypertarget{#1}{}}%
+}
+\newcommand{\proofref}[1]{\hyperlink{#1}{proof}}
+
+
+\usepackage{graphicx,color}
+\graphicspath{{./pics/}}
+\definecolor{BrickRed}{rgb}{.625,.25,.25}
+\providecommand{\red}[1]{\textcolor{BrickRed}{#1}}
+\definecolor{markergreen}{rgb}{0.6, 1.0, 0}
+\definecolor{darkgreen}{rgb}{0, .5, 0}
+\definecolor{darkred}{rgb}{.7,0,0}
+\definecolor{darkorange}{rgb}{1,0.3,0}
+\definecolor{darkblue}{rgb}{0,29,245}
+%\definecolor{orange}{rgb}{239, 133, 54}
+%\definecolor{lightblue}{rgb}{59, 188, 175}
+
+\providecommand{\marker}[1]{\fcolorbox{markergreen}{markergreen}{{#1}}}
+\providecommand{\natp}[1]{\textcolor{darkred}{#1}}
+\providecommand{\mj}[1]{\textcolor{darkred}{#1}}
+\providecommand{\francis}[1]{\textcolor{darkgreen}{#1}}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}%[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary} %%
+\newtheorem{lemma}[theorem]{Lemma} %%
+\theoremstyle{definition} %%
+\newtheorem{definition}{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{remarks}{Remarks}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{assumption}{Assumption}
+\setlength{\parindent}{0pt}
+
+\usepackage{amsmath}
+\input{definitions}
+\sloppy
+\begin{document}
+\setlength{\boxlength}{0.95\textwidth} %
+\title{\large{\bf\deftitle}} %
+\author{{\normalsize\bf\defauthor}}%
+\thispagestyle{empty}
+\addtocounter{page}{1}
+\maketitle
+
+% \keywords{keywords here} %%
+% \jel{jel here} %%
+\vspace{.5cm}
+\def\contentsname{Contents}
+\tableofcontents
+%%
+\vspace{.5cm}
+
+\section{Introduction}
+FL to team: 
+\begin{enumerate}
+  \item This notes extends the last idea (presented by TG) of forming a loan portfolio by further utilising the deposit as collateral to gain borrowing power.
+  \item By using the deposit as collateral, users can short/borrow other crypto on the lending platform.
+  \item An intricate balance must be maintained among the mean return, volatility, and the potential loss due to liquidation
+  \item One critical difference between the last idea and the idea in this notes is that we do not rebalance the portfolio weights continuously in time.
+  Instead, we fix the weights at the beginning and let the portfolio value changes according the the assets returns and the enforcement of liquidation. 
+  \item There are some advantages if we pursue in this direction
+  \begin{enumerate}
+    \item The result is comparable to any other portfolio optimisation scheme (it is a Markowitz portfolio anyway)
+    \item There is a practical relevancy to investors. Our work is beneficial to the DeFi lending platforms as we detail the scheme to form a portfolio on the lending platform. 
+    We should consider apply the AAVE research grant \url{https://aavegrants.org/}.
+    \item We will use machine learning algorithms, e.g. NN, XGBoost, along the way, so we can use the buzz word "machine learning" when we market our work. 
+  \end{enumerate}
+\end{enumerate}
+
+AAVE and Compound are decentralized finance (DeFi) platforms originally designed to facilitate the borrowing and lending of crypto assets. 
+ These platforms have become dominant players in the DeFi ecosystem, with total value locked (TVL) reaching over \$10 billion across both platforms, showcasing their significant influence and adoption in the market. \\
+
+Although initially developed for decentralized lending, the platforms' functionalities are surprisingly well-suited for implementing sophisticated portfolio management strategies.
+ In particular, there are two core features make these platforms appealing to users looking to build and manage diversified crypto portfolios.\\
+
+{\bf Interest-bearing collateral}. 
+ Assets deposited into these platforms can be used as collateral for loans while also accruing interest. 
+ This dual functionality enables an efficient capital utilization. 
+ For example, users can maintain long positions in assets they expect to appreciate, while using those same assets as collateral to borrow other assets.
+ This borrowed capital can be redeployed for short positions or to diversify into other investments, providing an opportunity to form a wide range of portfolio strategies. 
+ In addition to the potential profit generated from the price appreciation of long-held assets, users also benefit from passive income in the form of interest,
+ as collateralized assets accrue interest via interest-bearing tokens like \texttt{aTokens} in AAVE or \texttt{cTokens} in Compound.
+ This combination of borrowing power and interest generation allows users to simultaneously enhance their portfolio's earning potential while maintaining exposure to the crypto assets they favor. \\
+
+{\bf Unified margin assessment}.
+Users can borrow and lend multiple assets simultaneously, whereas debt and collateral across all crypto holdings within an account are collectively assessed. 
+ This enables the diversification of portfolio in two important ways. 
+ First, it allows users to reduce the overall portfolio volatility by holding a mix of negatively correlated assets.
+ Second, the aggregation of collateral and debt mitigates the risk of liquidation, 
+ as the platform evaluates the entire portfolio's performance rather than individual assets.
+ This means that a decline in the value of one asset or an increase in the price of a borrowed asset is less likely to trigger a liquidation event,
+ as other assets in the portfolio may offset the change in leverage. 
+ This feature is particularly crucial in the crypto market, where prices are notoriously volatile and fluctuations can be sudden and severe. \\ 
+
+Nonetheless, there are notable constraints and risks associated with overcollateralization, liquidation, interest rate risk, and bad debt risk. \\ 
+
+{\bf Overcollateralization} is a fundamental requirement on DeFi lending platforms to financially bind the borrowers to repay the loan in an anonymous and non-recourse environment.
+ Users must provide collateral that exceeds the value of the assets they wish to borrow in prior, often ranging from 120\% to 150\% of the loan value, depending on the collateral asset \red{(Need some references here)}.
+ Overcollateralization reduces capital efficiency for users by locking up more assets than they can borrow.
+ Platforms generally impose a larger haircut on volatile assets, meaning that holding long positions in such assets provides less borrowing power.
+ In the crypto market, research \red{(Need some references here)} has shown that volatility is positively correlated with price drift, often driven by herding effects.
+ This means that more volatile assets, while potentially more profitable, offer less borrowing power,
+ creating a trade-off between profits and borrowing power for users. \\
+  
+{\bf Liquidation risk} is another significant concern. 
+ If a position's health factor falls below a critical threshold, the position becomes undercollateralized, and the platform initiates liquidation.
+ During liquidation, a portion of the collateral is sold off to cover the debt, and borrowers incur liquidation penalties. 
+ In highly volatile crypto markets, where prices can fluctuate rapidly, liquidation risk becomes particularly acute.
+ One solution to mitigate this risk is to closely monitor the position and either supply additional collateral or repay part of their debt as needed to maintain sufficient collateralization. 
+ Alternatively, users can form a diversified portfolio of collateral in advance to reduce the likelihood of liquidation. 
+ The former approach requires additional funds or the unwinding of part of the portfolio, while the latter involves constructing a portfolio that balances potential returns with reduced liquidation risk. \\
+
+{\bf Interest rate risk} is a critical aspect that borrowers must account for when using AAVE or Compound.
+ Interest rates on borrowed assets are variable and fluctuate based on supply and demand within the platform.
+ When demand for borrowing is high, interest rates can rise sharply, increasing the cost of maintaining a borrowed position.
+ If the interest rate on borrowed assets increases beyond the returns generated by those assets, the debt can become increasingly expensive to service, 
+ eroding potential profits and putting additional pressure on users to repay or refinance their loans. \\
+ 
+{\bf Bad debt risk} refers to the possibility (to be finished)\\%that users may accumulate unmanageable debt if the value of their borrowed assets drops significantly,
+%  or if they fail to generate enough returns to cover both the principal and interest payments. This risk is especially prevalent in highly volatile markets, where sudden price drops or adverse market movements can leave users with debt that exceeds the value of their portfolio. If left unchecked, bad debt can result in forced liquidations, further exacerbating losses and undermining the financial stability of the user's portfolio.
+
+In this paper, we propose a method for constructing a Markowitz-type crypto portfolio that leverages the functionalities of DeFi lending platforms, 
+ with a focus on carefully balancing risk and return under the constraints imposed by the platforms. 
+ Achieving this balance requires accounting for several factors intrinsic to the crypto market. 
+ First, the joint dynamics of crypto asset prices, characterized by high volatility and intricate dependency structures, must be modeled accurately. 
+ We approach this by modeling individual price dynamics using ARIMA-GARCH models and capturing the dependency structure through an appropriate copula {\red{To Team: This is to be discussed}}.
+ Additionally, potential losses from liquidation events must be carefully calculated, as these can significantly erode portfolio value if not properly managed.
+ To estimate potential liquidation losses, we employ machine learning methods—such as neural networks or XGBoost {\red{To Team: This is to be discussed}}—to learn from simulated portfolio returns.
+ Finally, we propose a projected gradient ascent method to search for an optimal portfolio allocation under the constraints imposed by the platforms. 
+
+
+\section{Literature review}
+Petri Julhä: leverage constraints faced by investors may explain the empirical failure of the capital asset pricing model
+Measure of borrowing constrains: active management of the minimum initial margin requirement by the Federal Reserve. 
+Federal Reserve changed 22 times the marign reuqirement, ranging between 40\% to 100\%. 
+
+
+Frazzini and Pedersen (2013) provide a more realistic treatment of the effects of borrowing constraints on the cross-sectional price of risk. 
+Portfolio returns are negatively correlated with the spread between Eurodollar and Trasury bill rates (TED spread), which in accordance to CAPM prediction, should be positive. 
+Explaination: TED is a measure for the change in funding conditions rather than a measure of the funding conditions themselves. 
+
+The involvement of borrowing introduce the third dimension to the mean-variance plot. 
+ The third dimension can be 1. health factor, 2. historical number of default, 3. historical total loss due to default. 
+ All of them have their own problem.
+ Health factor is not a unique measure to risk. portfolios with the same health factor can lead to substantially difference portfolio performance and liquidation risk.
+ 2 and 3 will also contribute to variance, they are not independent to vairance
+
+Poor out-of-sample performance of the plug-in approach: Frost and Savarrion (1986, 1988); Best and Grauer (1991); Chopra and Ziemba (1993); Broadie (1993); 
+Litterman (2004); Merton (1980); 
+Michaud (1989): influence of the mean error as "error-maximization"
+Jagannathan and Ma (2003) error of mean estimation is so large that nothing is lost when one ignores the mean at all
+
+
+\section{Important Features}
+(to be filled)
+\subsection{Determination and Accrual of Borrowing and Lending Interest}
+(to be filled)
+\subsection{Borrowing power}
+(to be filled)
+\subsection{Liquidation Procedure}
+(to be filled)
+
+
+\section{The portfolio problem}
+\subsection{Price Processes and Log Health Factor}
+We model asset prices $S_i(t)$ for long assets $(i = 1,\dots,d_L)$ and $S_j(t)$ for short assets $(j = 1,\dots,d_S)$ via geometric Brownian motions with jumps:
+\[
+d\log S_k(t) = \mu_k dt + \sum_{\ell} \sigma_{k\ell} dW_\ell(t) + J_k dN_k(t)
+\]
+
+Drift $\mu_k$ captures the expected return, volatility $\sigma_{k\ell}$ captures market uncertainty, 
+and jump terms $J_k dN_k(t)$ reflect the wrong way risk - $J_k$s are the jump sizes, and $N_k(t)$ is a Poisson process counting the number of jumps up to time $t$.
+For long assets, the jumps $J_k$ are assumed to be negative as it is the wrong way to the portfolio. 
+For short assets, it is the other way around - the jumps $J_j$ are positive.
+In this work, we assume that the jumps are independent across assets and follow a shifted exponential distribution.
+
+Next, we form a long-short portfolio and track the wealth process and the health factor process.
+
+Let $w^L \in \mathbb{R}^{d_L}$ denotes the portfolio weights for long assets and $w^S \in \mathbb{R}^{d_S}$ for short assets.
+Suppose there is no liquidation taken in place between , the wealth process $\Pi(t)$ is defined as
+
+\begin{align}
+\Pi(t) &= \sum_{k=1}^{d_L} w_k^L S_k(t) + \sum_{j=1}^{d_S} w_j^S S_j(t) \\
+&= w^\top S(t)
+\end{align}
+
+where $w = \begin{bmatrix} w^L \ -w^S \end{bmatrix}^\top \in \mathbb{R}^{d_L + d_S}$ is the portfolio weights,
+$S(t) = \begin{bmatrix} S_1(t) \hdots S_{d_L}(t) \ S_{d_L+1}(t) \hdots S_{d_L + d_S}(t) \end{bmatrix}^\top$ is the vector of asset prices.
+
+The health factor $H(t)$ is defined as the ratio between the effective borrowing power and the total debt
+\[
+H(t) = \frac{\sum_{k=1}^{d_L} \tilde{w}_k S_k(t)}{\sum_{j=1}^{d_S} w_j S_j(t)}, 
+\]  
+where $\tilde{w}^L = b^L \odot w^L$ is the effective borrowing power of the long assets. $\odot$ denotes element-wise multiplication.
+
+To have a compact notation, we define a vector of effective weights $\tilde{w} \in \mathbb{R}^{d_L + d_S}$, 
+\[
+\tilde{w} = \begin{bmatrix}\tilde{w}^L \\ -w^S\end{bmatrix}.
+\]
+
+
+
+Notice that the health factor is a ratio of two stochastic processes, which can be difficult to analyse directly. 
+To simplify, we take the logarithm of the health factor 
+
+\[Y(t) \overset{\text{def}}{=}\log H(t). \]
+
+By Ito's lemma, the log health factor $Y(t)$ evolves according to
+\[
+dY(t) = \mu_Y dt + \sigma_Y dW_t + \sum_k J_k dN_k(t), \ Y(0) = \log H(0),
+\]
+where
+\[
+\mu_Y = \tilde{w}^\top \mu, \quad \sigma_Y^2 = \tilde{w}^\top \Sigma \tilde{w}.
+\]
+
+\subsection{Portfolio Optimisation Framework}
+The optimisation objective balances returns, volatility, and the potential loss caused by liquidation. 
+\[
+\max_{\tilde{w}} \quad \mu_{\tilde{w}} - \rho_1 \sigma_{\tilde{w}} - \rho_2 L(\tilde{w})
+\]
+
+Constraints on leverage, budget, and positions ensure practical viability.
+
+
+\subsection{First Hitting Time and Laplace Transform}
+The liquidation occurs when the health factor drop below one, which corresponds to the log health factor reaching zero. 
+\[
+\tau = \inf\{ t \geq 0 : Y(t) \leq 0 \}
+\]
+
+We analyse liquidation via the Laplace transform $\Phi(s) = \mathbb{E}[e^{-s\tau}]$. The exponential ansatz $\Phi(s; y_0) = e^{-\xi(s) y_0}$ simplifies the first-passage time into solving $\Psi(\xi(s)) = s$, where:
+\[
+\Psi(u) = \mu_Y u + \frac{1}{2}\sigma_Y^2 u^2 + \sum_k \lambda_k\left(\mathbb{E}[e^{u J_k}] - 1\right)
+\]
+For shifted exponential jumps $J_k \sim \text{ShiftedExp}(\eta_k, \nu_k)$:
+\[
+\mathbb{E}[e^{u J_k}] = \frac{\nu_k}{\nu_k - u}e^{-u\eta_k}, \quad u < \nu_k
+\]
+
+Liquidation probability within horizon $T$ is approximated as:
+\[
+\mathbb{P}[\tau \leq T] \approx 1 - \Phi(1/T)
+\]
+
+Tail uncertainty in $\tau$ is quantified by the squared coefficient of variation:
+\[
+\text{Tail}^2(\tau) = \frac{\Phi''(0)}{\Phi'(0)^2}-1
+\]
+
+Derivatives are:
+\[
+\Phi'(s) = -y_0 \xi'(s)e^{-y_0\xi(s)}, \quad \Phi''(s)=y_0^2(\xi'(s))^2e^{-y_0\xi(s)} - y_0\xi''(s)e^{-y_0\xi(s)}
+\]
+
+
+\section{Conclusion}
+We presented a structured framework for liquidation risk quantification and optimization using Lévy and Hawkes processes. Our approach explicitly captures extreme market movements and liquidation timing uncertainty, providing robust support for portfolio management decisions under tail-risk conditions.
+
+\section{Empirical results}
+\subsection{Data}
+\subsection{Backtesting procedure}
+
+\section{Discussion}
+
+
+\section{Extension to Hawkes-Driven Jump Intensity}
+Financial data exhibits jump clustering, motivating Hawkes jump intensities:
+\[
+d\lambda_k(t) = -\beta_k(\lambda_k(t)-\lambda_k^0)dt + \sum_j \alpha_{kj}dN_j(t)
+\]
+Approximating $\lambda_k$ by its expected path $\bar{\lambda}_k$ yields:
+\[
+\Psi^{\text{Hawkes}}(u) = \mu_Y u + \frac{1}{2}\sigma_Y^2u^2 + \sum_k \bar{\lambda}_k\left(\mathbb{E}[e^{u J_k}]-1\right)
+\]
+
+\bibliographystyle{abbrvnamed} %
+\bibliography{finance} %
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

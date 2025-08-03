@@ -1,0 +1,63 @@
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Best and Grauer}{1991}]{BestGrauer1991}
+Best, M.~J. and R.~R. Grauer.
+\newblock On the sensitivity of mean-variance-efficient portfolios to changes
+  in asset means: some analytical and computational results.
+\newblock {\em The Review of Financial Studies}, 4(2):315--342, 1991.
+
+\bibitem[\protect\citeauthoryear{Chopra and Ziemba}{1993}]{ChopraZiemba1993}
+Chopra, V.~K. and W.~T. Ziemba.
+\newblock The effect of errors in means, variances, and covariances on optimal
+  portfolio choice.
+\newblock {\em The Journal of Portfolio Management}, 19(2):6--11, 1993.
+
+\bibitem[\protect\citeauthoryear{Daley and
+  Vere-Jones}{2003}]{daley2003introduction}
+Daley, D.~J. and D.~Vere-Jones.
+\newblock {\em An Introduction to the Theory of Point Processes: Volume I:
+  Elementary Theory and Methods}.
+\newblock Springer, 2003.
+
+\bibitem[\protect\citeauthoryear{Duffie \bgroup \em et al.\egroup
+  }{2000}]{DuffiePanSingleton2000}
+Duffie, D., J.~Pan, and K.~Singleton.
+\newblock Transform analysis and asset pricing for affine jump-diffusions.
+\newblock {\em Econometrica}, 68(6):1343--1376, 2000.
+
+\bibitem[\protect\citeauthoryear{Embrechts \bgroup \em et al.\egroup
+  }{2011}]{embrechts2011multivariate}
+Embrechts, P., T.~Liniger, and L.~Lin.
+\newblock {\em Multivariate Hawkes processes: an application to financial
+  data}, volume~48.
+\newblock Cambridge University Press, 2011.
+
+\bibitem[\protect\citeauthoryear{Frazzini and
+  Pedersen}{2014}]{FrazziniPedersen2014}
+Frazzini, A. and L.~H. Pedersen.
+\newblock Betting against beta.
+\newblock {\em Journal of Financial Economics}, 111(1):1--25, 2014.
+
+\bibitem[\protect\citeauthoryear{Frost and Savarino}{1986}]{FrostSavarino1986}
+Frost, P.~A. and J.~E. Savarino.
+\newblock Portfolio size and estimation risk in multi-period portfolio
+  optimization.
+\newblock {\em Journal of Financial Economics}, 17(2):381--406, 1986.
+
+\bibitem[\protect\citeauthoryear{Hainaut}{2022}]{hainaut2022continuous}
+Hainaut, D.
+\newblock {\em Continuous Time Processes for Finance}.
+\newblock Springer, 2022.
+
+\bibitem[\protect\citeauthoryear{Laub \bgroup \em et al.\egroup
+  }{2021}]{laub2021elements}
+Laub, P.~J., Y.~Lee, and T.~Taimre.
+\newblock {\em The Elements of Hawkes Processes}.
+\newblock Springer, 2021.
+
+\bibitem[\protect\citeauthoryear{Michaud}{1989}]{Michaud1989}
+Michaud, R.~O.
+\newblock The markowitz optimization enigma: is 'optimized'optimal?
+\newblock {\em Financial Analysts Journal}, 45(1):31--42, 1989.
+
+\end{thebibliography}

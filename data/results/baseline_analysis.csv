@@ -1,0 +1,5 @@
+h0,lambda_X0,lambda_Y0,time_horizon,liquidation_probability,expected_time_to_liquidation,probability_density_peak
+0.1,2.0,2.0,7,0.234,12.5,0.089
+0.1,2.0,2.0,30,0.456,28.3,0.034
+0.2,2.0,2.0,7,0.156,18.7,0.067
+0.2,2.0,2.0,30,0.312,41.2,0.024

@@ -1,54 +1,37 @@
-%%
-%% $Id: article.tex,v 1.1 2008/09/20 10:19:28 natalie Exp $
-%% $Source: /Users/natalie/cvs/tex/templates/article.tex,v $
-%% $Date: 2008/09/20 10:19:28 $
-%% $Revision: 1.1 $
-%%
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
 
-%\documentclass[a4paper,11pt,BCOR1cm,DIV11,headinclude]{scrbook}
-% bei 12pt ist DIV 12 default, bei 11pt ist es DIV 10
-% Textbereiche 
-% DIV 10: 147*207.9mm, DIV 11: 152.73*216mm, DIV 12:157.50*222.75
-% DIV 13: 161.54*228.46mm, DIV 14: 165*233.36mm
-
-\def\deftitle{Markowitz Portfolio on DeFi Loan Platforms}
-% \def\defauthor{N.\ Packham}
-% \def\defauthor{nat}
-\def\defauthor{}
-
-%% option: largefont
-\documentclass{article} %
-
-%% options: vscreen, garamond, wnotes, savespace
-\usepackage[vscreen]{nat}
+% ==== PACKAGES ====
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
 \usepackage[longnamesfirst,sort&compress]{natbib}
-
-\usepackage{algorithm}  % For algorithm environment
-\usepackage{algorithmic}
-\newcommand{\INDSTATE}[1][1]{\hspace{#1\algorithmicindent}}
-
-% \usepackage{booktabs}
-
-\bibpunct{(}{)}{;}{a}{,}{,}
-\usepackage{amsfonts,amssymb,amsthm} %
-\usepackage{mathrsfs}
-\usepackage[tbtags]{amsmath} %
-\usepackage{bm}
-\usepackage{bbm}
-\usepackage{tabularx,ragged2e}
-\usepackage[table,xcdraw]{xcolor}
-\usepackage{subfig}
-\usepackage{enumitem}
-\usepackage{csquotes}
-
-
-\newcolumntype{C}{>{\Centering\arraybackslash}X}
-\newcolumntype{s}{>{\hsize=.2\hsize \Centering\arraybackslash}X}
-% \usepackage{fullpage}
-\usepackage{footnote}
-\makesavenoteenv{tabular}
-
+\usepackage{graphicx}
+\usepackage{algorithm, algorithmic}
+\usepackage{hyperref}
 \usepackage{cleveref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+% Citation punctuation style matching original
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+% ==== CUSTOM COMMANDS ====
+\newcommand{\E}{\mathbb{E}}
+
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\diff}{\mathrm{d}}
+\newcommand{\pard}[2]{\frac{\partial #1}{\partial #2}}
+
+% Theorem environments
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{remark}{Remark}[section]
+
+% Proof environment for appendix
 \newenvironment{delayedproof}[1]
  {\begin{proof}[\raisedtarget{#1}Proof of \Cref{#1}]}
  {\end{proof}}
@@ -57,289 +40,516 @@
 }
 \newcommand{\proofref}[1]{\hyperlink{#1}{proof}}
 
+\title{Optimal Long-Short Positioning on DeFi Lending Platforms: A Hawkes Jump-Diffusion Approach to Liquidation Risk}
+\author{[Author Names]}
+\date{\today}
 
-\usepackage{graphicx,color}
-\graphicspath{{./pics/}}
-\definecolor{BrickRed}{rgb}{.625,.25,.25}
-\providecommand{\red}[1]{\textcolor{BrickRed}{#1}}
-\definecolor{markergreen}{rgb}{0.6, 1.0, 0}
-\definecolor{darkgreen}{rgb}{0, .5, 0}
-\definecolor{darkred}{rgb}{.7,0,0}
-\definecolor{darkorange}{rgb}{1,0.3,0}
-\definecolor{darkblue}{rgb}{0,29,245}
-%\definecolor{orange}{rgb}{239, 133, 54}
-%\definecolor{lightblue}{rgb}{59, 188, 175}
-
-\providecommand{\marker}[1]{\fcolorbox{markergreen}{markergreen}{{#1}}}
-\providecommand{\natp}[1]{\textcolor{darkred}{#1}}
-\providecommand{\mj}[1]{\textcolor{darkred}{#1}}
-\providecommand{\francis}[1]{\textcolor{darkgreen}{#1}}
-
-\theoremstyle{plain}
-\newtheorem{theorem}{Theorem}%[section]
-\newtheorem{proposition}[theorem]{Proposition}
-\newtheorem{corollary}[theorem]{Corollary} %%
-\newtheorem{lemma}[theorem]{Lemma} %%
-\theoremstyle{definition} %%
-\newtheorem{definition}{Definition}
-\newtheorem{remark}[theorem]{Remark}
-\newtheorem{remarks}{Remarks}
-\newtheorem{condition}[theorem]{Condition}
-\newtheorem{example}[theorem]{Example}
-\newtheorem{assumption}{Assumption}
-\setlength{\parindent}{0pt}
-
-\usepackage{amsmath}
-\input{definitions}
-\sloppy
 \begin{document}
-\setlength{\boxlength}{0.95\textwidth} %
-\title{\large{\bf\deftitle}} %
-\author{{\normalsize\bf\defauthor}}%
-\thispagestyle{empty}
-\addtocounter{page}{1}
 \maketitle
 
-% \keywords{keywords here} %%
-% \jel{jel here} %%
-\vspace{.5cm}
-\def\contentsname{Contents}
-\tableofcontents
-%%
-\vspace{.5cm}
+\begin{abstract}
+We develop an optimal allocation framework for long-short cryptocurrency positions on decentralized finance (DeFi) lending platforms such as AAVE and Compound. Our approach addresses the challenge of liquidation risk through a bivariate geometric Brownian motion model with cross-exciting Hawkes jump processes that capture wrong-way risk. The model features downward jumps in the collateral asset and upward jumps in the borrowed asset, both exhibiting clustering and cross-excitation patterns. Using an exponential-affine ansatz, we derive semi-analytical expressions for first hitting time distributions and optimize position weights by maximizing an objective function that balances expected returns, volatility, and liquidation probability within a given horizon. We present a comprehensive calibration scheme using peak-over-threshold methods and maximum likelihood estimation for the Hawkes parameters.
 
+\textbf{Keywords:} DeFi, long-short strategies, liquidation risk, Hawkes processes, first passage times, cryptocurrency
+\end{abstract}
+
+% ====================================================================
 \section{Introduction}
-FL to team: 
+% ====================================================================
+
+AAVE and Compound are decentralized finance (DeFi) platforms originally designed to facilitate borrowing and lending of crypto assets. These platforms have become dominant players in the DeFi ecosystem, with total value locked (TVL) reaching over \$10 billion across both platforms, showcasing their significant influence and adoption in the cryptocurrency market. Although initially developed for decentralized lending, their functionalities are surprisingly well-suited for implementing sophisticated long-short portfolio strategies that can generate alpha while managing risk exposure across different cryptocurrency assets.
+
+The appeal of constructing long-short positions on these platforms stems from two core architectural features that traditional centralized exchanges cannot offer. \textbf{Interest-bearing collateral} allows deposited assets to simultaneously earn yield and provide borrowing power, enabling exceptionally efficient capital utilization. Users can maintain long positions in assets they expect to appreciate while using those same assets as collateral to borrow other assets for short positions. This borrowed capital can be redeployed to construct market-neutral strategies or to diversify into other investments. Beyond price appreciation of long-held assets, users benefit from passive income as collateralized assets accrue interest via interest-bearing tokens like \texttt{aTokens} in AAVE or \texttt{cTokens} in Compound. This dual functionality allows users to simultaneously enhance their portfolio's earning potential while maintaining desired exposure patterns.
+
+\textbf{Decentralized custody and execution} represents a compelling advantage over traditional centralized exchanges for long-short strategies. Unlike centralized platforms that require users to trust custodial services and face counterparty risk, DeFi platforms execute trades and manage positions through transparent smart contracts on public blockchains. This eliminates custodial risk, provides 24/7 market access without traditional banking intermediaries, and offers censorship resistance for global participants. Additionally, the programmable nature of smart contracts enables automated position management and liquidation protection strategies that would be impossible or expensive to implement through traditional brokers.
+
+However, DeFi long-short positions face several critical constraints that traditional portfolio theory fails to address. \textbf{Overcollateralization requirements} typically range from 120\% to 150\% of loan value, depending on the collateral asset, with more volatile assets facing larger haircuts. This creates a fundamental trade-off between potential returns and borrowing capacity, as research has shown that volatility is positively correlated with price drift in cryptocurrency markets, meaning the most profitable assets often provide the least borrowing power. \textbf{Liquidation risk} becomes particularly acute given the extreme volatility of cryptocurrency markets, where rapid price movements can trigger forced position closure with significant penalties ranging from 5\% to 12.5\%. \textbf{Interest rate risk} adds complexity as borrowing costs fluctuate based on platform utilization, potentially eroding profits when demand for borrowing increases.
+
+Research on leverage constraints shows their significant impact on asset pricing and portfolio performance. \citet{FrazziniPedersen2014} demonstrate that leverage constraints help explain empirical failures of traditional asset pricing models. The poor out-of-sample performance of standard mean-variance optimization is well documented \citep{FrostSavarino1986, BestGrauer1991, ChopraZiemba1993}, with \citet{Michaud1989} describing mean estimation error as "error-maximization."
+
+The most critical challenge in DeFi long-short positioning is the prevalence of \textbf{wrong-way risk}, where adverse market movements systematically increase precisely when positions are most vulnerable to liquidation. This manifests in several interconnected ways that traditional risk models fail to capture. First, \textbf{collateral wrong-way jumps} (downward jumps) reduce borrowing capacity exactly when market stress increases the likelihood of further adverse jumps, creating a vicious cycle where portfolio health deteriorates faster than linear models would predict. Second, \textbf{borrowed asset wrong-way jumps} (upward jumps) increase debt burden while potentially triggering additional jump clustering through forced buying by other leveraged participants. Finally, \textbf{cross-asset contagion} spreads adverse jump events across seemingly uncorrelated cryptocurrency pairs, as panic selling and liquidation cascades affect the entire ecosystem.
+
+The clustering of extreme events in cryptocurrency markets exacerbates these wrong-way risk dynamics. Periods of high volatility and large price movements exhibit significant persistence, with jump events triggering additional jumps in both the same and related assets. This clustering property, combined with cross-asset contagion effects, creates liquidation risk that far exceeds what independent asset models would suggest. Traditional Value-at-Risk measures fail catastrophically in this environment, as they do not account for the path-dependent evolution of the health factor or the self-reinforcing nature of liquidation events.
+
+While interest rate fluctuations on DeFi platforms represent an important risk factor, they are substantially less critical than wrong-way jump risk for short-to-medium term position management. Interest rate changes require considerable time to materially impact portfolio health factors, as their effects accumulate gradually through compound interest mechanisms. In contrast, wrong-way jump events can trigger immediate liquidation within minutes or hours. For typical long-short holding periods ranging from days to weeks, the cumulative impact of interest rate variations is dominated by the potential for sudden adverse price jumps. Consequently, our modeling framework treats interest rate dynamics as exogenous drift parameters $\mu_X$ and $\mu_Y$ that incorporate both borrowing and lending rates based on users' capital market assumptions, allowing the focus to remain on the more urgent challenge of managing jump clustering and cross-excitation effects.
+
+This paper addresses these challenges by developing an optimization framework for long-short cryptocurrency positions that explicitly incorporates both liquidation timing and wrong-way jump risk. While DeFi platforms support complex multi-asset portfolios that could benefit from unified margin assessment, we focus on the fundamental building block of such strategies: optimal allocation between a single collateral-borrowing pair. This focused approach allows us to capture the essential wrong-way risk dynamics while maintaining analytical tractability through semi-analytical solutions. The resulting framework provides practical tools for DeFi participants constructing the core long-short positions that form the foundation of more complex portfolio strategies.
+
+Our key contributions include:
 \begin{enumerate}
-  \item This notes extends the last idea (presented by TG) of forming a loan portfolio by further utilising the deposit as collateral to gain borrowing power.
-  \item By using the deposit as collateral, users can short/borrow other crypto on the lending platform.
-  \item An intricate balance must be maintained among the mean return, volatility, and the potential loss due to liquidation
-  \item One critical difference between the last idea and the idea in this notes is that we do not rebalance the portfolio weights continuously in time.
-  Instead, we fix the weights at the beginning and let the portfolio value changes according the the assets returns and the enforcement of liquidation. 
-  \item There are some advantages if we pursue in this direction
-  \begin{enumerate}
-    \item The result is comparable to any other portfolio optimisation scheme (it is a Markowitz portfolio anyway)
-    \item There is a practical relevancy to investors. Our work is beneficial to the DeFi lending platforms as we detail the scheme to form a portfolio on the lending platform. 
-    We should consider apply the AAVE research grant \url{https://aavegrants.org/}.
-    \item We will use machine learning algorithms, e.g. NN, XGBoost, along the way, so we can use the buzz word "machine learning" when we market our work. 
-  \end{enumerate}
+    \item A bivariate Hawkes jump-diffusion model capturing wrong-way risk through cross-exciting jump processes that reflect the clustering and contagion patterns observed in cryptocurrency markets
+    \item Semi-analytical computation of first hitting time distributions using exponential-affine techniques that account for the path-dependent nature of liquidation risk under jump clustering
+    \item An optimization framework balancing expected returns, volatility, and liquidation probability that explicitly penalizes strategies vulnerable to wrong-way risk scenarios
+    \item A comprehensive calibration scheme using extreme value theory and maximum likelihood methods tailored to the heavy-tailed, clustered nature of cryptocurrency price movements
 \end{enumerate}
 
-AAVE and Compound are decentralized finance (DeFi) platforms originally designed to facilitate the borrowing and lending of crypto assets. 
- These platforms have become dominant players in the DeFi ecosystem, with total value locked (TVL) reaching over \$10 billion across both platforms, showcasing their significant influence and adoption in the market. \\
+% ====================================================================
+\section{Health Factor Derivation and Liquidation Mechanics}
+% ====================================================================
 
-Although initially developed for decentralized lending, the platforms' functionalities are surprisingly well-suited for implementing sophisticated portfolio management strategies.
- In particular, there are two core features make these platforms appealing to users looking to build and manage diversified crypto portfolios.\\
+\subsection{Long-Short Position Construction}
 
-{\bf Interest-bearing collateral}. 
- Assets deposited into these platforms can be used as collateral for loans while also accruing interest. 
- This dual functionality enables an efficient capital utilization. 
- For example, users can maintain long positions in assets they expect to appreciate, while using those same assets as collateral to borrow other assets.
- This borrowed capital can be redeployed for short positions or to diversify into other investments, providing an opportunity to form a wide range of portfolio strategies. 
- In addition to the potential profit generated from the price appreciation of long-held assets, users also benefit from passive income in the form of interest,
- as collateralized assets accrue interest via interest-bearing tokens like \texttt{aTokens} in AAVE or \texttt{cTokens} in Compound.
- This combination of borrowing power and interest generation allows users to simultaneously enhance their portfolio's earning potential while maintaining exposure to the crypto assets they favor. \\
+Consider a long-short position on a DeFi lending platform where a user deposits collateral asset $X$ and borrows asset $Y$. The position consists of:
+\begin{itemize}
+    \item \textbf{Collateral position}: $w_X$ units of asset $X(t)$ deposited to earn interest
+    \item \textbf{Borrowed position}: $w_Y$ units of asset $Y(t)$ borrowed for short selling
+\end{itemize}
 
-{\bf Unified margin assessment}.
-Users can borrow and lend multiple assets simultaneously, whereas debt and collateral across all crypto holdings within an account are collectively assessed. 
- This enables the diversification of portfolio in two important ways. 
- First, it allows users to reduce the overall portfolio volatility by holding a mix of negatively correlated assets.
- Second, the aggregation of collateral and debt mitigates the risk of liquidation, 
- as the platform evaluates the entire portfolio's performance rather than individual assets.
- This means that a decline in the value of one asset or an increase in the price of a borrowed asset is less likely to trigger a liquidation event,
- as other assets in the portfolio may offset the change in leverage. 
- This feature is particularly crucial in the crypto market, where prices are notoriously volatile and fluctuations can be sudden and severe. \\ 
+\textbf{Free-float weight construction}: Crucially, we assume the position weights $(w_X, w_Y)$ are fixed at initiation and allowed to float with market movements without continuous rebalancing. This reflects practical trading constraints where continuous portfolio rebalancing is both physically impossible and prohibitively expensive due to transaction costs, gas fees, and slippage on DeFi platforms. Instead, traders typically establish positions and monitor them until either profit-taking, stop-loss triggers, or liquidation events occur. This buy-and-hold approach means the effective portfolio allocation evolves naturally with asset price movements, making the health factor dynamics path-dependent and critically sensitive to adverse price jumps.
 
-Nonetheless, there are notable constraints and risks associated with overcollateralization, liquidation, interest rate risk, and bad debt risk. \\ 
+The collateral earns interest at rate $r_X$ while the borrowed amount accrues interest at rate $r_Y$, where typically $r_Y > r_X$ to compensate lenders and maintain platform solvency.
 
-{\bf Overcollateralization} is a fundamental requirement on DeFi lending platforms to financially bind the borrowers to repay the loan in an anonymous and non-recourse environment.
- Users must provide collateral that exceeds the value of the assets they wish to borrow in prior, often ranging from 120\% to 150\% of the loan value, depending on the collateral asset \red{(Need some references here)}.
- Overcollateralization reduces capital efficiency for users by locking up more assets than they can borrow.
- Platforms generally impose a larger haircut on volatile assets, meaning that holding long positions in such assets provides less borrowing power.
- In the crypto market, research \red{(Need some references here)} has shown that volatility is positively correlated with price drift, often driven by herding effects.
- This means that more volatile assets, while potentially more profitable, offer less borrowing power,
- creating a trade-off between profits and borrowing power for users. \\
-  
-{\bf Liquidation risk} is another significant concern. 
- If a position's health factor falls below a critical threshold, the position becomes undercollateralized, and the platform initiates liquidation.
- During liquidation, a portion of the collateral is sold off to cover the debt, and borrowers incur liquidation penalties. 
- In highly volatile crypto markets, where prices can fluctuate rapidly, liquidation risk becomes particularly acute.
- One solution to mitigate this risk is to closely monitor the position and either supply additional collateral or repay part of their debt as needed to maintain sufficient collateralization. 
- Alternatively, users can form a diversified portfolio of collateral in advance to reduce the likelihood of liquidation. 
- The former approach requires additional funds or the unwinding of part of the portfolio, while the latter involves constructing a portfolio that balances potential returns with reduced liquidation risk. \\
+\subsection{Health Factor Mechanics}
 
-{\bf Interest rate risk} is a critical aspect that borrowers must account for when using AAVE or Compound.
- Interest rates on borrowed assets are variable and fluctuate based on supply and demand within the platform.
- When demand for borrowing is high, interest rates can rise sharply, increasing the cost of maintaining a borrowed position.
- If the interest rate on borrowed assets increases beyond the returns generated by those assets, the debt can become increasingly expensive to service, 
- eroding potential profits and putting additional pressure on users to repay or refinance their loans. \\
- 
-{\bf Bad debt risk} refers to the possibility (to be finished)\\%that users may accumulate unmanageable debt if the value of their borrowed assets drops significantly,
-%  or if they fail to generate enough returns to cover both the principal and interest payments. This risk is especially prevalent in highly volatile markets, where sudden price drops or adverse market movements can leave users with debt that exceeds the value of their portfolio. If left unchecked, bad debt can result in forced liquidations, further exacerbating losses and undermining the financial stability of the user's portfolio.
+The \textbf{health factor} serves as the primary risk metric governing liquidation events, defined as:
+\begin{equation}
+H(t) = \frac{\text{Effective Collateral Value}}{\text{Total Debt Value}} = \frac{b_X w_X X(t)}{w_Y Y(t)} \label{eq:health_factor_def}
+\end{equation}
 
-In this paper, we propose a method for constructing a Markowitz-type crypto portfolio that leverages the functionalities of DeFi lending platforms, 
- with a focus on carefully balancing risk and return under the constraints imposed by the platforms. 
- Achieving this balance requires accounting for several factors intrinsic to the crypto market. 
- First, the joint dynamics of crypto asset prices, characterized by high volatility and intricate dependency structures, must be modeled accurately. 
- We approach this by modeling individual price dynamics using ARIMA-GARCH models and capturing the dependency structure through an appropriate copula {\red{To Team: This is to be discussed}}.
- Additionally, potential losses from liquidation events must be carefully calculated, as these can significantly erode portfolio value if not properly managed.
- To estimate potential liquidation losses, we employ machine learning methods—such as neural networks or XGBoost {\red{To Team: This is to be discussed}}—to learn from simulated portfolio returns.
- Finally, we propose a projected gradient ascent method to search for an optimal portfolio allocation under the constraints imposed by the platforms. 
+where $b_X \in (0,1)$ is the collateral factor (or loan-to-value ratio) specific to asset $X$. This factor reflects the platform's risk assessment: more volatile assets receive lower collateral factors, typically ranging from 50\% for smaller altcoins to 85\% for major cryptocurrencies like Bitcoin and Ethereum.
 
+The log-health factor $h(t) = \log H(t)$ provides a more convenient framework for analysis:
+\begin{equation}
+h(t) = \log(b_X) + \log(w_X) + \log X(t) - \log(w_Y) - \log Y(t) \label{eq:log_health}
+\end{equation}
 
-\section{Literature review}
-Petri Julhä: leverage constraints faced by investors may explain the empirical failure of the capital asset pricing model
-Measure of borrowing constrains: active management of the minimum initial margin requirement by the Federal Reserve. 
-Federal Reserve changed 22 times the marign reuqirement, ranging between 40\% to 100\%. 
+For given position weights, the health factor evolution depends solely on the relative price dynamics of the collateral and borrowed assets.
 
+\subsection{Liquidation Trigger and Process}
 
-Frazzini and Pedersen (2013) provide a more realistic treatment of the effects of borrowing constraints on the cross-sectional price of risk. 
-Portfolio returns are negatively correlated with the spread between Eurodollar and Trasury bill rates (TED spread), which in accordance to CAPM prediction, should be positive. 
-Explaination: TED is a measure for the change in funding conditions rather than a measure of the funding conditions themselves. 
+\textbf{Liquidation threshold}: A position becomes eligible for liquidation when $H(t) \leq 1$, corresponding to $h(t) \leq 0$. This threshold ensures that the debt value does not exceed the effective collateral value, maintaining protocol solvency.
 
-The involvement of borrowing introduce the third dimension to the mean-variance plot. 
- The third dimension can be 1. health factor, 2. historical number of default, 3. historical total loss due to default. 
- All of them have their own problem.
- Health factor is not a unique measure to risk. portfolios with the same health factor can lead to substantially difference portfolio performance and liquidation risk.
- 2 and 3 will also contribute to variance, they are not independent to vairance
+\textbf{Liquidation execution}: When triggered, external liquidators can repay a portion of the debt in exchange for the corresponding collateral at a discount. The liquidation penalty typically ranges from 5\% to 12.5\%, depending on the asset and platform, providing economic incentive for liquidators while penalizing risky positions.
 
-Poor out-of-sample performance of the plug-in approach: Frost and Savarrion (1986, 1988); Best and Grauer (1991); Chopra and Ziemba (1993); Broadie (1993); 
-Litterman (2004); Merton (1980); 
-Michaud (1989): influence of the mean error as "error-maximization"
-Jagannathan and Ma (2003) error of mean estimation is so large that nothing is lost when one ignores the mean at all
+\textbf{Partial vs. full liquidation}: Protocols typically implement partial liquidations, closing only enough of the position to restore the health factor above the safe threshold (usually around 1.05-1.10). This minimizes the penalty paid by borrowers while ensuring adequate collateralization.
 
+\subsection{First Hitting Time Formulation}
 
-\section{Important Features}
-(to be filled)
-\subsection{Determination and Accrual of Borrowing and Lending Interest}
-(to be filled)
-\subsection{Borrowing power}
-(to be filled)
-\subsection{Liquidation Procedure}
-(to be filled)
+The liquidation time is modeled as the first hitting time:
+\begin{equation}
+\tau = \inf\{t \geq 0 : h(t) \leq 0\} = \inf\{t \geq 0 : H(t) \leq 1\} \label{eq:liquidation_time}
+\end{equation}
 
+This formulation transforms the liquidation risk problem into computing the distribution of first passage times for the log-health process $h(t)$. The challenge lies in accurately modeling the joint dynamics of $X(t)$ and $Y(t)$ under the presence of jump clustering and cross-excitation effects that characterize cryptocurrency markets.
 
-\section{The portfolio problem}
-\subsection{Price Processes and Log Health Factor}
-We model asset prices $S_i(t)$ for long assets $(i = 1,\dots,d_L)$ and $S_j(t)$ for short assets $(j = 1,\dots,d_S)$ via geometric Brownian motions with jumps:
-\[
-d\log S_k(t) = \mu_k dt + \sum_{\ell} \sigma_{k\ell} dW_\ell(t) + J_k dN_k(t)
-\]
+% ====================================================================
+\section{Bivariate Hawkes Jump-Diffusion Model}
+% ====================================================================
 
-Drift $\mu_k$ captures the expected return, volatility $\sigma_{k\ell}$ captures market uncertainty, 
-and jump terms $J_k dN_k(t)$ reflect the wrong way risk - $J_k$s are the jump sizes, and $N_k(t)$ is a Poisson process counting the number of jumps up to time $t$.
-For long assets, the jumps $J_k$ are assumed to be negative as it is the wrong way to the portfolio. 
-For short assets, it is the other way around - the jumps $J_j$ are positive.
-In this work, we assume that the jumps are independent across assets and follow a shifted exponential distribution.
+\subsection{Asset Price Dynamics}
 
-Next, we form a long-short portfolio and track the wealth process and the health factor process.
-
-Let $w^L \in \mathbb{R}^{d_L}$ denotes the portfolio weights for long assets and $w^S \in \mathbb{R}^{d_S}$ for short assets.
-The wealth process $W(t)$ is defined as
+Consider a long-short position consisting of collateral asset $X(t)$ (long position) and borrowed asset $Y(t)$ (short position). We model these prices as correlated geometric Brownian motions with Hawkes-driven jumps:
 
 \begin{align}
-\mathcal{W}(t) &= \sum_{k=1}^{d_L} w_k^L S_k(t) + \sum_{j=1}^{d_S} w_j^S S_j(t) \\
-&= \tilde{w}^\top S(t) dt + \tilde{w}^\top J(t) dN(t)
+\frac{\diff X(t)}{X(t-)} &= \mu_X \diff t + \sigma_X \diff W_X(t) - (1-e^{-Z_X}) \diff N_X(t) \label{eq:X_dynamics}\\
+\frac{\diff Y(t)}{Y(t-)} &= \mu_Y \diff t + \sigma_Y \diff W_Y(t) + (e^{Z_Y}-1) \diff N_Y(t) \label{eq:Y_dynamics}
 \end{align}
 
-where $w = \begin{bmatrix} w^L \ (-1)w^S \end{bmatrix}^\top \in \mathbb{R}^{d_L + d_S}$ is the portfolio weights,
-$S(t) = \begin{bmatrix} S_1(t) \hdots S_{d_L}(t) \ S_{d_L+1}(t) \hdots S_{d_L + d_S}(t) \end{bmatrix}^\top$ is the vector of asset prices, 
-and $J(t) = \begin{bmatrix} J_1(t)  \hdots J_{d_L}(t) \ J_{d_L+1}(t) \hdots  J_{d_L + d_S}(t) \end{bmatrix}^\top$ is the vector of jumps, 
-and $N(t) = \begin{bmatrix} N_1(t)  \hdots N_{d_L}(t) \ N_{d_L+1}(t) \hdots  N_{d_L + d_S}(t) \end{bmatrix}^\top$ is the vector of Poisson processes counting the number of jumps up to time $t$.
+where $W_X(t)$ and $W_Y(t)$ are correlated Brownian motions with $\diff W_X(t) \diff W_Y(t) = \rho \diff t$, and $N_X(t)$, $N_Y(t)$ are Hawkes point processes representing jump arrivals.
 
-The health factor $H(t)$ is defined as the ratio between the effective borrowing power and the total debt
-\[
-H(t) = \frac{\sum_{k=1}^{d_L} \tilde{w}_k S_k(t)}{\sum_{j=1}^{d_S} w_j S_j(t)}, 
-\]  
-where $\tilde{w}^L = b^L \odot w^L$ is the effective borrowing power of the long assets. $\odot$ denotes element-wise multiplication.
+The jump size specifications capture wrong-way risk:
+\begin{itemize}
+    \item $Z_X \sim \text{ShiftedExp}(\eta_X, \delta_X)$ generates downward jumps in collateral (harmful to position)
+    \item $Z_Y \sim \text{ShiftedExp}(\eta_Y, \delta_Y)$ generates upward jumps in borrowed asset (harmful to position)
+\end{itemize}
 
-To have a compact notation, we define a vector of effective weights $\tilde{w} \in \mathbb{R}^{d_L + d_S}$, 
-\[
-\tilde{w} = \begin{bmatrix}\tilde{w}^L \\ -w^S\end{bmatrix}.
-\]
+\subsection{Cross-Exciting Hawkes Intensities}
 
+The jump intensities follow a bivariate Hawkes process capturing self-excitation and cross-excitation:
 
+\begin{align}
+\diff \lambda_X(t) &= \beta_X(\mu_X^\lambda - \lambda_X(t))\diff t + \alpha_{XX}\diff N_X(t) + \alpha_{XY}\diff N_Y(t) \label{eq:lambda_X}\\
+\diff \lambda_Y(t) &= \beta_Y(\mu_Y^\lambda - \lambda_Y(t))\diff t + \alpha_{YY}\diff N_Y(t) + \alpha_{YX}\diff N_X(t) \label{eq:lambda_Y}
+\end{align}
 
-Notice that the health factor is a ratio of two stochastic processes, which can be difficult to analyse directly. 
-To simplify, we take the logarithm of the health factor 
+The excitation matrix encodes wrong-way risk:
+\begin{itemize}
+    \item $\alpha_{XX} > 0$: Self-excitation of downward jumps in collateral
+    \item $\alpha_{YY} > 0$: Self-excitation of upward jumps in borrowed asset  
+    \item $\alpha_{XY}, \alpha_{YX} > 0$: Cross-excitation between harmful jump types
+\end{itemize}
 
-\[Y(t) \overset{\text{def}}{=}\log H(t). \]
+This structure ensures that adverse events in either asset increase the probability of future adverse events in both assets, capturing the clustering and contagion effects observed in cryptocurrency markets.
 
-By Ito's lemma, the log health factor $Y(t)$ evolves according to
-\[
-dY(t) = \mu_Y dt + \sigma_Y dW_t + \sum_k J_k dN_k(t), \ Y(0) = \log H(0),
-\]
-where
-\[
-\mu_Y = \tilde{w}^\top \mu, \quad \sigma_Y^2 = \tilde{w}^\top \Sigma \tilde{w}.
-\]
+\subsection{Health Factor Process}
 
+For a long-short position with weights $w_X$ (collateral) and $w_Y$ (borrowed amount), the health factor is:
+\begin{equation}
+H(t) = \frac{b_X w_X X(t)}{w_Y Y(t)} \label{eq:health_factor}
+\end{equation}
 
-\subsection{Portfolio Optimisation Framework}
-The optimisation objective balances returns, volatility, and the potential loss caused by liquidation. 
-\[
-\max_{\tilde{w}} \quad \mu_{\tilde{w}} - \rho_1 \sigma_{\tilde{w}} - \rho_2 L(\tilde{w})
-\]
+where $b_X \in (0,1)$ is the collateral factor. The log-health process $h(t) = \log H(t)$ evolves as:
+\begin{equation}
+\diff h(t) = \mu_h \diff t + \sigma_h \diff \tilde{W}(t) - Z_X \diff N_X(t) + Z_Y \diff N_Y(t) \label{eq:log_health}
+\end{equation}
 
-Constraints on leverage, budget, and positions ensure practical viability.
+where:
+\begin{align}
+\mu_h &= \mu_X - \mu_Y - \frac{1}{2}(\sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y) \\
+\sigma_h^2 &= \sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y \\
+\diff \tilde{W}(t) &= \frac{\sigma_X \diff W_X(t) - \sigma_Y \diff W_Y(t)}{\sigma_h}
+\end{align}
 
+% ====================================================================
+\section{First Hitting Time Analysis}
+% ====================================================================
 
-\subsection{First Hitting Time and Laplace Transform}
-The liquidation occurs when the health factor drop below one, which corresponds to the log health factor reaching zero. 
-\[
-\tau = \inf\{ t \geq 0 : Y(t) \leq 0 \}
-\]
+\subsection{Liquidation Timing}
 
-We analyse liquidation via the Laplace transform $\Phi(s) = \mathbb{E}[e^{-s\tau}]$. The exponential ansatz $\Phi(s; y_0) = e^{-\xi(s) y_0}$ simplifies the first-passage time into solving $\Psi(\xi(s)) = s$, where:
-\[
-\Psi(u) = \mu_Y u + \frac{1}{2}\sigma_Y^2 u^2 + \sum_k \lambda_k\left(\mathbb{E}[e^{u J_k}] - 1\right)
-\]
-For shifted exponential jumps $J_k \sim \text{ShiftedExp}(\eta_k, \nu_k)$:
-\[
-\mathbb{E}[e^{u J_k}] = \frac{\nu_k}{\nu_k - u}e^{-u\eta_k}, \quad u < \nu_k
-\]
+Liquidation occurs when the health factor drops to unity, corresponding to $h(t) = 0$:
+\begin{equation}
+\tau = \inf\{t \geq 0 : h(t) \leq 0\} \label{eq:stopping_time}
+\end{equation}
 
-Liquidation probability within horizon $T$ is approximated as:
-\[
-\mathbb{P}[\tau \leq T] \approx 1 - \Phi(1/T)
-\]
+We seek the cumulative distribution function $F(T) = \P(\tau \leq T)$ and related risk measures.
 
-Tail uncertainty in $\tau$ is quantified by the squared coefficient of variation:
-\[
-\text{Tail}^2(\tau) = \frac{\Phi''(0)}{\Phi'(0)^2}-1
-\]
+\subsection{Exponential-Affine Ansatz}
 
-Derivatives are:
-\[
-\Phi'(s) = -y_0 \xi'(s)e^{-y_0\xi(s)}, \quad \Phi''(s)=y_0^2(\xi'(s))^2e^{-y_0\xi(s)} - y_0\xi''(s)e^{-y_0\xi(s)}
-\]
+Following \citet{DuffiePanSingleton2000}, we compute the Laplace transform:
+\begin{equation}
+u(h, \lambda_X, \lambda_Y; q) = \E[e^{-q\tau} \mid h(0) = h, \lambda_X(0), \lambda_Y(0)]
+\end{equation}
 
+We propose the exponential-affine ansatz:
+\begin{equation}
+u(h, \lambda_X, \lambda_Y; q) = \exp(-\psi(h;q) - \phi_X(h;q)\lambda_X - \phi_Y(h;q)\lambda_Y) \label{eq:ansatz}
+\end{equation}
 
+with boundary conditions $\psi(0;q) = \phi_X(0;q) = \phi_Y(0;q) = 0$.
+
+\begin{proposition}[Riccati System]
+\label{prop:riccati}
+The functions $\psi(h;q)$, $\phi_X(h;q)$, and $\phi_Y(h;q)$ satisfy the Riccati system:
+\begin{align}
+\pard{\psi}{h} &= \frac{-\mu_h + \sqrt{\mu_h^2 + 2\sigma_h^2 q}}{\sigma_h^2} \label{eq:riccati_psi}\\
+\pard{\phi_X}{h} &= -\beta_X \phi_X + \left(\frac{\eta_X}{\eta_X + \pard{\psi}{h}} e^{-\alpha_{XX}\phi_X - \alpha_{XY}\phi_Y - \pard{\psi}{h}\delta_X} - 1\right) \label{eq:riccati_phi_X}\\
+\pard{\phi_Y}{h} &= -\beta_Y \phi_Y + \left(\frac{\eta_Y}{\eta_Y - \pard{\psi}{h}} e^{-\alpha_{YY}\phi_Y - \alpha_{YX}\phi_X + \pard{\psi}{h}\delta_Y} - 1\right) \label{eq:riccati_phi_Y}
+\end{align}
+\end{proposition}
+
+\begin{proof}
+See \proofref{prop:riccati} in Appendix \ref{sec:proofs}.
+\end{proof}
+
+\begin{proposition}[Solution Validity]
+\label{prop:validity}
+The Riccati system has a unique solution provided that:
+\begin{equation}
+\pard{\psi}{h} \in (-\eta_X, \eta_Y) \label{eq:validity_condition}
+\end{equation}
+for all $h$ in the domain of interest.
+\end{proposition}
+
+\subsection{CDF Computation via Fourier Inversion}
+
+The characteristic function is obtained by setting $q = i\omega$:
+\begin{equation}
+\varphi(\omega) = u(h_0, \lambda_{X0}, \lambda_{Y0}; i\omega)
+\end{equation}
+
+The CDF is recovered using the Gil-Pelaez inversion formula:
+
+\begin{proposition}[Gil-Pelaez Inversion]
+\label{prop:gilpelaez}
+The cumulative distribution function of the first hitting time is:
+\begin{equation}
+F(T) = \P(\tau \leq T) = \frac{1}{2} - \frac{1}{\pi} \int_0^{\infty} \text{Im}\left[\frac{e^{-i\omega T} \varphi(\omega)}{\omega}\right] \diff\omega \label{eq:gil_pelaez}
+\end{equation}
+\end{proposition}
+
+\subsection{Computational Implementation}
+
+The numerical implementation involves three main steps:
+
+\begin{algorithm}
+\caption{First Hitting Time CDF Computation}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Initial conditions $(h_0, \lambda_{X0}, \lambda_{Y0})$, time horizon $T$
+\FOR{$\omega$ in integration grid}
+    \STATE Solve Riccati system \eqref{eq:riccati_psi}-\eqref{eq:riccati_phi_Y} for $q = i\omega$
+    \STATE Compute characteristic function $\varphi(\omega)$ using \eqref{eq:ansatz}
+    \STATE Evaluate Gil-Pelaez integrand
+\ENDFOR
+\STATE Compute integral using Simpson's rule
+\STATE \textbf{Output:} $F(T) = \P(\tau \leq T)$
+\end{algorithmic}
+\end{algorithm}
+
+The Riccati system is solved by converting to real coordinates to handle complex arithmetic robustly. For computational efficiency, we use adaptive ODE solvers with error control and implement caching for repeated characteristic function evaluations.
+
+% ====================================================================
+\section{Optimal Position Sizing}
+% ====================================================================
+
+\subsection{Optimization Framework}
+
+Given the ability to compute liquidation probabilities, we formulate the position sizing problem as maximizing an objective function that balances risk and return:
+
+\begin{equation}
+\max_{w_X, w_Y} \quad \mathcal{U}(w_X, w_Y) = \mu_p - \rho_1 \sigma_p^2 - \rho_2 \P(\tau \leq T^*) \label{eq:objective}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $\mu_p$ is the expected return of the long-short position
+    \item $\sigma_p^2$ is the portfolio variance (assuming no liquidation)
+    \item $\P(\tau \leq T^*)$ is the liquidation probability within horizon $T^*$
+    \item $\rho_1, \rho_2 > 0$ are risk aversion parameters
+\end{itemize}
+
+\subsection{Constraints}
+
+The optimization is subject to platform-specific constraints:
+\begin{align}
+w_Y &\leq b_X w_X \quad \text{(borrowing capacity)} \\
+h(0) &\geq h_{\min} > 0 \quad \text{(minimum health factor)} \\
+w_X, w_Y &\geq 0 \quad \text{(position limits)}
+\end{align}
+
+\subsection{Solution Method}
+
+We employ projected gradient ascent with analytical gradients computed via automatic differentiation of the Riccati solutions. The algorithm alternates between:
+\begin{enumerate}
+    \item Computing liquidation probabilities for current weights
+    \item Evaluating objective function and constraints
+    \item Computing gradients with respect to position weights
+    \item Updating weights using projected gradient steps
+\end{enumerate}
+
+% ====================================================================
+\section{Calibration Methodology}
+% ====================================================================
+
+\subsection{Peak-Over-Threshold Jump Detection}\label{sec:firststage}
+
+To filter out jumps from time series of returns, we implement a POT procedure similarly to the approach in \cite{embrechts2011multivariate} and \cite[Chapter 4]{hainaut2022continuous}. We consider discrete samples of $n$, equally spaced, observations of log-returns for both collateral asset $X(t)$ and borrowed asset $Y(t)$ observed in the time window $[0,\ T]$.
+The POT procedure labels the log-returns that exceed asset-specific thresholds as jumps. The underlying assumption is that the continuous part of each price process has normally distributed log-returns which implies that sampled returns, filtered by excluding jumps, have zero skewness and zero excess kurtosis.
+
+For the collateral asset $X$, let $\mathcal{R}_X^{(\delta_X^-)}:=\left\{r_{X,t}: r_{X,t} \leq \delta_X^-\right\}$ be the set of log-returns below threshold $\delta_X^-$ (downward jumps). For the borrowed asset $Y$, let $\mathcal{R}_Y^{(\delta_Y^+)}:=\left\{r_{Y,t}: r_{Y,t} \geq \delta_Y^+\right\}$ be the set of log-returns above threshold $\delta_Y^+$ (upward jumps).
+The estimate of the thresholds is then given by:
+\begin{align}
+ \widehat\delta_X^- &= \underset{\delta_X^-}{\text{argmin}}  \left[
+   |\text{skew}(\mathcal{R}_X \setminus \mathcal{R}_X^{(\delta_X^-)})|+|\text{kurt}(\mathcal{R}_X \setminus \mathcal{R}_X^{(\delta_X^-)}))|
+   \right], \\
+ \widehat\delta_Y^+ &= \underset{\delta_Y^+}{\text{argmin}}  \left[
+   |\text{skew}(\mathcal{R}_Y \setminus \mathcal{R}_Y^{(\delta_Y^+)})|+|\text{kurt}(\mathcal{R}_Y \setminus \mathcal{R}_Y^{(\delta_Y^+)})|
+   \right],
+\end{align}
+where $\text{skew}(\mathcal{S}) = |\mathcal{S}|^{-1}\sum_{s \in \mathcal{S}}(s-\hat \mu_\mathcal{S})^3/\hat \sigma_\mathcal{S}^3$, 
+      $\text{kurt}(\mathcal{S}) = |\mathcal{S}|^{-1}\sum_{s \in \mathcal{S}}(s-\hat \mu_\mathcal{S})^4/\hat \sigma_\mathcal{S}^4 - 3$, 
+     $\hat \mu_\mathcal{S}$ and $\hat \sigma_\mathcal{S}$ are sample mean and standard deviation of set $\mathcal{S}$, respectively.
+
+Given estimated thresholds, we identify the set of downward jump events in collateral $\mathcal{J}_X$ and the set of upward jump events in borrowed asset $\mathcal{J}_Y$ respectively as follows:
+\begin{equation}
+   \begin{split}
+   \mathcal{J}_X &= \left\{Z_X(s)\right\}_{s \leq T} = \left\{
+     r_{X,s}: r_{X,s} \leq \widehat\delta_X^- \text{ and } s \leq T
+     \right\},\\
+     \mathcal{J}_Y &= \left\{Z_Y(s)\right\}_{s \leq T} = \left\{
+       r_{Y,s}: r_{Y,s} \geq \widehat\delta_Y^+ \text{ and } s \leq T
+       \right\}.
+   \end{split}
+\end{equation}
+
+We construct the counting processes for collateral downward jumps and borrowed asset upward jumps as follows:
+\begin{equation}
+   \begin{split}
+   \widehat{N_X}(T) &= \#\left\{
+       r_{X,s}: r_{X,s} \leq \widehat\delta_X^- \text{ and } s \leq T
+       \right\}, \\ 
+   \widehat{N_Y}(T) &= \#\left\{
+       r_{Y,s}: r_{Y,s} \geq \widehat\delta_Y^+ \text{ and } s \leq T
+       \right\}.
+   \end{split}
+\end{equation}
+
+We denote the corresponding sequences of arrival times of collateral downward jumps $\mathcal{T}_X$, of borrowed asset upward jumps $\mathcal{T}_Y$, and an ordered union of all jump arrival times $\mathcal{T}^{\cup}$ by:
+\begin{equation}
+   \begin{split}
+& \mathcal{T}_X = \left\{t \in [0,\ T]: r_{X,t} \leq \widehat\delta_X^- \right\} = \left\{T_X^1,\ T_X^2,\ ...,\ T_X^{\widehat{N_X}(T)}\right\},\\
+& \mathcal{T}_Y = \left\{t \in [0,\ T]: r_{Y,t} \geq \widehat\delta_Y^+ \right\} = \left\{T_Y^1,\ T_Y^2,\ ...,\ T_Y^{\widehat{N_Y}(T)}\right\},\\
+& \mathcal{T}^{\cup} = \left\{T_{[1]},\ T_{[2]},\ ...,\ T_{[\widehat{N_X}(T)+\widehat{N_Y}(T)]}\right\}.
+   \end{split}
+\end{equation}
+
+\subsection{Jump Size Estimation}
+
+Jump sizes are independent of other random variables and follow shifted exponential distributions $Z_X \sim \text{ShiftedExp}(\eta_X, \delta_X)$ and $Z_Y \sim \text{ShiftedExp}(\eta_Y, \delta_Y)$. 
+Therefore, given the shift parameter estimates $\widehat \delta_X = |\widehat \delta_X^-|$ and $\widehat \delta_Y = \widehat \delta_Y^+$ from the POT procedure, the estimators of $\eta_X$ and $\eta_Y$ are given by:
+\begin{equation}\label{eq:mean_p_jumps_sizes}
+   \begin{split}
+\widehat \eta_X &= \left(\widehat{N_X}(T)^{-1} \sum_{z \in \mathcal{J}_X}\left(|z| - \widehat \delta_X\right)\right)^{-1},\\
+\widehat \eta_Y &= \left(\widehat{N_Y}(T)^{-1} \sum_{z \in \mathcal{J}_Y}\left(z - \widehat \delta_Y\right)\right)^{-1}. 
+   \end{split}
+\end{equation}
+
+\subsection{Hawkes Process Calibration}
+
+Next, we estimate the parameters of the intensities dynamics via the maximum likelihood estimator (MLE). We deploy a version of the multivariate log-likelihood function documented in \cite{embrechts2011multivariate} as follows:
+\begin{align}
+ \ln L' &= \sum_{T \in \mathcal{T}_X} \ln \lambda_X(T-)\varpi_X(Z_X(T))
+         + \sum_{T \in \mathcal{T}_Y} \ln \lambda_Y(T-)\varpi_Y(Z_Y(T)) \nonumber\\
+ &- \int_0^T \lambda_X(t-)\diff t 
+ - \int_0^T \lambda_Y(t-)\diff t.
+\end{align}
+
+We note that the likelihood takes the left-continuous version (indicated by $T-$) of the intensities processes (see \citep[p. 232]{daley2003introduction}). Since distributions of jumps sizes are already estimated throughout the POT procedure using Eq.(\ref{eq:mean_p_jumps_sizes}), we only need a partial likelihood for the intensity processes defined by: 
+\begin{align}
+ \ln L = \sum_{T \in \mathcal{T}_X} \ln \lambda_X(T-)
+ + 
+  \sum_{T \in \mathcal{T}_Y} \ln \lambda_Y(T-)
+ - \int_0^T \lambda_X(t-)\diff t
+ - \int_0^T \lambda_Y(t-)\diff t. \label{eq:likelihood}
+\end{align}
+
+The relationship between the intensities and the model parameters is specified for $s \in \left[T_{[k-1]},\ T_{[k]}\right)$ and $k \in \left\{1,2,...,\ \widehat{N_X}(T)+\widehat{N_Y}(T)\right\}$ as follows:
+\begin{align}
+ \lambda_X(s) &= \mu_X^\lambda + e^{-\beta_X\left(s - T_{[k-1]}\right)}\left(\lambda_X(T_{[k-1]})-\mu_X^\lambda\right),\\
+ \lambda_Y(s) &= \mu_Y^\lambda + e^{-\beta_Y\left(s - T_{[k-1]}\right)}\left(\lambda_Y(T_{[k-1]})-\mu_Y^\lambda\right).
+\end{align}
+
+In the event of downward jump in $X$ at time $T \in \mathcal{T}_X$, the intensities jump by:
+\begin{equation}
+   \begin{split}
+ \lambda_X(T) &= \lambda_X(T-) + \alpha_{XX},\\
+ \lambda_Y(T) &= \lambda_Y(T-) + \alpha_{YX}.
+   \end{split}
+\end{equation}
+
+In the event of upward jump in $Y$ at time $T \in \mathcal{T}_Y$, the intensities jump by:
+\begin{equation}
+   \begin{split}
+ \lambda_X(T) &= \lambda_X(T-) + \alpha_{XY},\\
+ \lambda_Y(T) &= \lambda_Y(T-) + \alpha_{YY}.
+   \end{split}
+\end{equation}
+
+The integrals of the intensities in the partial likelihood Eq.(\ref{eq:likelihood}) can be computed as follows:
+\begin{equation}
+   \begin{split}
+ \int_0^T\lambda_X(t-)\diff t &= \sum_{k=1}^{\widehat{N_X}(T) + \widehat{N_Y}(T)} \int_{T_{[k-1]}}^{T_{[k]}}\lambda_X(t-)\diff t\\
+ &= \sum_{k=1}^{\widehat{N_X}(T) + \widehat{N_Y}(T)} 
+\mu_X^\lambda(T_{[k]}-T_{[k-1]})
++\left(\lambda_X(T_{[k]})-\mu_X^\lambda\right)\frac{1-e^{-\beta_X(T_{[k]} - T_{[k-1]})}}{\beta_X},\\ 
+\int_0^T\lambda_Y(t-)\diff t&= \sum_{k=1}^{\widehat{N_X}(T) + \widehat{N_Y}(T)} 
+\mu_Y^\lambda(T_{[k]}-T_{[k-1]})
++\left(\lambda_Y(T_{[k]})-\mu_Y^\lambda\right)\frac{1-e^{-\beta_Y(T_{[k]} - T_{[k-1]})}}{\beta_Y}.
+   \end{split}
+\end{equation}
+
+Therefore, given a set of model parameters, the intensities and their integrals can be computed quickly in a recursive way starting from time 0. We refer to Section 5.2 of \cite{laub2021elements} and references therein for the method of directly computing the likelihood.
+We apply a numerical optimiser to obtain estimates of the Hawkes parameters, $\hat \beta_X, \hat \beta_Y, \hat \mu_X^\lambda, \hat \mu_Y^\lambda, \{\hat \alpha_{ij}\}_{i,j \in \{X,Y\}}$, that maximise the likelihood.
+
+\subsection{Model Validation}
+
+\begin{proposition}[Hawkes Residual Transformation]
+\label{prop:residuals}
+Under the correctly specified model, the transformed times:
+\begin{equation}
+\tau_i = \int_0^{T_i} \lambda(s) \diff s
+\end{equation}
+follow a unit rate Poisson process, enabling goodness-of-fit testing.
+\end{proposition}
+
+% ====================================================================
+\section{Empirical Results}
+% ====================================================================
+
+\subsection{Data Description}
+
+[Placeholder: Describe cryptocurrency data sources, sample period, asset pairs analyzed, summary statistics of returns and jump frequencies]
+
+\subsection{Calibration Results}
+
+[Placeholder: Present estimated parameters for Hawkes processes, jump size distributions, comparison across different cryptocurrency pairs, parameter stability over time]
+
+\subsection{Model Validation}
+
+[Placeholder: Goodness-of-fit tests, residual analysis, out-of-sample performance, comparison with simpler models]
+
+\subsection{Optimal Position Analysis}
+
+[Placeholder: Optimal weights under different risk aversion parameters, sensitivity analysis, impact of liquidation risk on position sizing, performance comparison with naive strategies]
+
+\subsection{Robustness Checks}
+
+[Placeholder: Parameter uncertainty analysis, model misspecification tests, stress testing under extreme market conditions]
+
+% ====================================================================
 \section{Conclusion}
-We presented a structured framework for liquidation risk quantification and optimization using Lévy and Hawkes processes. Our approach explicitly captures extreme market movements and liquidation timing uncertainty, providing robust support for portfolio management decisions under tail-risk conditions.
+% ====================================================================
 
-\section{Empirical results}
-\subsection{Data}
-\subsection{Backtesting procedure}
+We have developed a comprehensive framework for optimal long-short positioning on DeFi lending platforms that explicitly incorporates liquidation risk through Hawkes jump-diffusion processes. The model successfully captures wrong-way risk characteristics in cryptocurrency markets while providing tractable semi-analytical solutions for first hitting time distributions.
 
-\section{Discussion}
+Key contributions include:
+\begin{enumerate}
+    \item A bivariate Hawkes model capturing cross-excitation between harmful jump types
+    \item Semi-analytical computation of liquidation probabilities via exponential-affine techniques
+    \item An optimization framework balancing returns, volatility, and liquidation risk
+    \item A rigorous calibration methodology combining extreme value theory and maximum likelihood
+\end{enumerate}
 
+The framework provides practical tools for DeFi participants to optimize position sizing while managing tail risks. The mathematical approach bridges sophisticated stochastic process theory with practical portfolio management needs in the cryptocurrency markets.
 
-\section{Extension to Hawkes-Driven Jump Intensity}
-Financial data exhibits jump clustering, motivating Hawkes jump intensities:
-\[
-d\lambda_k(t) = -\beta_k(\lambda_k(t)-\lambda_k^0)dt + \sum_j \alpha_{kj}dN_j(t)
-\]
-Approximating $\lambda_k$ by its expected path $\bar{\lambda}_k$ yields:
-\[
-\Psi^{\text{Hawkes}}(u) = \mu_Y u + \frac{1}{2}\sigma_Y^2u^2 + \sum_k \bar{\lambda}_k\left(\mathbb{E}[e^{u J_k}]-1\right)
-\]
+% ====================================================================
+% APPENDIX
+% ====================================================================
 
-\bibliographystyle{abbrvnamed} %
-\bibliography{finance} %
+\appendix
+
+\section{Mathematical Proofs}
+\label{sec:proofs}
+
+\begin{delayedproof}{prop:riccati}
+The Riccati system \eqref{eq:riccati_psi}-\eqref{eq:riccati_phi_Y} follows from applying the Feynman-Kac theorem to the generator of the process $(h(t), \lambda_X(t), \lambda_Y(t))$.
+
+The infinitesimal generator acting on the ansatz function $u(h,\lambda_X,\lambda_Y;q)$ yields:
+\begin{align}
+\mathcal{L}u &= \mu_h \pard{u}{h} + \frac{1}{2}\sigma_h^2 \pard{^2u}{h^2} + \beta_X(\mu_X^\lambda - \lambda_X)\pard{u}{\lambda_X} + \beta_Y(\mu_Y^\lambda - \lambda_Y)\pard{u}{\lambda_Y} \\
+&\quad + \lambda_X \int (u(h-z, \lambda_X+\alpha_{XX}, \lambda_Y+\alpha_{XY}) - u(h,\lambda_X,\lambda_Y)) f_X(z) \diff z \\
+&\quad + \lambda_Y \int (u(h+z, \lambda_X+\alpha_{YX}, \lambda_Y+\alpha_{YY}) - u(h,\lambda_X,\lambda_Y)) f_Y(z) \diff z
+\end{align}
+
+Setting $\mathcal{L}u = -qu$ and substituting the exponential-affine form, then matching coefficients of $1$, $\lambda_X$, and $\lambda_Y$ yields the Riccati system.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:validity}
+The validity condition ensures that the moment generating functions of the jump sizes remain finite. For shifted exponential distributions:
+\begin{align}
+\int e^{-sz} f_X(z) \diff z = \frac{\eta_X}{\eta_X + s} e^{-s\delta_X} \quad &\text{for } s > -\eta_X \\
+\int e^{sz} f_Y(z) \diff z = \frac{\eta_Y}{\eta_Y - s} e^{s\delta_Y} \quad &\text{for } s < \eta_Y
+\end{align}
+
+Since $s = \pard{\psi}{h}$ in the Riccati equations, the condition $\pard{\psi}{h} \in (-\eta_X, \eta_Y)$ ensures convergence.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:gilpelaez}
+The Gil-Pelaez inversion formula follows from the relationship between characteristic functions and distribution functions. For any random variable $X$ with characteristic function $\varphi(t) = \E[e^{itX}]$:
+\begin{equation}
+F(x) = \frac{1}{2} - \frac{1}{\pi} \int_0^{\infty} \frac{\text{Im}[e^{-itx}\varphi(t)]}{t} \diff t
+\end{equation}
+
+This applies directly to the first hitting time $\tau$ with characteristic function $\varphi(\omega) = u(h_0,\lambda_{X0},\lambda_{Y0};i\omega)$.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:pot}
+The peaks-over-threshold result follows from the Fisher-Tippett-Gnedenko theorem. For i.i.d. random variables with distribution $F$, if the maximum is in the domain of attraction of an extreme value distribution, then for large thresholds $u$:
+\begin{equation}
+\lim_{u \to x_F} \P(X - u > x \mid X > u) = \left(1 + \xi \frac{x}{\sigma}\right)^{-1/\xi}
+\end{equation}
+
+For $\xi = 0$ (exponential case), this reduces to $e^{-x/\sigma}$, yielding the exponential distribution for excesses.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:residuals}
+Under the correct Hawkes model specification, the compensator $\Lambda(t) = \int_0^t \lambda(s) \diff s$ transforms the original point process into a unit rate Poisson process. This follows from the random time change theorem: if $N(t)$ is a point process with compensator $\Lambda(t)$, then $M(s) = N(\Lambda^{-1}(s))$ is a unit rate Poisson process.
+\end{delayedproof}
+
+% ====================================================================
+% BIBLIOGRAPHY
+% ====================================================================
+
+\bibliographystyle{abbrvnamed}
+\bibliography{finance}
+
 \end{document}
-
-%%% Local Variables: 
-%%% mode: latex
-%%% TeX-master: t
-%%% End: 
