@@ -10,7 +10,7 @@ setup(
     name="hawkes-first-passage",
     version="0.1.0",
     author="Francis Liu",
-    author_email="francis.liu@example.com",
+    author_email="francisliu.hk@gmail.com",
     description="Hawkes jump-diffusion models for first passage time analysis in DeFi lending",
     long_description=long_description,
     long_description_content_type="text/markdown",

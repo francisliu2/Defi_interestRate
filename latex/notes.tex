@@ -59,7 +59,7 @@ We develop an optimal allocation framework for long-short cryptocurrency positio
 
 AAVE and Compound are decentralized finance (DeFi) platforms originally designed to facilitate borrowing and lending of crypto assets. These platforms have become dominant players in the DeFi ecosystem, with total value locked (TVL) reaching over \$10 billion across both platforms, showcasing their significant influence and adoption in the cryptocurrency market. Although initially developed for decentralized lending, their functionalities are surprisingly well-suited for implementing sophisticated long-short portfolio strategies that can generate alpha while managing risk exposure across different cryptocurrency assets.
 
-The appeal of constructing long-short positions on these platforms stems from two core architectural features that traditional centralized exchanges cannot offer. \textbf{Interest-bearing collateral} allows deposited assets to simultaneously earn yield and provide borrowing power, enabling exceptionally efficient capital utilization. Users can maintain long positions in assets they expect to appreciate while using those same assets as collateral to borrow other assets for short positions. This borrowed capital can be redeployed to construct market-neutral strategies or to diversify into other investments. Beyond price appreciation of long-held assets, users benefit from passive income as collateralized assets accrue interest via interest-bearing tokens like \texttt{aTokens} in AAVE or \texttt{cTokens} in Compound. This dual functionality allows users to simultaneously enhance their portfolio's earning potential while maintaining desired exposure patterns.
+The appeal of constructing long-short positions on these platforms stems from two core architectural features that traditional centralized exchanges cannot offer. \textbf{Interest-bearing collateral} allows deposited assets to simultaneously earn yield and provide borrowing power, enabling efficient capital utilization. Users can maintain long positions in assets they expect to appreciate while using those same assets as collateral to borrow other assets for short positions. This borrowed capital can be redeployed to construct market-neutral strategies or to diversify into other investments. Beyond price appreciation of long-held assets, users benefit from passive income as collateralized assets accrue interest via interest-bearing tokens like \texttt{aTokens} in AAVE or \texttt{cTokens} in Compound. This dual functionality allows users to simultaneously enhance their portfolio's earning potential while maintaining desired exposure patterns.
 
 \textbf{Decentralized custody and execution} represents a compelling advantage over traditional centralized exchanges for long-short strategies. Unlike centralized platforms that require users to trust custodial services and face counterparty risk, DeFi platforms execute trades and manage positions through transparent smart contracts on public blockchains. This eliminates custodial risk, provides 24/7 market access without traditional banking intermediaries, and offers censorship resistance for global participants. Additionally, the programmable nature of smart contracts enables automated position management and liquidation protection strategies that would be impossible or expensive to implement through traditional brokers.
 
@@ -141,16 +141,16 @@ This formulation transforms the liquidation risk problem into computing the dist
 Consider a long-short position consisting of collateral asset $X(t)$ (long position) and borrowed asset $Y(t)$ (short position). We model these prices as correlated geometric Brownian motions with Hawkes-driven jumps:
 
 \begin{align}
-\frac{\diff X(t)}{X(t-)} &= \mu_X \diff t + \sigma_X \diff W_X(t) - (1-e^{-Z_X}) \diff N_X(t) \label{eq:X_dynamics}\\
-\frac{\diff Y(t)}{Y(t-)} &= \mu_Y \diff t + \sigma_Y \diff W_Y(t) + (e^{Z_Y}-1) \diff N_Y(t) \label{eq:Y_dynamics}
+\frac{\diff X(t)}{X(t-)} &= \mu_X \diff t + \sigma_X \diff W_X(t) - (1-e^{-J_X}) \diff N_X(t) \label{eq:X_dynamics}\\
+\frac{\diff Y(t)}{Y(t-)} &= \mu_Y \diff t + \sigma_Y \diff W_Y(t) + (e^{J_Y}-1) \diff N_Y(t) \label{eq:Y_dynamics}
 \end{align}
 
 where $W_X(t)$ and $W_Y(t)$ are correlated Brownian motions with $\diff W_X(t) \diff W_Y(t) = \rho \diff t$, and $N_X(t)$, $N_Y(t)$ are Hawkes point processes representing jump arrivals.
 
 The jump size specifications capture wrong-way risk:
 \begin{itemize}
-    \item $Z_X \sim \text{ShiftedExp}(\eta_X, \delta_X)$ generates downward jumps in collateral (harmful to position)
-    \item $Z_Y \sim \text{ShiftedExp}(\eta_Y, \delta_Y)$ generates upward jumps in borrowed asset (harmful to position)
+    \item $J_X \sim \text{ShiftedExp}(\eta_X, \delta_X)$ generates downward jumps in collateral (harmful to position)
+    \item $J_Y \sim \text{ShiftedExp}(\eta_Y, \delta_Y)$ generates upward jumps in borrowed asset (harmful to position)
 \end{itemize}
 
 \subsection{Cross-Exciting Hawkes Intensities}
@@ -180,7 +180,7 @@ H(t) = \frac{b_X w_X X(t)}{w_Y Y(t)} \label{eq:health_factor}
 
 where $b_X \in (0,1)$ is the collateral factor. The log-health process $h(t) = \log H(t)$ evolves as:
 \begin{equation}
-\diff h(t) = \mu_h \diff t + \sigma_h \diff \tilde{W}(t) - Z_X \diff N_X(t) + Z_Y \diff N_Y(t) \label{eq:log_health}
+\diff h(t) = \mu_h \diff t + \sigma_h \diff \tilde{W}(t) - J_X \diff N_X(t) + J_Y \diff N_Y(t) \label{eq:log_health}
 \end{equation}
 
 where:
@@ -342,10 +342,10 @@ where $\text{skew}(\mathcal{S}) = |\mathcal{S}|^{-1}\sum_{s \in \mathcal{S}}(s-\
 Given estimated thresholds, we identify the set of downward jump events in collateral $\mathcal{J}_X$ and the set of upward jump events in borrowed asset $\mathcal{J}_Y$ respectively as follows:
 \begin{equation}
    \begin{split}
-   \mathcal{J}_X &= \left\{Z_X(s)\right\}_{s \leq T} = \left\{
+   \mathcal{J}_X &= \left\{J_X(s)\right\}_{s \leq T} = \left\{
      r_{X,s}: r_{X,s} \leq \widehat\delta_X^- \text{ and } s \leq T
      \right\},\\
-     \mathcal{J}_Y &= \left\{Z_Y(s)\right\}_{s \leq T} = \left\{
+     \mathcal{J}_Y &= \left\{J_Y(s)\right\}_{s \leq T} = \left\{
        r_{Y,s}: r_{Y,s} \geq \widehat\delta_Y^+ \text{ and } s \leq T
        \right\}.
    \end{split}
@@ -374,7 +374,7 @@ We denote the corresponding sequences of arrival times of collateral downward ju
 
 \subsection{Jump Size Estimation}
 
-Jump sizes are independent of other random variables and follow shifted exponential distributions $Z_X \sim \text{ShiftedExp}(\eta_X, \delta_X)$ and $Z_Y \sim \text{ShiftedExp}(\eta_Y, \delta_Y)$. 
+Jump sizes are independent of other random variables and follow shifted exponential distributions $J_X \sim \text{ShiftedExp}(\eta_X, \delta_X)$ and $J_Y \sim \text{ShiftedExp}(\eta_Y, \delta_Y)$. 
 Therefore, given the shift parameter estimates $\widehat \delta_X = |\widehat \delta_X^-|$ and $\widehat \delta_Y = \widehat \delta_Y^+$ from the POT procedure, the estimators of $\eta_X$ and $\eta_Y$ are given by:
 \begin{equation}\label{eq:mean_p_jumps_sizes}
    \begin{split}
@@ -387,8 +387,8 @@ Therefore, given the shift parameter estimates $\widehat \delta_X = |\widehat \d
 
 Next, we estimate the parameters of the intensities dynamics via the maximum likelihood estimator (MLE). We deploy a version of the multivariate log-likelihood function documented in \cite{embrechts2011multivariate} as follows:
 \begin{align}
- \ln L' &= \sum_{T \in \mathcal{T}_X} \ln \lambda_X(T-)\varpi_X(Z_X(T))
-         + \sum_{T \in \mathcal{T}_Y} \ln \lambda_Y(T-)\varpi_Y(Z_Y(T)) \nonumber\\
+ \ln L' &= \sum_{T \in \mathcal{T}_X} \ln \lambda_X(T-)\varpi_X(J_X(T))
+         + \sum_{T \in \mathcal{T}_Y} \ln \lambda_Y(T-)\varpi_Y(J_Y(T)) \nonumber\\
  &- \int_0^T \lambda_X(t-)\diff t 
  - \int_0^T \lambda_Y(t-)\diff t.
 \end{align}
