@@ -9,6 +9,7 @@ health_factor:
 # Diffusion parameters
 diffusion:
   volatility: 0.8  # sigma_h: Health factor volatility
+  drift: 0.01      # mu_h: Health factor drift
   
 # Drift parameters (interest rate dynamics)
 drift:

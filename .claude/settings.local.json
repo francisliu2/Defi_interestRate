@@ -7,7 +7,11 @@
       "Bash(mkdir:*)",
       "Bash(mv:*)",
       "Bash(cp:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(pdflatex:*)",
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "Bash(pip3 list:*)"
     ],
     "deny": []
   }

@@ -20,14 +20,14 @@ __email__ = "francis.liu@example.com"
 
 # Import main classes for easy access
 from .hawkes_process import HawkesJumpDiffusion
-from .riccati_solver import RiccatiSolver
+from .riccati_solver import FirstHittingTimeRiccatiSolver
 from .gil_pelaez import GilPelaezCDF
 from .calibration import POTCalibrator, MLECalibrator
 from .simulation import HawkesSimulator
 
 __all__ = [
     "HawkesJumpDiffusion",
-    "RiccatiSolver", 
+    "FirstHittingTimeRiccatiSolver", 
     "GilPelaezCDF",
     "POTCalibrator",
     "MLECalibrator",
