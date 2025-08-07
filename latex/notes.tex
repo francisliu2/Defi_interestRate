@@ -203,50 +203,50 @@ Liquidation occurs when the health factor drops to unity, corresponding to $h(t)
 
 We seek the cumulative distribution function $F(T) = \P(\tau \leq T)$ and related risk measures.
 
-\subsection{First Hitting Time Characteristic Function}
+\subsection{Moment Generating Function Analysis}
 
-For the first hitting time $\tau = \inf\{t \geq 0 : h(t) \leq 0\}$, we compute the characteristic function:
+For the first hitting time $\tau = \inf\{t \geq 0 : h(t) \leq 0\}$, we derive the moment generating function:
 \begin{equation}
-\varphi(s; h_0, \lambda_{X0}, \lambda_{Y0}) = \mathbb{E}[e^{is\tau} \mid h(0) = h_0, \lambda_X(0) = \lambda_{X0}, \lambda_Y(0) = \lambda_{Y0}]
+M(s; h_0, \lambda_{X0}, \lambda_{Y0}) = \mathbb{E}[e^{s\tau} \mid h(0) = h_0, \lambda_X(0) = \lambda_{X0}, \lambda_Y(0) = \lambda_{Y0}]
 \end{equation}
 
-We propose the exponential-affine ansatz:
+The exponential-affine structure yields:
 \begin{equation}
-\varphi(h, \lambda_X, \lambda_Y) = \exp\!\left( i s A(h) + B(h)\,\lambda_X + C(h)\,\lambda_Y \right) \label{eq:ansatz}
+M(h, \lambda_X, \lambda_Y) = \exp\!\left( s A(h) + B(h)\,\lambda_X + C(h)\,\lambda_Y \right) \label{eq:mgf_ansatz}
 \end{equation}
 
 with boundary conditions $A(0) = B(0) = C(0) = 0$.
 
-\begin{proposition}[First Hitting Time Riccati System]
-\label{prop:riccati}
+\begin{proposition}[Moment Generating Function Riccati System]
+\label{prop:mgf_riccati}
 Let 
 \[
-\varphi(h, \lambda_X, \lambda_Y) 
-= \exp\!\left( i s A(h) + B(h)\,\lambda_X + C(h)\,\lambda_Y \right)
+M(h, \lambda_X, \lambda_Y) 
+= \exp\!\left( s A(h) + B(h)\,\lambda_X + C(h)\,\lambda_Y \right)
 \]
-be the exponential-affine ansatz for the characteristic function of the first hitting time $\tau$. Then $\varphi$ satisfies the Kolmogorov backward equation
+denote the exponential-affine representation for the moment generating function of the first hitting time $\tau$. Then $M$ satisfies the Kolmogorov backward equation
 \[
-\mathcal{L}\varphi = -i s \varphi,
+\mathcal{L}M = s M,
 \]
-where $\mathcal{L}$ denotes the infinitesimal generator of the log-ratio process with Hawkes jump intensities. The corresponding functions $A(h)$, $B(h)$ and $C(h)$ solve the nonlinear second-order Riccati-type system
+where $\mathcal{L}$ denotes the infinitesimal generator of the log-health process under Hawkes jump intensities. The functions $A(h)$, $B(h)$ and $C(h)$ solve the coupled nonlinear second-order Riccati system
 \[
 \begin{aligned}
-& \mu_h (i s A'(h)) 
-+ \frac{1}{2}\sigma_h^2 \left( i s A''(h) + (i s A'(h))^2 \right)
+& \mu_h (s A'(h)) 
++ \frac{1}{2}\sigma_h^2 \left( s A''(h) + (s A'(h))^2 \right)
 + \beta_X \mu_X^\lambda B(h) 
 + \beta_Y \mu_Y^\lambda C(h) 
-= - i s, \\[1.2ex]
+= s, \\[1.2ex]
 & \mu_h B'(h) 
-+ \frac{1}{2}\sigma_h^2 \left( B''(h) + 2 i s A'(h) B'(h) + (B'(h))^2 \right)
++ \frac{1}{2}\sigma_h^2 \left( B''(h) + 2 s A'(h) B'(h) + (B'(h))^2 \right)
 - \beta_X B(h) \\
-&\quad + \left( \frac{\eta_X}{\eta_X + i s A'(h)} 
-\exp\!\left( i s A'(h)\delta_X - \alpha_{XX} B(h) - \alpha_{XY} C(h) \right) - 1 \right) 
+&\quad + \left( \frac{\eta_X}{\eta_X - s A'(h)} 
+\exp\!\left( s A'(h)\delta_X + \alpha_{XX} B(h) + \alpha_{XY} C(h) \right) - 1 \right) 
 = 0, \\[1.2ex]
 & \mu_h C'(h) 
-+ \frac{1}{2}\sigma_h^2 \left( C''(h) + 2 i s A'(h) C'(h) + (C'(h))^2 \right)
++ \frac{1}{2}\sigma_h^2 \left( C''(h) + 2 s A'(h) C'(h) + (C'(h))^2 \right)
 - \beta_Y C(h) \\
-&\quad + \left( \frac{\eta_Y}{\eta_Y - i s A'(h)} 
-\exp\!\left( -i s A'(h)\delta_Y - \alpha_{YY} C(h) - \alpha_{YX} B(h) \right) - 1 \right) 
+&\quad + \left( \frac{\eta_Y}{\eta_Y + s A'(h)} 
+\exp\!\left( -s A'(h)\delta_Y + \alpha_{YY} C(h) + \alpha_{YX} B(h) \right) - 1 \right) 
 = 0,
 \end{aligned}
 \]
@@ -254,166 +254,128 @@ with boundary conditions $A(0) = B(0) = C(0) = 0$.
 \end{proposition}
 
 \begin{proof}
-See \proofref{prop:riccati} in Appendix \ref{sec:proofs}.
+See \proofref{prop:mgf_riccati} in Appendix \ref{sec:proofs}.
 \end{proof}
 
-\begin{proposition}[Transformation to 12D First-Order System]
-\label{prop:12d_transform}
-The nonlinear second-order Riccati system for $A(h)$, $B(h)$, and $C(h)$ can be transformed into a first-order system in twelve real variables, suitable for numerical integration by standard solvers.
+\begin{proposition}[Transformation to 6D First-Order System]
+\label{prop:6d_transform}
+The nonlinear second-order Riccati system for $A(h)$, $B(h)$, and $C(h)$ in the moment generating function formulation can be transformed into a first-order system in six real variables, suitable for numerical integration by standard solvers.
 \end{proposition}
 
 \begin{proof}
-Consider the complex-valued functions $A(h), B(h), C(h)$ governed by
+Since the moment generating function involves real parameters $s$, the functions $A(h)$, $B(h)$, $C(h)$ are real-valued, governed by
 \[
 \begin{aligned}
-& \mu_h (i s A') 
-+ \tfrac{1}{2}\sigma_h^2 \big( i s A'' + (i s A')^2 \big)
+& \mu_h (s A') 
++ \tfrac{1}{2}\sigma_h^2 \big( s A'' + (s A')^2 \big)
 + \beta_X \mu_X^\lambda B 
 + \beta_Y \mu_Y^\lambda C 
-= - i s, \\[0.8ex]
+= s, \\[0.8ex]
 & \mu_h B' 
-+ \tfrac{1}{2}\sigma_h^2 \big( B'' + 2 i s A' B' + (B')^2 \big)
++ \tfrac{1}{2}\sigma_h^2 \big( B'' + 2 s A' B' + (B')^2 \big)
 - \beta_X B 
-+ \Big( \tfrac{\eta_X}{\eta_X + i s A'} 
-\exp\!\left( i s A' \delta_X - \alpha_{XX} B - \alpha_{XY} C \right) - 1 \Big) 
++ \Big( \tfrac{\eta_X}{\eta_X - s A'} 
+\exp\!\left( s A' \delta_X + \alpha_{XX} B + \alpha_{XY} C \right) - 1 \Big) 
 = 0, \\[0.8ex]
 & \mu_h C' 
-+ \tfrac{1}{2}\sigma_h^2 \big( C'' + 2 i s A' C' + (C')^2 \big)
++ \tfrac{1}{2}\sigma_h^2 \big( C'' + 2 s A' C' + (C')^2 \big)
 - \beta_Y C 
-+ \Big( \tfrac{\eta_Y}{\eta_Y - i s A'} 
-\exp\!\left( -i s A' \delta_Y - \alpha_{YY} C - \alpha_{YX} B \right) - 1 \Big) 
++ \Big( \tfrac{\eta_Y}{\eta_Y + s A'} 
+\exp\!\left( -s A' \delta_Y + \alpha_{YY} C + \alpha_{YX} B \right) - 1 \Big) 
 = 0.
 \end{aligned}
 \]
 
-Each of $A,B,C$ is complex-valued. To obtain a real-valued system, we split into real and imaginary parts:
-\[
-A = A_r + i A_i, \quad 
-B = B_r + i B_i, \quad 
-C = C_r + i C_i.
-\]
-
 Introduce auxiliary variables for the first derivatives:
 \[
-A'_r, \; A'_i, \quad 
-B'_r, \; B'_i, \quad 
-C'_r, \; C'_i.
+A'(h), \quad B'(h), \quad C'(h).
 \]
 
-Altogether we obtain 12 real unknowns:
+The state vector consists of 6 real unknowns:
 \[
-\mathbf{y} = (A_r, A'_r, B_r, B'_r, C_r, C'_r, \; A_i, A'_i, B_i, B'_i, C_i, C'_i).
+\mathbf{y} = (A, A', B, B', C, C').
 \]
 
-The original second-order equations specify $A''$, $B''$, $C''$ in terms of $(A, A', B, B', C, C')$ and the parameters. Writing
-\[
-A'' = F_A(A, A', B, B', C, C'), \quad
-B'' = F_B(A, A', B, B', C, C'), \quad
-C'' = F_C(A, A', B, B', C, C'),
-\]
-we obtain the first-order system
+Rearranging the second-order equations to solve for the second derivatives:
 \[
 \begin{aligned}
-& A_r' = A'_r, && (A'_r)' = \Re(F_A), \\
-& B_r' = B'_r, && (B'_r)' = \Re(F_B), \\
-& C_r' = C'_r, && (C'_r)' = \Re(F_C), \\
-& A_i' = A'_i, && (A'_i)' = \Im(F_A), \\
-& B_i' = B'_i, && (B'_i)' = \Im(F_B), \\
-& C_i' = C'_i, && (C'_i)' = \Im(F_C).
+A'' &= \frac{2s - 2\mu_h s A' - \sigma_h^2 (s A')^2 - 2\beta_X \mu_X^\lambda B - 2\beta_Y \mu_Y^\lambda C}{\sigma_h^2 s}, \\[1ex]
+B'' &= \frac{-2\mu_h B' - \sigma_h^2(B'^2 + 2 s A' B') + 2 \beta_X B - 2(g_X - 1)}{\sigma_h^2}, \\[1ex]
+C'' &= \frac{-2\mu_h C' - \sigma_h^2(C'^2 + 2 s A' C') + 2 \beta_Y C - 2(g_Y - 1)}{\sigma_h^2},
+\end{aligned}
+\]
+where
+\[
+\begin{aligned}
+g_X &= \frac{\eta_X}{\eta_X - s A'} 
+\exp\!\left( s A' \delta_X + \alpha_{XX} B + \alpha_{XY} C \right), \\
+g_Y &= \frac{\eta_Y}{\eta_Y + s A'} 
+\exp\!\left( -s A' \delta_Y + \alpha_{YY} C + \alpha_{YX} B \right).
 \end{aligned}
 \]
 
-Here $F_A, F_B, F_C$ are explicitly given by rearranging the Riccati system:
-\[
-\begin{aligned}
-F_A &= \frac{ -2\mu_h i s A' - \sigma_h^2 (i s A')^2 - 2\beta_X \mu_X^\lambda B - 2\beta_Y \mu_Y^\lambda C - 2 i s}{\sigma_h^2 i s}, \\[1ex]
-F_B &= \frac{-2\mu_h B' - \sigma_h^2(B'^2 + 2 i s A' B') + 2 \beta_X B - 2(f_X - 1)}{\sigma_h^2}, \\[1ex]
-F_C &= \frac{-2\mu_h C' - \sigma_h^2(C'^2 + 2 i s A' C') + 2 \beta_Y C - 2(f_Y - 1)}{\sigma_h^2},
-\end{aligned}
-\]
-with
-\[
-\begin{aligned}
-f_X &= \frac{\eta_X}{\eta_X + i s A'} 
-\exp\!\left( i s A' \delta_X - \alpha_{XX} B - \alpha_{XY} C \right), \\
-f_Y &= \frac{\eta_Y}{\eta_Y - i s A'} 
-\exp\!\left( -i s A' \delta_Y - \alpha_{YY} C - \alpha_{YX} B \right).
-\end{aligned}
-\]
-
-Explicitly, the 12-dimensional first-order system is:
+The 6-dimensional first-order system is:
 \begin{align}
-\frac{dA_r}{dh} &= A'_r, \\
-\frac{dA_i}{dh} &= A'_i, \\
-\frac{dB_r}{dh} &= B'_r, \\
-\frac{dB_i}{dh} &= B'_i, \\
-\frac{dC_r}{dh} &= C'_r, \\
-\frac{dC_i}{dh} &= C'_i, \\
-\frac{d(A'_r)}{dh} &= \frac{2\mu_h s A'_i + \sigma_h^2 s^2 ((A'_r)^2 - (A'_i)^2) + 2\beta_X \mu_X^\lambda B_r + 2\beta_Y \mu_Y^\lambda C_r}{\sigma_h^2 s}, \\
-\frac{d(A'_i)}{dh} &= \frac{-2\mu_h s A'_r - 2\sigma_h^2 s^2 A'_r A'_i - 2\beta_X \mu_X^\lambda B_i - 2\beta_Y \mu_Y^\lambda C_i - 2s}{\sigma_h^2 s}, \\
-\frac{d(B'_r)}{dh} &= \frac{-2\mu_h B'_r - \sigma_h^2((B'_r)^2 - (B'_i)^2 + 2s(A'_i B'_r - A'_r B'_i)) + 2\beta_X B_r - 2\Re(f_X - 1)}{\sigma_h^2}, \\
-\frac{d(B'_i)}{dh} &= \frac{-2\mu_h B'_i - \sigma_h^2(2B'_r B'_i + 2s(A'_r B'_r + A'_i B'_i)) + 2\beta_X B_i - 2\Im(f_X - 1)}{\sigma_h^2}, \\
-\frac{d(C'_r)}{dh} &= \frac{-2\mu_h C'_r - \sigma_h^2((C'_r)^2 - (C'_i)^2 + 2s(A'_i C'_r - A'_r C'_i)) + 2\beta_Y C_r - 2\Re(f_Y - 1)}{\sigma_h^2}, \\
-\frac{d(C'_i)}{dh} &= \frac{-2\mu_h C'_i - \sigma_h^2(2C'_r C'_i + 2s(A'_r C'_r + A'_i C'_i)) + 2\beta_Y C_i - 2\Im(f_Y - 1)}{\sigma_h^2},
+\frac{dA}{dh} &= A', \\
+\frac{dB}{dh} &= B', \\
+\frac{dC}{dh} &= C', \\
+\frac{d(A')}{dh} &= \frac{2s - 2\mu_h s A' - \sigma_h^2 (s A')^2 - 2\beta_X \mu_X^\lambda B - 2\beta_Y \mu_Y^\lambda C}{\sigma_h^2 s}, \\
+\frac{d(B')}{dh} &= \frac{-2\mu_h B' - \sigma_h^2(B'^2 + 2 s A' B') + 2 \beta_X B - 2(g_X - 1)}{\sigma_h^2}, \\
+\frac{d(C')}{dh} &= \frac{-2\mu_h C' - \sigma_h^2(C'^2 + 2 s A' C') + 2 \beta_Y C - 2(g_Y - 1)}{\sigma_h^2}.
 \end{align}
-where the functions $F_A$, $F_B$, and $F_C$ are given above. The system is integrated from $h = 0$ to $h = h_0$ with boundary conditions
+
+The system is integrated from $h = 0$ to $h = h_0$ with boundary conditions
 \[
-A_r(0)=A_i(0)=B_r(0)=B_i(0)=C_r(0)=C_i(0)=0, 
-\]
-\[
-A'_r(0)=A'_i(0)=B'_r(0)=B'_i(0)=C'_r(0)=C'_i(0)=\varepsilon,
+A(0) = B(0) = C(0) = 0, \quad A'(0) = B'(0) = C'(0) = \varepsilon,
 \]
 for a small perturbation $\varepsilon > 0$ to avoid degeneracy.
 \end{proof}
 
 \begin{proposition}[Solution Validity]
-\label{prop:validity}
-The second-order Riccati system has a unique solution provided that:
+\label{prop:mgf_validity}
+The second-order Riccati system admits a unique solution provided that:
 \begin{equation}
-i s A'(h) \in (-\eta_X, \eta_Y) \label{eq:validity_condition}
+s A'(h) \in (-\eta_X, \eta_Y) \label{eq:mgf_validity_condition}
 \end{equation}
-for all $h$ in the domain of interest, ensuring convergence of the jump transforms.
+for all $h$ in the integration domain, ensuring convergence of the moment generating functions for the jump size distributions.
 \end{proposition}
 
-\subsection{CDF Computation via Gil-Pelaez Inversion}
+\subsection{Distribution Recovery}
 
-The characteristic function $\varphi(s)$ for frequency parameter $s$ is computed by solving the 12-dimensional first-order system obtained by converting the second-order Riccati equations to real coordinates:
+The moment generating function $M(s)$ for real parameter $s$ is evaluated by solving the 6-dimensional first-order system obtained by converting the second-order Riccati equations:
 \begin{equation}
-\varphi(s) = \exp\!\left( i s A(h_0) + B(h_0)\lambda_{X0} + C(h_0)\lambda_{Y0} \right)
+M(s) = \exp\!\left( s A(h_0) + B(h_0)\lambda_{X0} + C(h_0)\lambda_{Y0} \right)
 \end{equation}
 
-The first hitting time CDF is recovered using the Gil-Pelaez inversion formula:
-
-\begin{proposition}[Gil-Pelaez Inversion]
-\label{prop:gilpelaez}
-The cumulative distribution function of the first hitting time is:
+The cumulative distribution function of the first hitting time is recovered through numerical Laplace inversion. Since $M(s)$ is the moment generating function of $\tau$, we have:
 \begin{equation}
-F(T) = \P(\tau \leq T) = \frac{1}{2} - \frac{1}{\pi} \int_0^{\infty} \text{Im}\left[\frac{e^{-i\omega T} \varphi(\omega)}{\omega}\right] \diff\omega \label{eq:gil_pelaez}
+F(T) = \P(\tau \leq T) = \mathcal{L}^{-1}\left[\frac{M(s)}{s}\right](T) \label{eq:laplace_inversion}
 \end{equation}
-\end{proposition}
+where $\mathcal{L}^{-1}$ denotes the inverse Laplace transform. For numerical implementation, we employ the Talbot algorithm, which provides a robust and efficient method for Laplace inversion through optimized contour deformation.
 
-\subsection{Computational Implementation}
+\subsection{Numerical Implementation}
 
-The numerical implementation involves solving the 12-dimensional real-valued first-order ODE system:
+The computational procedure combines solving the 12-dimensional real-valued first-order ODE system with the Talbot inversion algorithm:
 
 \begin{algorithm}
-\caption{First Hitting Time CDF Computation}
+\caption{First Hitting Time Distribution via Talbot Inversion}
 \begin{algorithmic}[1]
-\STATE \textbf{Input:} Initial conditions $(h_0, \lambda_{X0}, \lambda_{Y0})$, time horizon $T$, frequency $s$
-\STATE Convert second-order complex system to 12D real first-order system (Proposition \ref{prop:12d_transform}):
-\STATE $\mathbf{y} = [\text{Re}A, \text{Re}A', \text{Re}B, \text{Re}B', \text{Re}C, \text{Re}C', \text{Im}A, \text{Im}A', \text{Im}B, \text{Im}B', \text{Im}C, \text{Im}C']$
-\FOR{$s$ in frequency grid}
-    \STATE Solve 12D ODE system from $h = 0$ to $h = h_0$ with initial conditions $\mathbf{y}(0) = [0, 10^{-6}, 0, 10^{-6}, 0, 10^{-6}, 0, 0, 0, 0, 0, 0]$
-    \STATE Extract $A(h_0)$, $B(h_0)$, $C(h_0)$ from solution
-    \STATE Compute $\varphi(s) = \exp(-is A(h_0) - B(h_0)\lambda_{X0} - C(h_0)\lambda_{Y0})$
-    \STATE Evaluate Gil-Pelaez integrand: $\text{Im}[e^{-isT} \varphi(s) / s]$
+\STATE \textbf{Input:} Initial conditions $(h_0, \lambda_{X0}, \lambda_{Y0})$, evaluation time $T$, Talbot parameters $(N, \gamma)$
+\STATE Transform second-order real system to 6D real first-order system (Proposition \ref{prop:6d_transform})
+\STATE Initialize state vector: $\mathbf{y} = [A, A', B, B', C, C']$
+\FOR{$k = 0$ to $2N$}
+    \STATE Compute Talbot contour point: $s_k = \gamma(1 + ik\pi/N - e^{ik\pi/N})/T$
+    \STATE Integrate 6D ODE system from $h = 0$ to $h = h_0$ with parameter $s_k$
+    \STATE Extract solution components $A(h_0)$, $B(h_0)$, $C(h_0)$
+    \STATE Evaluate $M(s_k) = \exp(s_k A(h_0) + B(h_0)\lambda_{X0} + C(h_0)\lambda_{Y0})$
+    \STATE Compute Talbot weight: $w_k = \frac{\gamma}{T} \left(1 + \frac{ik\pi}{N}(1-e^{ik\pi/N}) \right) e^{s_k T}$
 \ENDFOR
-\STATE Compute integral using Simpson's rule: $F(T) = 0.5 - \frac{1}{\pi} \int_0^{\infty} \text{Im}[e^{-isT} \varphi(s) / s] ds$
-\STATE \textbf{Output:} $F(T) = \P(\tau \leq T)$
+\STATE Apply Talbot summation: $f(T) = \frac{1}{s_0} M(s_0) w_0 + 2\Re\left[\sum_{k=1}^{N} \frac{M(s_k) w_k}{s_k}\right]$
+\STATE \textbf{Output:} $F(T) = f(T) = \P(\tau \leq T)$
 \end{algorithmic}
 \end{algorithm}
 
-The second-order Riccati system is converted to a 12-dimensional first-order real system to handle complex arithmetic robustly. We use adaptive RK45 ODE solvers with error control and implement LRU caching for repeated characteristic function evaluations.
+The second-order Riccati system is converted to a 6-dimensional first-order real system, leveraging the real-valued nature of the moment generating function approach. We use adaptive RK45 ODE solvers with error control and implement LRU caching for repeated moment generating function evaluations.
 
 % ====================================================================
 \section{Optimal Position Sizing}
@@ -640,26 +602,133 @@ The framework provides practical tools for DeFi participants to optimize positio
 
 \appendix
 
+\section{Characteristic Function Solutions}
+\label{sec:characteristic_function}
+
+\subsection{Characteristic Function Formulation}
+
+As an alternative to the moment generating function analysis presented in the main text, the first hitting time $\tau$ can be characterized through its characteristic function. For completeness, we present the characteristic function formulation and its associated Riccati system.
+
+The characteristic function is defined as:
+\begin{equation}
+\varphi(s; h_0, \lambda_{X0}, \lambda_{Y0}) = \mathbb{E}[e^{is\tau} \mid h(0) = h_0, \lambda_X(0) = \lambda_{X0}, \lambda_Y(0) = \lambda_{Y0}]
+\end{equation}
+
+Under the exponential-affine ansatz:
+\begin{equation}
+\varphi(h, \lambda_X, \lambda_Y) = \exp\!\left( i s A_{\text{cf}}(h) + B_{\text{cf}}(h)\,\lambda_X + C_{\text{cf}}(h)\,\lambda_Y \right)
+\end{equation}
+
+with boundary conditions $A_{\text{cf}}(0) = B_{\text{cf}}(0) = C_{\text{cf}}(0) = 0$.
+
+\begin{proposition}[Characteristic Function Riccati System]
+\label{prop:cf_riccati}
+The functions $A_{\text{cf}}(h)$, $B_{\text{cf}}(h)$ and $C_{\text{cf}}(h)$ solve the nonlinear second-order Riccati system:
+\[
+\begin{aligned}
+& \mu_h (i s A'_{\text{cf}}(h)) 
++ \frac{1}{2}\sigma_h^2 \left( i s A''_{\text{cf}}(h) + (i s A'_{\text{cf}}(h))^2 \right)
++ \beta_X \mu_X^\lambda B_{\text{cf}}(h) 
++ \beta_Y \mu_Y^\lambda C_{\text{cf}}(h) 
+= - i s, \\[1.2ex]
+& \mu_h B'_{\text{cf}}(h) 
++ \frac{1}{2}\sigma_h^2 \left( B''_{\text{cf}}(h) + 2 i s A'_{\text{cf}}(h) B'_{\text{cf}}(h) + (B'_{\text{cf}}(h))^2 \right)
+- \beta_X B_{\text{cf}}(h) \\
+&\quad + \left( \frac{\eta_X}{\eta_X + i s A'_{\text{cf}}(h)} 
+\exp\!\left( i s A'_{\text{cf}}(h)\delta_X - \alpha_{XX} B_{\text{cf}}(h) - \alpha_{XY} C_{\text{cf}}(h) \right) - 1 \right) 
+= 0, \\[1.2ex]
+& \mu_h C'_{\text{cf}}(h) 
++ \frac{1}{2}\sigma_h^2 \left( C''_{\text{cf}}(h) + 2 i s A'_{\text{cf}}(h) C'_{\text{cf}}(h) + (C'_{\text{cf}}(h))^2 \right)
+- \beta_Y C_{\text{cf}}(h) \\
+&\quad + \left( \frac{\eta_Y}{\eta_Y - i s A'_{\text{cf}}(h)} 
+\exp\!\left( -i s A'_{\text{cf}}(h)\delta_Y - \alpha_{YY} C_{\text{cf}}(h) - \alpha_{YX} B_{\text{cf}}(h) \right) - 1 \right) 
+= 0.
+\end{aligned}
+\]
+\end{proposition}
+
+\subsection{Gil-Pelaez Inversion Formula}
+
+The distribution function can be recovered from the characteristic function using:
+\begin{proposition}[Gil-Pelaez Inversion]
+\label{prop:gilpelaez}
+The cumulative distribution function of the first hitting time is:
+\begin{equation}
+F(T) = \P(\tau \leq T) = \frac{1}{2} - \frac{1}{\pi} \int_0^{\infty} \text{Im}\left[\frac{e^{-i\omega T} \varphi(\omega)}{\omega}\right] \diff\omega
+\end{equation}
+\end{proposition}
+
+\subsection{12D First-Order System for Characteristic Function}
+
+The characteristic function approach requires handling complex-valued functions, necessitating a 12-dimensional real system.
+
+\begin{proposition}[Transformation to 12D First-Order System]
+\label{prop:12d_transform_cf}
+The nonlinear second-order Riccati system for $A_{\text{cf}}(h)$, $B_{\text{cf}}(h)$, and $C_{\text{cf}}(h)$ in the characteristic function formulation can be transformed into a first-order system in twelve real variables.
+\end{proposition}
+
+\begin{proof}
+The complex-valued functions $A_{\text{cf}}(h), B_{\text{cf}}(h), C_{\text{cf}}(h)$ are governed by
+\[
+\begin{aligned}
+& \mu_h (i s A'_{\text{cf}}) 
++ \tfrac{1}{2}\sigma_h^2 \big( i s A''_{\text{cf}} + (i s A'_{\text{cf}})^2 \big)
++ \beta_X \mu_X^\lambda B_{\text{cf}} 
++ \beta_Y \mu_Y^\lambda C_{\text{cf}} 
+= - i s, \\[0.8ex]
+& \mu_h B'_{\text{cf}} 
++ \tfrac{1}{2}\sigma_h^2 \big( B''_{\text{cf}} + 2 i s A'_{\text{cf}} B'_{\text{cf}} + (B'_{\text{cf}})^2 \big)
+- \beta_X B_{\text{cf}} 
++ \Big( \tfrac{\eta_X}{\eta_X + i s A'_{\text{cf}}} 
+\exp\!\left( i s A'_{\text{cf}} \delta_X - \alpha_{XX} B_{\text{cf}} - \alpha_{XY} C_{\text{cf}} \right) - 1 \Big) 
+= 0, \\[0.8ex]
+& \mu_h C'_{\text{cf}} 
++ \tfrac{1}{2}\sigma_h^2 \big( C''_{\text{cf}} + 2 i s A'_{\text{cf}} C'_{\text{cf}} + (C'_{\text{cf}})^2 \big)
+- \beta_Y C_{\text{cf}} 
++ \Big( \tfrac{\eta_Y}{\eta_Y - i s A'_{\text{cf}}} 
+\exp\!\left( -i s A'_{\text{cf}} \delta_Y - \alpha_{YY} C_{\text{cf}} - \alpha_{YX} B_{\text{cf}} \right) - 1 \Big) 
+= 0.
+\end{aligned}
+\]
+
+Splitting into real and imaginary parts:
+\[
+A_{\text{cf}} = A_{\text{cf},r} + i A_{\text{cf},i}, \quad 
+B_{\text{cf}} = B_{\text{cf},r} + i B_{\text{cf},i}, \quad 
+C_{\text{cf}} = C_{\text{cf},r} + i C_{\text{cf},i}.
+\]
+
+The 12-dimensional state vector becomes:
+\[
+\mathbf{y}_{\text{cf}} = (A_{\text{cf},r}, A'_{\text{cf},r}, B_{\text{cf},r}, B'_{\text{cf},r}, C_{\text{cf},r}, C'_{\text{cf},r}, A_{\text{cf},i}, A'_{\text{cf},i}, B_{\text{cf},i}, B'_{\text{cf},i}, C_{\text{cf},i}, C'_{\text{cf},i}).
+\]
+
+The first-order system follows by separating real and imaginary components of the second-order derivatives, with boundary conditions
+\[
+A_{\text{cf},r}(0)=A_{\text{cf},i}(0)=B_{\text{cf},r}(0)=B_{\text{cf},i}(0)=C_{\text{cf},r}(0)=C_{\text{cf},i}(0)=0.
+\]
+\end{proof}
+
 \section{Mathematical Proofs}
 \label{sec:proofs}
 
-\begin{delayedproof}{prop:riccati}
-We apply the generator $\mathcal{L}$ to the ansatz. Differentiation with respect to $h$ yields
+\begin{delayedproof}{prop:cf_riccati}
+We apply the generator $\mathcal{L}$ to the characteristic function ansatz. Differentiation with respect to $h$ yields
 \[
 \partial_h \varphi 
-= \left( i s A'(h) + B'(h)\,\lambda_X + C'(h)\,\lambda_Y \right)\,\varphi,
+= \left( i s A'_{\text{cf}}(h) + B'_{\text{cf}}(h)\,\lambda_X + C'_{\text{cf}}(h)\,\lambda_Y \right)\,\varphi,
 \]
 and a second derivative gives
 \[
 \partial_h^2 \varphi 
-= \left( i s A''(h) + B''(h)\,\lambda_X + C''(h)\,\lambda_Y 
-+ \left(i s A'(h) + B'(h)\,\lambda_X + C'(h)\,\lambda_Y\right)^2 \right)\,\varphi.
+= \left( i s A''_{\text{cf}}(h) + B''_{\text{cf}}(h)\,\lambda_X + C''_{\text{cf}}(h)\,\lambda_Y 
++ \left(i s A'_{\text{cf}}(h) + B'_{\text{cf}}(h)\,\lambda_X + C'_{\text{cf}}(h)\,\lambda_Y\right)^2 \right)\,\varphi.
 \]
 For the intensity components we obtain
 \[
-\partial_{\lambda_X}\varphi = B(h)\,\varphi, 
+\partial_{\lambda_X}\varphi = B_{\text{cf}}(h)\,\varphi, 
 \qquad 
-\partial_{\lambda_Y}\varphi = C(h)\,\varphi.
+\partial_{\lambda_Y}\varphi = C_{\text{cf}}(h)\,\varphi.
 \]
 
 Substituting into the generator,
@@ -673,30 +742,72 @@ Substituting into the generator,
 &\quad + \lambda_X(f_X - 1)\,\varphi + \lambda_Y(f_Y - 1)\,\varphi,
 \end{aligned}
 \]
-where the jump transforms associated with the shifted exponential jump sizes are
+where the characteristic functions of the jump sizes are
 \[
 \begin{aligned}
-f_X &= \frac{\eta_X}{\eta_X + i s A'(h)} 
-\exp\!\left( i s A'(h)\delta_X - \alpha_{XX} B(h) - \alpha_{XY} C(h) \right), \\
-f_Y &= \frac{\eta_Y}{\eta_Y - i s A'(h)} 
-\exp\!\left( -i s A'(h)\delta_Y - \alpha_{YY} C(h) - \alpha_{YX} B(h) \right).
+f_X &= \frac{\eta_X}{\eta_X + i s A'_{\text{cf}}(h)} 
+\exp\!\left( i s A'_{\text{cf}}(h)\delta_X - \alpha_{XX} B_{\text{cf}}(h) - \alpha_{XY} C_{\text{cf}}(h) \right), \\
+f_Y &= \frac{\eta_Y}{\eta_Y - i s A'_{\text{cf}}(h)} 
+\exp\!\left( -i s A'_{\text{cf}}(h)\delta_Y - \alpha_{YY} C_{\text{cf}}(h) - \alpha_{YX} B_{\text{cf}}(h) \right).
 \end{aligned}
 \]
 
-Dividing by $\varphi$, the coefficients of $1$, $\lambda_X$, and $\lambda_Y$ must separately satisfy the backward equation $\mathcal{L}\varphi = -i s \varphi$. Collecting the constant term gives the first equation in the claimed system. Collecting the $\lambda_X$ and $\lambda_Y$ terms respectively yields the second and third equations. The boundary conditions follow from the requirement $\varphi(0, \lambda_X, \lambda_Y) = 1$, which forces $A(0)=B(0)=C(0)=0$.
-
-This completes the proof.
+Dividing by $\varphi$, the coefficients must satisfy $\mathcal{L}\varphi = -i s \varphi$. The boundary conditions follow from $\varphi(0, \lambda_X, \lambda_Y) = 1$.
 \end{delayedproof}
 
-\begin{delayedproof}{prop:validity}
+\begin{delayedproof}{prop:mgf_riccati}
+We apply the generator $\mathcal{L}$ to the moment generating function ansatz. Differentiation with respect to $h$ yields
+\[
+\partial_h M 
+= \left( s A'(h) + B'(h)\,\lambda_X + C'(h)\,\lambda_Y \right)\,M,
+\]
+and the second derivative gives
+\[
+\partial_h^2 M 
+= \left( s A''(h) + B''(h)\,\lambda_X + C''(h)\,\lambda_Y 
++ \left(s A'(h) + B'(h)\,\lambda_X + C'(h)\,\lambda_Y\right)^2 \right)\,M.
+\]
+For the intensity components we obtain
+\[
+\partial_{\lambda_X}M = B(h)\,M, 
+\qquad 
+\partial_{\lambda_Y}M = C(h)\,M.
+\]
+
+Substituting into the generator,
+\[
+\begin{aligned}
+\mathcal{L}M &= 
+\mu_h \partial_h M 
++ \frac{1}{2}\sigma_h^2 \partial_h^2 M
++ \beta_X(\mu_X^\lambda - \lambda_X)\,\partial_{\lambda_X}M
++ \beta_Y(\mu_Y^\lambda - \lambda_Y)\,\partial_{\lambda_Y}M \\
+&\quad + \lambda_X(g_X - 1)\,M + \lambda_Y(g_Y - 1)\,M,
+\end{aligned}
+\]
+where the moment generating functions of the jump sizes are
+\[
+\begin{aligned}
+g_X &= \frac{\eta_X}{\eta_X - s A'(h)} 
+\exp\!\left( s A'(h)\delta_X + \alpha_{XX} B(h) + \alpha_{XY} C(h) \right), \\
+g_Y &= \frac{\eta_Y}{\eta_Y + s A'(h)} 
+\exp\!\left( -s A'(h)\delta_Y + \alpha_{YY} C(h) + \alpha_{YX} B(h) \right).
+\end{aligned}
+\]
+
+Dividing by $M$, the coefficients of $1$, $\lambda_X$, and $\lambda_Y$ must separately satisfy the backward equation $\mathcal{L}M = s M$. Collecting terms yields the claimed Riccati system. The boundary conditions follow from $M(0, \lambda_X, \lambda_Y) = 1$.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:mgf_validity}
 The validity condition ensures that the moment generating functions of the jump sizes remain finite. For shifted exponential distributions:
 \begin{align}
-\int e^{-sz} f_X(z) \diff z = \frac{\eta_X}{\eta_X + s} e^{-s\delta_X} \quad &\text{for } s > -\eta_X \\
-\int e^{sz} f_Y(z) \diff z = \frac{\eta_Y}{\eta_Y - s} e^{s\delta_Y} \quad &\text{for } s < \eta_Y
+\int e^{sz} f_X(z) \diff z = \frac{\eta_X}{\eta_X - s} e^{s\delta_X} \quad &\text{for } s < \eta_X \\
+\int e^{-sz} f_Y(z) \diff z = \frac{\eta_Y}{\eta_Y + s} e^{-s\delta_Y} \quad &\text{for } s > -\eta_Y
 \end{align}
 
-Since $s = \pard{\psi}{h}$ in the Riccati equations, the condition $\pard{\psi}{h} \in (-\eta_X, \eta_Y)$ ensures convergence.
+Since $s A'(h)$ appears in the Riccati equations, the condition $s A'(h) \in (-\eta_X, \eta_Y)$ ensures convergence of both moment generating functions.
 \end{delayedproof}
+
 
 \begin{delayedproof}{prop:gilpelaez}
 The Gil-Pelaez inversion formula follows from the relationship between characteristic functions and distribution functions. For any random variable $X$ with characteristic function $\varphi(t) = \E[e^{itX}]$:
@@ -704,7 +815,7 @@ The Gil-Pelaez inversion formula follows from the relationship between character
 F(x) = \frac{1}{2} - \frac{1}{\pi} \int_0^{\infty} \frac{\text{Im}[e^{-itx}\varphi(t)]}{t} \diff t
 \end{equation}
 
-This applies directly to the first hitting time $\tau$ with characteristic function $\varphi(\omega) = u(h_0,\lambda_{X0},\lambda_{Y0};i\omega)$.
+This applies directly to the first hitting time $\tau$ with characteristic function derived from the exponential-affine ansatz.
 \end{delayedproof}
 
 \begin{delayedproof}{prop:pot}

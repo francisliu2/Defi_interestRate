@@ -11,7 +11,8 @@
       "Bash(pdflatex:*)",
       "Bash(python3:*)",
       "Bash(ls:*)",
-      "Bash(pip3 list:*)"
+      "Bash(pip3 list:*)",
+      "Bash(python:*)"
     ],
     "deny": []
   }
