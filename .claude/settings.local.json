@@ -12,7 +12,8 @@
       "Bash(python3:*)",
       "Bash(ls:*)",
       "Bash(pip3 list:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(/dev/null)"
     ],
     "deny": []
   }

@@ -7,23 +7,24 @@ risk models with bivariate Hawkes jump-diffusion processes.
 
 The implementation includes:
 1. 12D complex-valued ODE system for CF Riccati equations
-2. Integration with Gil-Pelaez inversion algorithm for distribution recovery  
+2. Integration with Gil-Pelaez inversion algorithm for distribution recovery
 3. Integration with existing parameter structures and utilities
 
 Author: [Author Name]
 Date: 2025
 """
 
+import warnings
+from functools import lru_cache
+from typing import Dict, Optional
+
 import numpy as np
 from scipy.integrate import solve_ivp
-import warnings
-from typing import Dict, Optional
-from functools import lru_cache
 
 # Import existing modules for reuse
 from hawkes_process import HawkesParameters
-from utils import save_results, create_summary_statistics
 from inversion_algorithms import GilPelaezInversion
+from utils import create_summary_statistics, save_results
 
 
 class CFFirstHittingTime:
@@ -53,16 +54,20 @@ class CFFirstHittingTime:
             raise ValueError("Jump intensity parameters eta_X, eta_Y must be positive")
 
         if self.params.beta_X <= 0 or self.params.beta_Y <= 0:
-            raise ValueError("Mean reversion parameters beta_X, beta_Y must be positive")
+            raise ValueError(
+                "Mean reversion parameters beta_X, beta_Y must be positive"
+            )
 
         # Check stability using existing validation pattern
         spectral_radius = max(
             abs(self.params.alpha_XX / self.params.beta_X),
-            abs(self.params.alpha_YY / self.params.beta_Y)
+            abs(self.params.alpha_YY / self.params.beta_Y),
         )
 
         if spectral_radius >= 1.0:
-            warnings.warn(f"Hawkes process may be unstable: spectral radius = {spectral_radius:.3f}")
+            warnings.warn(
+                f"Hawkes process may be unstable: spectral radius = {spectral_radius:.3f}"
+            )
 
     def ode_system_real(self, h: float, y: np.ndarray, s: float) -> np.ndarray:
         """
@@ -90,18 +95,31 @@ class CFFirstHittingTime:
         i_s = 1j * s
 
         # Compute drift of health factor from existing parameters
-        mu_h = self.params.mu_X - self.params.mu_Y  # Drift difference
+        mu_h = (
+            self.params.mu_X
+            - self.params.mu_Y
+            - 0.5
+            * (
+                self.params.sigma_X**2
+                + self.params.sigma_Y**2
+                - 2 * self.params.rho * self.params.sigma_X * self.params.sigma_Y
+            )
+        )
 
         # Avoid division by zero
-        denom_X = self.params.eta_X + i_s * A_p + 1e-10
-        denom_Y = self.params.eta_Y - i_s * A_p + 1e-10
+        denom_X = self.params.eta_X - i_s * A_p + 1e-10
+        denom_Y = self.params.eta_Y + i_s * A_p + 1e-10
 
         # Characteristic functions for jump sizes
         f_X = (self.params.eta_X / denom_X) * np.exp(
-            i_s * A_p * self.params.delta_X - self.params.alpha_XX * B - self.params.alpha_XY * C
+            i_s * A_p * self.params.delta_X
+            + self.params.alpha_XX * B
+            + self.params.alpha_XY * C
         )
         f_Y = (self.params.eta_Y / denom_Y) * np.exp(
-            -i_s * A_p * self.params.delta_Y - self.params.alpha_YY * C - self.params.alpha_YX * B
+            -i_s * A_p * self.params.delta_Y
+            + self.params.alpha_YY * C
+            + self.params.alpha_YX * B
         )
 
         # Second derivatives from the Riccati system
@@ -109,8 +127,16 @@ class CFFirstHittingTime:
             # Use L'Hôpital's rule for s→0
             A_pp = (
                 -2 * mu_h * A_p
-                - 2 * self.params.beta_X * self.params.mu_X_lambda * B / self.params.sigma_h**2
-                - 2 * self.params.beta_Y * self.params.mu_Y_lambda * C / self.params.sigma_h**2
+                - 2
+                * self.params.beta_X
+                * self.params.mu_X_lambda
+                * B
+                / self.params.sigma_h**2
+                - 2
+                * self.params.beta_Y
+                * self.params.mu_Y_lambda
+                * C
+                / self.params.sigma_h**2
                 - 2j
             ) / self.params.sigma_h**2
         else:
@@ -154,9 +180,15 @@ class CFFirstHittingTime:
         return dy
 
     @lru_cache(maxsize=128)
-    def characteristic_function(self, s: float, h0: float, lambda_X0: float, 
-                               lambda_Y0: float, rtol: float = 1e-8, 
-                               atol: float = 1e-10) -> complex:
+    def characteristic_function(
+        self,
+        s: float,
+        h0: float,
+        lambda_X0: float,
+        lambda_Y0: float,
+        rtol: float = 1e-8,
+        atol: float = 1e-10,
+    ) -> complex:
         """
         Compute the characteristic function φ(s) = E[exp(isτ)].
 
@@ -173,19 +205,19 @@ class CFFirstHittingTime:
         """
         # Initial conditions: all derivatives set to small non-zero values
         y0 = np.zeros(12)
-        y0[1] = 1e-6  # ReA'
-        y0[3] = 1e-6  # ReB'
-        y0[5] = 1e-6  # ReC'
+        y0[1] = 1e-10  # ReA'
+        y0[3] = 0  # ReB'
+        y0[5] = 0  # ReC'
 
         try:
             sol = solve_ivp(
                 fun=lambda h, y: self.ode_system_real(h, y, s),
                 t_span=[0, h0],
                 y0=y0,
-                method="RK45",
+                method="BDF",
                 rtol=rtol,
                 atol=atol,
-                max_step=min(h0/100, 0.1)
+                max_step=min(h0 / 100, 0.1),
             )
 
             if not sol.success:
@@ -200,7 +232,7 @@ class CFFirstHittingTime:
             C = ReC + 1j * ImC
 
             # Compute characteristic function
-            phi_value = np.exp(-1j * s * A - B * lambda_X0 - C * lambda_Y0)
+            phi_value = np.exp(1j * s * A + B * lambda_X0 + C * lambda_Y0)
             return phi_value
 
         except Exception as e:
@@ -208,16 +240,23 @@ class CFFirstHittingTime:
             return complex(np.nan)
 
     @lru_cache(maxsize=32)
-    def batch_characteristic_function(self, s_tuple: tuple, h0: float, 
-                                     lambda_X0: float, lambda_Y0: float,
-                                     rtol: float = 1e-8) -> tuple:
+    def batch_characteristic_function(
+        self,
+        s_tuple: tuple,
+        h0: float,
+        lambda_X0: float,
+        lambda_Y0: float,
+        rtol: float = 1e-8,
+    ) -> tuple:
         """Batch computation of CF for multiple s values (cached version)."""
         s_array = np.array(s_tuple)
         phi_array = np.zeros(len(s_array), dtype=complex)
 
         for i, s in enumerate(s_array):
             try:
-                phi_array[i] = self.characteristic_function(s, h0, lambda_X0, lambda_Y0, rtol)
+                phi_array[i] = self.characteristic_function(
+                    s, h0, lambda_X0, lambda_Y0, rtol
+                )
             except:
                 phi_array[i] = complex(np.nan)
 
@@ -231,12 +270,13 @@ class CFFirstHittingTime:
     def cache_info(self) -> Dict:
         """Get cache statistics for all cached methods."""
         return {
-            'characteristic_function': self.characteristic_function.cache_info(),
-            'batch_characteristic_function': self.batch_characteristic_function.cache_info()
+            "characteristic_function": self.characteristic_function.cache_info(),
+            "batch_characteristic_function": self.batch_characteristic_function.cache_info(),
         }
 
-    def validate_solution(self, s: float, h0: float, lambda_X0: float, 
-                         lambda_Y0: float) -> Dict:
+    def validate_solution(
+        self, s: float, h0: float, lambda_X0: float, lambda_Y0: float
+    ) -> Dict:
         """
         Validate the CF solution by checking basic properties.
 
@@ -269,11 +309,7 @@ class CFFirstHittingTime:
                         "error": f"φ(0) normalization failed: |φ(0)| = {abs(phi_0):.8f}",
                     }
 
-            return {
-                "valid": True,
-                "phi_value": phi,
-                "phi_magnitude": abs(phi)
-            }
+            return {"valid": True, "phi_value": phi, "phi_magnitude": abs(phi)}
 
         except Exception as e:
             return {"valid": False, "error": str(e)}
@@ -282,7 +318,7 @@ class CFFirstHittingTime:
 class FirstHittingTimeDistribution:
     """
     Complete first hitting time distribution computation using CF and Gil-Pelaez inversion.
-    
+
     This class provides the interface between the CF solver and the Gil-Pelaez inversion
     algorithm to compute CDFs and PDFs of first hitting times.
     """
@@ -299,8 +335,15 @@ class FirstHittingTimeDistribution:
         self.gil_pelaez = GilPelaezInversion(adaptive_params=adaptive_params)
 
     @lru_cache(maxsize=256)
-    def gil_pelaez_cdf(self, T: float, h0: float, lambda_X0: float, lambda_Y0: float,
-                      s_max: Optional[float] = None, n_points: Optional[int] = None) -> float:
+    def gil_pelaez_cdf(
+        self,
+        T: float,
+        h0: float,
+        lambda_X0: float,
+        lambda_Y0: float,
+        s_max: Optional[float] = None,
+        n_points: Optional[int] = None,
+    ) -> float:
         """
         Compute first hitting time CDF P(τ ≤ T) using CF and Gil-Pelaez inversion.
 
@@ -315,10 +358,13 @@ class FirstHittingTimeDistribution:
         Returns:
             CDF value at time T
         """
+
         def char_function(s):
             """Characteristic function φ(s)"""
             try:
-                phi = self.cf_solver.characteristic_function(s, h0, lambda_X0, lambda_Y0)
+                phi = self.cf_solver.characteristic_function(
+                    s, h0, lambda_X0, lambda_Y0
+                )
                 return phi if np.isfinite(phi) else complex(0.0)
             except:
                 return complex(0.0)
@@ -329,8 +375,9 @@ class FirstHittingTimeDistribution:
         # Ensure CDF is in [0,1]
         return np.clip(cdf_value, 0.0, 1.0)
 
-    def first_passage_pdf(self, T: float, h0: float, lambda_X0: float, 
-                         lambda_Y0: float, dT: float = 1e-4) -> float:
+    def first_passage_pdf(
+        self, T: float, h0: float, lambda_X0: float, lambda_Y0: float, dT: float = 1e-4
+    ) -> float:
         """
         Compute first hitting time PDF using numerical differentiation.
 
@@ -351,19 +398,21 @@ class FirstHittingTimeDistribution:
             return (cdf_T - cdf_0) / dT
         else:
             # Use central difference
-            cdf_plus = self.gil_pelaez_cdf(T + dT/2, h0, lambda_X0, lambda_Y0)
-            cdf_minus = self.gil_pelaez_cdf(T - dT/2, h0, lambda_X0, lambda_Y0)
+            cdf_plus = self.gil_pelaez_cdf(T + dT / 2, h0, lambda_X0, lambda_Y0)
+            cdf_minus = self.gil_pelaez_cdf(T - dT / 2, h0, lambda_X0, lambda_Y0)
             return (cdf_plus - cdf_minus) / dT
 
     @lru_cache(maxsize=256)
-    def survival_function(self, T: float, h0: float, lambda_X0: float, lambda_Y0: float) -> float:
+    def survival_function(
+        self, T: float, h0: float, lambda_X0: float, lambda_Y0: float
+    ) -> float:
         """
         Compute survival function P(τ > T) = 1 - F(T).
 
         Args:
             T: Evaluation time
             h0: Initial health factor value
-            lambda_X0: Initial X intensity  
+            lambda_X0: Initial X intensity
             lambda_Y0: Initial Y intensity
 
         Returns:
@@ -380,9 +429,9 @@ class FirstHittingTimeDistribution:
     def cache_info(self) -> Dict:
         """Get cache statistics for all cached methods."""
         return {
-            'gil_pelaez_cdf': self.gil_pelaez_cdf.cache_info(),
-            'survival_function': self.survival_function.cache_info(),
-            'cf_solver': self.cf_solver.cache_info()
+            "gil_pelaez_cdf": self.gil_pelaez_cdf.cache_info(),
+            "survival_function": self.survival_function.cache_info(),
+            "cf_solver": self.cf_solver.cache_info(),
         }
 
 
@@ -392,30 +441,26 @@ def create_example_parameters() -> HawkesParameters:
         # Health factor and diffusion
         h0=1.25,
         sigma_h=0.25,
-
-        # Drift parameters  
-        mu_X=0.04,          # collateral drift
-        mu_Y=0.02,          # borrowed asset drift
-
+        # Drift parameters
+        mu_X=0.04,  # collateral drift
+        mu_Y=0.02,  # borrowed asset drift
         # Jump size parameters
-        eta_X=5.0,          # jump rate
+        eta_X=5.0,  # jump rate
         eta_Y=5.0,
-        delta_X=0.05,       # minimum jump size
+        delta_X=0.05,  # minimum jump size
         delta_Y=0.05,
-
         # Hawkes intensity parameters
-        mu_X_lambda=0.1,    # baseline intensity
+        mu_X_lambda=0.1,  # baseline intensity
         mu_Y_lambda=0.1,
-        beta_X=2.0,         # mean reversion
+        beta_X=2.0,  # mean reversion
         beta_Y=2.0,
-        alpha_XX=0.3,       # self-excitation
-        alpha_XY=0.1,       # cross-excitation
+        alpha_XX=0.3,  # self-excitation
+        alpha_XY=0.1,  # cross-excitation
         alpha_YX=0.1,
         alpha_YY=0.3,
-
         # Initial intensities
         lambda_X0=0.1,
-        lambda_Y0=0.1
+        lambda_Y0=0.1,
     )
 
 
@@ -445,10 +490,13 @@ def validate_implementation():
         phi_val = cf_solver.characteristic_function(s, h0, lambda_X0, lambda_Y0)
         if np.isfinite(phi_val):
             print(f"φ({s}) = {phi_val:.6f}")
-            results[f'phi_{s}'] = {'real': float(np.real(phi_val)), 'imag': float(np.imag(phi_val))}
+            results[f"phi_{s}"] = {
+                "real": float(np.real(phi_val)),
+                "imag": float(np.imag(phi_val)),
+            }
         else:
             print(f"φ({s}) = Failed")
-            results[f'phi_{s}'] = None
+            results[f"phi_{s}"] = None
 
     # Test distribution computation
     print("\nTesting distribution computation...")
@@ -461,27 +509,31 @@ def validate_implementation():
         cdf_val = dist_solver.gil_pelaez_cdf(T, h0, lambda_X0, lambda_Y0)
         pdf_val = dist_solver.first_passage_pdf(T, h0, lambda_X0, lambda_Y0)
         print(f"T={T}: F(T)={cdf_val:.6f}, f(T)={pdf_val:.6f}")
-        distribution_results[f'T_{T}'] = {'cdf': cdf_val, 'pdf': pdf_val}
+        distribution_results[f"T_{T}"] = {"cdf": cdf_val, "pdf": pdf_val}
 
     # Create summary statistics
-    cdf_values = [distribution_results[key]['cdf'] for key in distribution_results.keys()]
+    cdf_values = [
+        distribution_results[key]["cdf"] for key in distribution_results.keys()
+    ]
     cdf_stats = create_summary_statistics(np.array(cdf_values), "CDF_values")
 
     # Save results using existing utility
     all_results = {
-        'parameters': parameters.__dict__,
-        'cf_values': results,
-        'distribution_values': distribution_results,
-        'summary_statistics': cdf_stats,
-        'cache_info': {
-            'cf_solver': cf_solver.cache_info(),
-            'dist_solver': dist_solver.cache_info()
-        }
+        "parameters": parameters.__dict__,
+        "cf_values": results,
+        "distribution_values": distribution_results,
+        "summary_statistics": cdf_stats,
+        "cache_info": {
+            "cf_solver": cf_solver.cache_info(),
+            "dist_solver": dist_solver.cache_info(),
+        },
     }
 
     try:
-        save_results(all_results, 'results/cf_validation_results')
-        print("Validation completed. Results saved to results/cf_validation_results.yaml")
+        save_results(all_results, "results/cf_validation_results")
+        print(
+            "Validation completed. Results saved to results/cf_validation_results.yaml"
+        )
     except Exception as e:
         print(f"Validation completed. Could not save results: {e}")
 

@@ -1,0 +1,819 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+
+% ==== PACKAGES ====
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage[longnamesfirst,sort&compress]{natbib}
+\usepackage{graphicx}
+\usepackage{algorithm, algorithmic}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+% Citation punctuation style matching original
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+% ==== CUSTOM COMMANDS ====
+\newcommand{\E}{\mathbb{E}}
+
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\diff}{\mathrm{d}}
+\newcommand{\pard}[2]{\frac{\partial #1}{\partial #2}}
+
+% Theorem environments
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{remark}{Remark}[section]
+
+% Proof environment for appendix
+\newenvironment{delayedproof}[1]
+ {\begin{proof}[\raisedtarget{#1}Proof of \Cref{#1}]}
+ {\end{proof}}
+\newcommand{\raisedtarget}[1]{%
+  \raisebox{\fontcharht\font`P}[0pt][0pt]{\hypertarget{#1}{}}%
+}
+\newcommand{\proofref}[1]{\hyperlink{#1}{proof}}
+
+\title{Optimal Long-Short Positioning on DeFi Lending Platforms: A Hawkes Jump-Diffusion Approach to Liquidation Risk}
+\author{[Author Names]}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We develop an optimal allocation framework for long-short cryptocurrency positions on decentralized finance (DeFi) lending platforms such as AAVE and Compound. Our approach addresses the challenge of liquidation risk through a bivariate geometric Brownian motion model with cross-exciting Hawkes jump processes that capture wrong-way risk. The model features downward jumps in the collateral asset and upward jumps in the borrowed asset, both exhibiting clustering and cross-excitation patterns. Using an exponential-affine ansatz, we derive semi-analytical expressions for first hitting time distributions and optimize position weights by maximizing an objective function that balances expected returns, volatility, and liquidation probability within a given horizon. We present a comprehensive calibration scheme using peak-over-threshold methods and maximum likelihood estimation for the Hawkes parameters.
+
+\textbf{Keywords:} DeFi, long-short strategies, liquidation risk, Hawkes processes, first passage times, cryptocurrency
+\end{abstract}
+
+% ====================================================================
+\section{Introduction}
+% ====================================================================
+
+AAVE and Compound are decentralized finance (DeFi) platforms originally designed to facilitate borrowing and lending of crypto assets. These platforms have become dominant players in the DeFi ecosystem, with total value locked (TVL) reaching over \$10 billion across both platforms, showcasing their significant influence and adoption in the cryptocurrency market. Although initially developed for decentralized lending, their functionalities are surprisingly well-suited for implementing sophisticated long-short portfolio strategies that can generate alpha while managing risk exposure across different cryptocurrency assets.
+
+The appeal of constructing long-short positions on these platforms stems from two core architectural features that traditional centralized exchanges cannot offer. \textbf{Interest-bearing collateral} allows deposited assets to simultaneously earn yield and provide borrowing power, enabling efficient capital utilization. Users can maintain long positions in assets they expect to appreciate while using those same assets as collateral to borrow other assets for short positions. This borrowed capital can be redeployed to construct market-neutral strategies or to diversify into other investments. Beyond price appreciation of long-held assets, users benefit from passive income as collateralized assets accrue interest via interest-bearing tokens like \texttt{aTokens} in AAVE or \texttt{cTokens} in Compound. This dual functionality allows users to simultaneously enhance their portfolio's earning potential while maintaining desired exposure patterns.
+
+\textbf{Decentralized custody and execution} represents a compelling advantage over traditional centralized exchanges for long-short strategies. Unlike centralized platforms that require users to trust custodial services and face counterparty risk, DeFi platforms execute trades and manage positions through transparent smart contracts on public blockchains. This eliminates custodial risk, provides 24/7 market access without traditional banking intermediaries, and offers censorship resistance for global participants. Additionally, the programmable nature of smart contracts enables automated position management and liquidation protection strategies that would be impossible or expensive to implement through traditional brokers.
+
+However, DeFi long-short positions face several critical constraints that traditional portfolio theory fails to address. \textbf{Overcollateralization requirements} typically range from 120\% to 150\% of loan value, depending on the collateral asset, with more volatile assets facing larger haircuts. This creates a fundamental trade-off between potential returns and borrowing capacity, as research has shown that volatility is positively correlated with price drift in cryptocurrency markets, meaning the most profitable assets often provide the least borrowing power. \textbf{Liquidation risk} becomes particularly acute given the extreme volatility of cryptocurrency markets, where rapid price movements can trigger forced position closure with significant penalties ranging from 5\% to 12.5\%. \textbf{Interest rate risk} adds complexity as borrowing costs fluctuate based on platform utilization, potentially eroding profits when demand for borrowing increases.
+
+Research on leverage constraints shows their significant impact on asset pricing and portfolio performance. \citet{FrazziniPedersen2014} demonstrate that leverage constraints help explain empirical failures of traditional asset pricing models. The poor out-of-sample performance of standard mean-variance optimization is well documented \citep{FrostSavarino1986, BestGrauer1991, ChopraZiemba1993}, with \citet{Michaud1989} describing mean estimation error as "error-maximization."
+
+The most critical challenge in DeFi long-short positioning is the prevalence of \textbf{wrong-way risk}, where adverse market movements systematically increase precisely when positions are most vulnerable to liquidation. This manifests in several interconnected ways that traditional risk models fail to capture. First, \textbf{collateral wrong-way jumps} (downward jumps) reduce borrowing capacity exactly when market stress increases the likelihood of further adverse jumps, creating a vicious cycle where portfolio health deteriorates faster than linear models would predict. Second, \textbf{borrowed asset wrong-way jumps} (upward jumps) increase debt burden while potentially triggering additional jump clustering through forced buying by other leveraged participants. Finally, \textbf{cross-asset contagion} spreads adverse jump events across seemingly uncorrelated cryptocurrency pairs, as panic selling and liquidation cascades affect the entire ecosystem.
+
+The clustering of extreme events in cryptocurrency markets exacerbates these wrong-way risk dynamics. Periods of high volatility and large price movements exhibit significant persistence, with jump events triggering additional jumps in both the same and related assets. This clustering property, combined with cross-asset contagion effects, creates liquidation risk that far exceeds what independent asset models would suggest. Traditional Value-at-Risk measures fail catastrophically in this environment, as they do not account for the path-dependent evolution of the health factor or the self-reinforcing nature of liquidation events.
+
+While interest rate fluctuations on DeFi platforms represent an important risk factor, they are substantially less critical than wrong-way jump risk for short-to-medium term position management. Interest rate changes require considerable time to materially impact portfolio health factors, as their effects accumulate gradually through compound interest mechanisms. In contrast, wrong-way jump events can trigger immediate liquidation within minutes or hours. For typical long-short holding periods ranging from days to weeks, the cumulative impact of interest rate variations is dominated by the potential for sudden adverse price jumps. Consequently, our modeling framework treats interest rate dynamics as exogenous drift parameters $\mu_X$ and $\mu_Y$ that incorporate both borrowing and lending rates based on users' capital market assumptions, allowing the focus to remain on the more urgent challenge of managing jump clustering and cross-excitation effects.
+
+This paper addresses these challenges by developing an optimization framework for long-short cryptocurrency positions that explicitly incorporates both liquidation timing and wrong-way jump risk. While DeFi platforms support complex multi-asset portfolios that could benefit from unified margin assessment, we focus on the fundamental building block of such strategies: optimal allocation between a single collateral-borrowing pair. This focused approach allows us to capture the essential wrong-way risk dynamics while maintaining analytical tractability through semi-analytical solutions. The resulting framework provides practical tools for DeFi participants constructing the core long-short positions that form the foundation of more complex portfolio strategies.
+
+Our key contributions include:
+\begin{enumerate}
+    \item A bivariate Hawkes jump-diffusion model capturing wrong-way risk through cross-exciting jump processes that reflect the clustering and contagion patterns observed in cryptocurrency markets
+    \item Semi-analytical computation of first hitting time distributions using exponential-affine techniques that account for the path-dependent nature of liquidation risk under jump clustering
+    \item An optimization framework balancing expected returns, volatility, and liquidation probability that explicitly penalizes strategies vulnerable to wrong-way risk scenarios
+    \item A comprehensive calibration scheme using extreme value theory and maximum likelihood methods tailored to the heavy-tailed, clustered nature of cryptocurrency price movements
+\end{enumerate}
+
+% ====================================================================
+\section{Health Factor Derivation and Liquidation Mechanics}
+% ====================================================================
+
+\subsection{Long-Short Position Construction}
+
+Consider a long-short position on a DeFi lending platform where a user deposits collateral asset $X$ and borrows asset $Y$. The position consists of:
+\begin{itemize}
+    \item \textbf{Collateral position}: $w_X$ units of asset $X(t)$ deposited to earn interest
+    \item \textbf{Borrowed position}: $w_Y$ units of asset $Y(t)$ borrowed for short selling
+\end{itemize}
+
+\textbf{Free-float weight construction}: Crucially, we assume the position weights $(w_X, w_Y)$ are fixed at initiation and allowed to float with market movements without continuous rebalancing. This reflects practical trading constraints where continuous portfolio rebalancing is both physically impossible and prohibitively expensive due to transaction costs, gas fees, and slippage on DeFi platforms. Instead, traders typically establish positions and monitor them until either profit-taking, stop-loss triggers, or liquidation events occur. This buy-and-hold approach means the effective portfolio allocation evolves naturally with asset price movements, making the health factor dynamics path-dependent and critically sensitive to adverse price jumps.
+
+The collateral earns interest at rate $r_X$ while the borrowed amount accrues interest at rate $r_Y$, where typically $r_Y > r_X$ to compensate lenders and maintain platform solvency.
+
+\subsection{Health Factor Mechanics}
+
+The \textbf{health factor} serves as the primary risk metric governing liquidation events, defined as:
+\begin{equation}
+H(t) = \frac{\text{Effective Collateral Value}}{\text{Total Debt Value}} = \frac{b_X w_X X(t)}{w_Y Y(t)} \label{eq:health_factor_def}
+\end{equation}
+
+where $b_X \in (0,1)$ is the collateral factor (or loan-to-value ratio) specific to asset $X$. This factor reflects the platform's risk assessment: more volatile assets receive lower collateral factors, typically ranging from 50\% for smaller altcoins to 85\% for major cryptocurrencies like Bitcoin and Ethereum.
+
+The log-health factor $h(t) = \log H(t)$ provides a more convenient framework for analysis:
+\begin{equation}
+h(t) = \log(b_X) + \log(w_X) + \log X(t) - \log(w_Y) - \log Y(t) \label{eq:log_health}
+\end{equation}
+
+For given position weights, the health factor evolution depends solely on the relative price dynamics of the collateral and borrowed assets.
+
+\subsection{Liquidation Trigger and Process}
+
+\textbf{Liquidation threshold}: A position becomes eligible for liquidation when $H(t) \leq 1$, corresponding to $h(t) \leq 0$. This threshold ensures that the debt value does not exceed the effective collateral value, maintaining protocol solvency.
+
+\textbf{Liquidation execution}: When triggered, external liquidators can repay a portion of the debt in exchange for the corresponding collateral at a discount. The liquidation penalty typically ranges from 5\% to 12.5\%, depending on the asset and platform, providing economic incentive for liquidators while penalizing risky positions.
+
+\textbf{Partial vs. full liquidation}: Protocols typically implement partial liquidations, closing only enough of the position to restore the health factor above the safe threshold (usually around 1.05-1.10). This minimizes the penalty paid by borrowers while ensuring adequate collateralization.
+
+\subsection{First Hitting Time Formulation}
+
+The liquidation time is modeled as the first hitting time:
+\begin{equation}
+\tau = \inf\{t \geq 0 : h(t) \leq 0\} = \inf\{t \geq 0 : H(t) \leq 1\} \label{eq:liquidation_time}
+\end{equation}
+
+This formulation transforms the liquidation risk problem into computing the distribution of first passage times for the log-health process $h(t)$. The challenge lies in accurately modeling the joint dynamics of $X(t)$ and $Y(t)$ under the presence of jump clustering and cross-excitation effects that characterize cryptocurrency markets.
+
+% ====================================================================
+\section{Bivariate Hawkes Jump-Diffusion Model}
+% ====================================================================
+
+\subsection{Asset Price Dynamics}
+
+Consider a long-short position consisting of collateral asset $X(t)$ (long position) and borrowed asset $Y(t)$ (short position). We model these prices as correlated geometric Brownian motions with Hawkes-driven jumps:
+
+\begin{align}
+\frac{\diff X(t)}{X(t-)} &= \mu_X \diff t + \sigma_X \diff W_X(t) - (1-e^{-J_X}) \diff N_X(t) \label{eq:X_dynamics}\\
+\frac{\diff Y(t)}{Y(t-)} &= \mu_Y \diff t + \sigma_Y \diff W_Y(t) + (e^{J_Y}-1) \diff N_Y(t) \label{eq:Y_dynamics}
+\end{align}
+
+where $W_X(t)$ and $W_Y(t)$ are correlated Brownian motions with $\diff W_X(t) \diff W_Y(t) = \rho \diff t$, and $N_X(t)$, $N_Y(t)$ are Hawkes point processes representing jump arrivals.
+
+The jump size specifications capture wrong-way risk:
+\begin{itemize}
+    \item $J_X \sim \text{ShiftedExp}(\eta_X, \delta_X)$ generates downward jumps in collateral (harmful to position)
+    \item $J_Y \sim \text{ShiftedExp}(\eta_Y, \delta_Y)$ generates upward jumps in borrowed asset (harmful to position)
+\end{itemize}
+
+\subsection{Cross-Exciting Hawkes Intensities}
+
+The jump intensities follow a bivariate Hawkes process capturing self-excitation and cross-excitation:
+
+\begin{align}
+\diff \lambda_X(t) &= \beta_X(\mu_X^\lambda - \lambda_X(t))\diff t + \alpha_{XX}\diff N_X(t) + \alpha_{XY}\diff N_Y(t) \label{eq:lambda_X}\\
+\diff \lambda_Y(t) &= \beta_Y(\mu_Y^\lambda - \lambda_Y(t))\diff t + \alpha_{YY}\diff N_Y(t) + \alpha_{YX}\diff N_X(t) \label{eq:lambda_Y}
+\end{align}
+
+The excitation matrix encodes wrong-way risk:
+\begin{itemize}
+    \item $\alpha_{XX} > 0$: Self-excitation of downward jumps in collateral
+    \item $\alpha_{YY} > 0$: Self-excitation of upward jumps in borrowed asset  
+    \item $\alpha_{XY}, \alpha_{YX} > 0$: Cross-excitation between harmful jump types
+\end{itemize}
+
+This structure ensures that adverse events in either asset increase the probability of future adverse events in both assets, capturing the clustering and contagion effects observed in cryptocurrency markets.
+
+\subsection{Health Factor Process}
+
+For a long-short position with weights $w_X$ (collateral) and $w_Y$ (borrowed amount), the health factor is:
+\begin{equation}
+H(t) = \frac{b_X w_X X(t)}{w_Y Y(t)} \label{eq:health_factor}
+\end{equation}
+
+where $b_X \in (0,1)$ is the collateral factor. The log-health process $h(t) = \log H(t)$ evolves as:
+\begin{equation}
+\diff h(t) = \mu_h \diff t + \sigma_h \diff \tilde{W}(t) - J_X \diff N_X(t) + J_Y \diff N_Y(t) \label{eq:log_health_dynamics}
+\end{equation}
+
+where:
+\begin{align}
+\mu_h &= \mu_X - \mu_Y - \frac{1}{2}(\sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y) \\
+\sigma_h^2 &= \sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y \\
+\diff \tilde{W}(t) &= \frac{\sigma_X \diff W_X(t) - \sigma_Y \diff W_Y(t)}{\sigma_h}
+\end{align}
+
+% ====================================================================
+\section{First Hitting Time Analysis}
+% ====================================================================
+
+\subsection{Liquidation Timing}
+
+Liquidation occurs when the health factor drops to unity, corresponding to $h(t) = 0$:
+\begin{equation}
+\tau = \inf\{t \geq 0 : h(t) \leq 0\} \label{eq:stopping_time}
+\end{equation}
+
+We seek the cumulative distribution function $F(T) = \P(\tau \leq T)$ and related risk measures.
+
+\subsection{Characteristic Function Analysis}
+
+For the first hitting time $\tau = \inf\{t \geq 0 : h(t) \leq 0\}$, we employ the characteristic function formulation. The characteristic function is defined as:
+\begin{equation}
+\varphi(s; h_0, \lambda_{X0}, \lambda_{Y0}) = \mathbb{E}[e^{is\tau} \mid h(0) = h_0, \lambda_X(0) = \lambda_{X0}, \lambda_Y(0) = \lambda_{Y0}]
+\end{equation}
+
+Under the exponential-affine ansatz:
+\begin{equation}
+\varphi(h, \lambda_X, \lambda_Y) = \exp\!\left( i s A(h) + B(h)\,\lambda_X + C(h)\,\lambda_Y \right) \label{eq:cf_ansatz}
+\end{equation}
+
+with boundary conditions $A(0) = B(0) = C(0) = 0$.
+
+\begin{proposition}[Characteristic Function Riccati System]
+\label{prop:cf_riccati}
+Let 
+\[
+\varphi(h, \lambda_X, \lambda_Y) 
+= \exp\!\left( i s A(h) + B(h)\,\lambda_X + C(h)\,\lambda_Y \right)
+\]
+denote the exponential-affine representation for the characteristic function of the first hitting time $\tau$. Then $\varphi$ satisfies the Kolmogorov backward equation
+\[
+\mathcal{L}\varphi = -is \varphi,
+\]
+where $\mathcal{L}$ denotes the infinitesimal generator of the log-health process under Hawkes jump intensities. The functions $A(h)$, $B(h)$ and $C(h)$ solve the coupled nonlinear second-order Riccati system
+\[
+\begin{aligned}
+& \mu_h (is A'(h)) 
++ \frac{1}{2}\sigma_h^2 \left( is A''(h) + (is A'(h))^2 \right)
++ \beta_X \mu_X^\lambda B(h) 
++ \beta_Y \mu_Y^\lambda C(h) 
++ is = 0, \\[1.2ex]
+& \mu_h B'(h) 
++ \frac{1}{2}\sigma_h^2 \left( B''(h) + 2 is A'(h) B'(h) + (B'(h))^2 \right)
+- \beta_X B(h) \\
+&\quad + \left( \frac{\eta_X}{\eta_X - is A'(h)} 
+\exp\!\left( is A'(h)\delta_X + \alpha_{XX} B(h) + \alpha_{XY} C(h) \right) - 1 \right) 
+= 0, \\[1.2ex]
+& \mu_h C'(h) 
++ \frac{1}{2}\sigma_h^2 \left( C''(h) + 2 is A'(h) C'(h) + (C'(h))^2 \right)
+- \beta_Y C(h) \\
+&\quad + \left( \frac{\eta_Y}{\eta_Y + is A'(h)} 
+\exp\!\left( -is A'(h)\delta_Y + \alpha_{YY} C(h) + \alpha_{YX} B(h) \right) - 1 \right) 
+= 0,
+\end{aligned}
+\]
+with boundary conditions $A(0) = B(0) = C(0) = 0$.
+\end{proposition}
+
+\begin{proof}
+See \proofref{prop:cf_riccati} in Appendix \ref{sec:proofs}.
+\end{proof}
+
+\begin{proposition}[Transformation to 12D First-Order System]
+\label{prop:12d_transform}
+The nonlinear second-order Riccati system for $A(h)$, $B(h)$, and $C(h)$ in the characteristic function formulation can be transformed into a first-order system in twelve real variables, suitable for numerical integration by standard solvers.
+\end{proposition}
+
+\begin{proof}
+The characteristic function involves complex parameters $is$, so the functions $A(h)$, $B(h)$, $C(h)$ are complex-valued. Splitting into real and imaginary parts:
+\[
+A = A_r + i A_i, \quad 
+B = B_r + i B_i, \quad 
+C = C_r + i C_i.
+\]
+
+The complex-valued Riccati system is governed by:
+\[
+\begin{aligned}
+& \mu_h (is A') 
++ \tfrac{1}{2}\sigma_h^2 \big( is A'' + (is A')^2 \big)
++ \beta_X \mu_X^\lambda B 
++ \beta_Y \mu_Y^\lambda C 
++ is = 0, \\[0.8ex]
+& \mu_h B' 
++ \tfrac{1}{2}\sigma_h^2 \big( B'' + 2 is A' B' + (B')^2 \big)
+- \beta_X B 
++ \Big( \tfrac{\eta_X}{\eta_X - is A'} 
+\exp\!\left( is A' \delta_X + \alpha_{XX} B + \alpha_{XY} C \right) - 1 \Big) 
+= 0, \\[0.8ex]
+& \mu_h C' 
++ \tfrac{1}{2}\sigma_h^2 \big( C'' + 2 is A' C' + (C')^2 \big)
+- \beta_Y C 
++ \Big( \tfrac{\eta_Y}{\eta_Y + is A'} 
+\exp\!\left( -is A' \delta_Y + \alpha_{YY} C + \alpha_{YX} B \right) - 1 \Big) 
+= 0.
+\end{aligned}
+\]
+
+The 12-dimensional state vector becomes:
+\[
+\mathbf{y} = (A_r, A'_r, B_r, B'_r, C_r, C'_r, A_i, A'_i, B_i, B'_i, C_i, C'_i).
+\]
+
+Separating real and imaginary parts yields a coupled 12-dimensional real-valued first-order ODE system suitable for numerical integration. The system is integrated from $h = 0$ to $h = h_0$ with boundary conditions
+\[
+A_r(0) = A_i(0) = B_r(0) = B_i(0) = C_r(0) = C_i(0) = 0,
+\]
+\[
+A'_r(0) = A'_i(0) = B'_r(0) = B'_i(0) = C'_r(0) = C'_i(0) = \varepsilon,
+\]
+for a small perturbation $\varepsilon > 0$ to avoid degeneracy.
+\end{proof}
+
+\begin{proposition}[Solution Validity]
+\label{prop:cf_validity}
+The second-order Riccati system admits a unique solution provided that the denominators in the jump characteristic functions remain bounded away from zero:
+\begin{equation}
+\eta_X + is A'(h) \neq 0, \quad \eta_Y - is A'(h) \neq 0 \label{eq:cf_validity_condition}
+\end{equation}
+for all $h$ in the integration domain.
+\end{proposition}
+
+\subsection{Gil-Pelaez Inversion Formula}
+
+The characteristic function $\varphi(s)$ for complex parameter $s$ is evaluated by solving the 12-dimensional first-order system obtained by converting the second-order Riccati equations:
+\begin{equation}
+\varphi(s) = \exp\!\left( is A(h_0) + B(h_0)\lambda_{X0} + C(h_0)\lambda_{Y0} \right)
+\end{equation}
+
+\begin{proposition}[Gil-Pelaez Inversion]
+\label{prop:gilpelaez}
+The cumulative distribution function of the first hitting time is recovered from the characteristic function using:
+\begin{equation}
+F(T) = \P(\tau \leq T) = \frac{1}{2} - \frac{1}{\pi} \int_0^{\infty} \text{Im}\left[\frac{e^{-i\omega T} \varphi(\omega)}{\omega}\right] \diff\omega \label{eq:gilpelaez_inversion}
+\end{equation}
+\end{proposition}
+
+\subsection{Numerical Implementation}
+
+The computational procedure combines solving the 12-dimensional real-valued first-order ODE system with the Gil-Pelaez inversion formula:
+
+\begin{algorithm}
+\caption{First Hitting Time Distribution via Gil-Pelaez Inversion}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Initial conditions $(h_0, \lambda_{X0}, \lambda_{Y0})$, evaluation time $T$, integration parameters $(s_{\max}, N)$
+\STATE Transform second-order complex system to 12D real first-order system (Proposition \ref{prop:12d_transform})
+\STATE Initialize state vector: $\mathbf{y} = [A_r, A'_r, B_r, B'_r, C_r, C'_r, A_i, A'_i, B_i, B'_i, C_i, C'_i]$
+\FOR{$k = 1$ to $N$}
+    \STATE Compute frequency: $\omega_k = k \cdot s_{\max} / N$
+    \STATE Integrate 12D ODE system from $h = 0$ to $h = h_0$ with parameter $\omega_k$
+    \STATE Extract solution components $A(h_0)$, $B(h_0)$, $C(h_0)$
+    \STATE Evaluate $\varphi(\omega_k) = \exp(i\omega_k A(h_0) + B(h_0)\lambda_{X0} + C(h_0)\lambda_{Y0})$
+    \STATE Compute integrand: $I_k = \text{Im}\left[\frac{e^{-i\omega_k T} \varphi(\omega_k)}{\omega_k}\right]$
+\ENDFOR
+\STATE Apply numerical integration: $F(T) = \frac{1}{2} - \frac{1}{\pi} \int_0^{s_{\max}} I(\omega) \diff\omega$
+\STATE \textbf{Output:} $F(T) = \P(\tau \leq T)$
+\end{algorithmic}
+\end{algorithm}
+
+The second-order Riccati system is converted to a 12-dimensional first-order real system, handling the complex-valued nature of the characteristic function approach. We use implicit Radau ODE solvers for enhanced stability and implement adaptive Gil-Pelaez integration with LRU caching for repeated characteristic function evaluations.
+
+% ====================================================================
+\section{Optimal Position Sizing}
+% ====================================================================
+
+\subsection{Optimization Framework}
+
+Given the ability to compute liquidation probabilities, we formulate the position sizing problem as maximizing an objective function that balances risk and return:
+
+\begin{equation}
+\max_{w_X, w_Y} \quad \mathcal{U}(w_X, w_Y) = \mu_p - \rho_1 \sigma_p^2 - \rho_2 \P(\tau \leq T^*) \label{eq:objective}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $\mu_p$ is the expected return of the long-short position
+    \item $\sigma_p^2$ is the portfolio variance (assuming no liquidation)
+    \item $\P(\tau \leq T^*)$ is the liquidation probability within horizon $T^*$
+    \item $\rho_1, \rho_2 > 0$ are risk aversion parameters
+\end{itemize}
+
+\subsection{Constraints}
+
+The optimization is subject to platform-specific constraints:
+\begin{align}
+w_Y &\leq b_X w_X \quad \text{(borrowing capacity)} \\
+h(0) &\geq h_{\min} > 0 \quad \text{(minimum health factor)} \\
+w_X, w_Y &\geq 0 \quad \text{(position limits)}
+\end{align}
+
+\subsection{Solution Method}
+
+We employ projected gradient ascent with analytical gradients computed via automatic differentiation of the Riccati solutions. The algorithm alternates between:
+\begin{enumerate}
+    \item Computing liquidation probabilities for current weights
+    \item Evaluating objective function and constraints
+    \item Computing gradients with respect to position weights
+    \item Updating weights using projected gradient steps
+\end{enumerate}
+
+% ====================================================================
+\section{Calibration Methodology}
+% ====================================================================
+
+\subsection{Peak-Over-Threshold Jump Detection}\label{sec:firststage}
+
+To filter out jumps from time series of returns, we implement a POT procedure similarly to the approach in \cite{embrechts2011multivariate} and \cite[Chapter 4]{hainaut2022continuous}. We consider discrete samples of $n$, equally spaced, observations of log-returns for both collateral asset $X(t)$ and borrowed asset $Y(t)$ observed in the time window $[0,\ T]$.
+The POT procedure labels the log-returns that exceed asset-specific thresholds as jumps. The underlying assumption is that the continuous part of each price process has normally distributed log-returns which implies that sampled returns, filtered by excluding jumps, have zero skewness and zero excess kurtosis.
+
+For the collateral asset $X$, let $\mathcal{R}_X^{(\delta_X^-)}:=\left\{r_{X,t}: r_{X,t} \leq \delta_X^-\right\}$ be the set of log-returns below threshold $\delta_X^-$ (downward jumps). For the borrowed asset $Y$, let $\mathcal{R}_Y^{(\delta_Y^+)}:=\left\{r_{Y,t}: r_{Y,t} \geq \delta_Y^+\right\}$ be the set of log-returns above threshold $\delta_Y^+$ (upward jumps).
+The estimate of the thresholds is then given by:
+\begin{align}
+ \widehat\delta_X^- &= \underset{\delta_X^-}{\text{argmin}}  \left[
+   |\text{skew}(\mathcal{R}_X \setminus \mathcal{R}_X^{(\delta_X^-)})|+|\text{kurt}(\mathcal{R}_X \setminus \mathcal{R}_X^{(\delta_X^-)}))|
+   \right], \\
+ \widehat\delta_Y^+ &= \underset{\delta_Y^+}{\text{argmin}}  \left[
+   |\text{skew}(\mathcal{R}_Y \setminus \mathcal{R}_Y^{(\delta_Y^+)})|+|\text{kurt}(\mathcal{R}_Y \setminus \mathcal{R}_Y^{(\delta_Y^+)})|
+   \right],
+\end{align}
+where $\text{skew}(\mathcal{S}) = |\mathcal{S}|^{-1}\sum_{s \in \mathcal{S}}(s-\hat \mu_\mathcal{S})^3/\hat \sigma_\mathcal{S}^3$, 
+      $\text{kurt}(\mathcal{S}) = |\mathcal{S}|^{-1}\sum_{s \in \mathcal{S}}(s-\hat \mu_\mathcal{S})^4/\hat \sigma_\mathcal{S}^4 - 3$, 
+     $\hat \mu_\mathcal{S}$ and $\hat \sigma_\mathcal{S}$ are sample mean and standard deviation of set $\mathcal{S}$, respectively.
+
+Given estimated thresholds, we identify the set of downward jump events in collateral $\mathcal{J}_X$ and the set of upward jump events in borrowed asset $\mathcal{J}_Y$ respectively as follows:
+\begin{equation}
+   \begin{split}
+   \mathcal{J}_X &= \left\{J_X(s)\right\}_{s \leq T} = \left\{
+     r_{X,s}: r_{X,s} \leq \widehat\delta_X^- \text{ and } s \leq T
+     \right\},\\
+     \mathcal{J}_Y &= \left\{J_Y(s)\right\}_{s \leq T} = \left\{
+       r_{Y,s}: r_{Y,s} \geq \widehat\delta_Y^+ \text{ and } s \leq T
+       \right\}.
+   \end{split}
+\end{equation}
+
+We construct the counting processes for collateral downward jumps and borrowed asset upward jumps as follows:
+\begin{equation}
+   \begin{split}
+   \widehat{N_X}(T) &= \#\left\{
+       r_{X,s}: r_{X,s} \leq \widehat\delta_X^- \text{ and } s \leq T
+       \right\}, \\ 
+   \widehat{N_Y}(T) &= \#\left\{
+       r_{Y,s}: r_{Y,s} \geq \widehat\delta_Y^+ \text{ and } s \leq T
+       \right\}.
+   \end{split}
+\end{equation}
+
+We denote the corresponding sequences of arrival times of collateral downward jumps $\mathcal{T}_X$, of borrowed asset upward jumps $\mathcal{T}_Y$, and an ordered union of all jump arrival times $\mathcal{T}^{\cup}$ by:
+\begin{equation}
+   \begin{split}
+& \mathcal{T}_X = \left\{t \in [0,\ T]: r_{X,t} \leq \widehat\delta_X^- \right\} = \left\{T_X^1,\ T_X^2,\ ...,\ T_X^{\widehat{N_X}(T)}\right\},\\
+& \mathcal{T}_Y = \left\{t \in [0,\ T]: r_{Y,t} \geq \widehat\delta_Y^+ \right\} = \left\{T_Y^1,\ T_Y^2,\ ...,\ T_Y^{\widehat{N_Y}(T)}\right\},\\
+& \mathcal{T}^{\cup} = \left\{T_{[1]},\ T_{[2]},\ ...,\ T_{[\widehat{N_X}(T)+\widehat{N_Y}(T)]}\right\}.
+   \end{split}
+\end{equation}
+
+\subsection{Jump Size Estimation}
+
+Jump sizes are independent of other random variables and follow shifted exponential distributions $J_X \sim \text{ShiftedExp}(\eta_X, \delta_X)$ and $J_Y \sim \text{ShiftedExp}(\eta_Y, \delta_Y)$. 
+Therefore, given the shift parameter estimates $\widehat \delta_X = |\widehat \delta_X^-|$ and $\widehat \delta_Y = \widehat \delta_Y^+$ from the POT procedure, the estimators of $\eta_X$ and $\eta_Y$ are given by:
+\begin{equation}\label{eq:mean_p_jumps_sizes}
+   \begin{split}
+\widehat \eta_X &= \left(\widehat{N_X}(T)^{-1} \sum_{z \in \mathcal{J}_X}\left(|z| - \widehat \delta_X\right)\right)^{-1},\\
+\widehat \eta_Y &= \left(\widehat{N_Y}(T)^{-1} \sum_{z \in \mathcal{J}_Y}\left(z - \widehat \delta_Y\right)\right)^{-1}. 
+   \end{split}
+\end{equation}
+
+\subsection{Hawkes Process Calibration}
+
+Next, we estimate the parameters of the intensities dynamics via the maximum likelihood estimator (MLE). We deploy a version of the multivariate log-likelihood function documented in \cite{embrechts2011multivariate} as follows:
+\begin{align}
+ \ln L' &= \sum_{T \in \mathcal{T}_X} \ln \lambda_X(T-)\varpi_X(J_X(T))
+         + \sum_{T \in \mathcal{T}_Y} \ln \lambda_Y(T-)\varpi_Y(J_Y(T)) \nonumber\\
+ &- \int_0^T \lambda_X(t-)\diff t 
+ - \int_0^T \lambda_Y(t-)\diff t.
+\end{align}
+
+We note that the likelihood takes the left-continuous version (indicated by $T-$) of the intensities processes (see \citep[p. 232]{daley2003introduction}). Since distributions of jumps sizes are already estimated throughout the POT procedure using Eq.(\ref{eq:mean_p_jumps_sizes}), we only need a partial likelihood for the intensity processes defined by: 
+\begin{align}
+ \ln L = \sum_{T \in \mathcal{T}_X} \ln \lambda_X(T-)
+ + 
+  \sum_{T \in \mathcal{T}_Y} \ln \lambda_Y(T-)
+ - \int_0^T \lambda_X(t-)\diff t
+ - \int_0^T \lambda_Y(t-)\diff t. \label{eq:likelihood}
+\end{align}
+
+The relationship between the intensities and the model parameters is specified for $s \in \left[T_{[k-1]},\ T_{[k]}\right)$ and $k \in \left\{1,2,...,\ \widehat{N_X}(T)+\widehat{N_Y}(T)\right\}$ as follows:
+\begin{align}
+ \lambda_X(s) &= \mu_X^\lambda + e^{-\beta_X\left(s - T_{[k-1]}\right)}\left(\lambda_X(T_{[k-1]})-\mu_X^\lambda\right),\\
+ \lambda_Y(s) &= \mu_Y^\lambda + e^{-\beta_Y\left(s - T_{[k-1]}\right)}\left(\lambda_Y(T_{[k-1]})-\mu_Y^\lambda\right).
+\end{align}
+
+In the event of downward jump in $X$ at time $T \in \mathcal{T}_X$, the intensities jump by:
+\begin{equation}
+   \begin{split}
+ \lambda_X(T) &= \lambda_X(T-) + \alpha_{XX},\\
+ \lambda_Y(T) &= \lambda_Y(T-) + \alpha_{YX}.
+   \end{split}
+\end{equation}
+
+In the event of upward jump in $Y$ at time $T \in \mathcal{T}_Y$, the intensities jump by:
+\begin{equation}
+   \begin{split}
+ \lambda_X(T) &= \lambda_X(T-) + \alpha_{XY},\\
+ \lambda_Y(T) &= \lambda_Y(T-) + \alpha_{YY}.
+   \end{split}
+\end{equation}
+
+The integrals of the intensities in the partial likelihood Eq.(\ref{eq:likelihood}) can be computed as follows:
+\begin{equation}
+   \begin{split}
+ \int_0^T\lambda_X(t-)\diff t &= \sum_{k=1}^{\widehat{N_X}(T) + \widehat{N_Y}(T)} \int_{T_{[k-1]}}^{T_{[k]}}\lambda_X(t-)\diff t\\
+ &= \sum_{k=1}^{\widehat{N_X}(T) + \widehat{N_Y}(T)} 
+\mu_X^\lambda(T_{[k]}-T_{[k-1]})
++\left(\lambda_X(T_{[k]})-\mu_X^\lambda\right)\frac{1-e^{-\beta_X(T_{[k]} - T_{[k-1]})}}{\beta_X},\\ 
+\int_0^T\lambda_Y(t-)\diff t&= \sum_{k=1}^{\widehat{N_X}(T) + \widehat{N_Y}(T)} 
+\mu_Y^\lambda(T_{[k]}-T_{[k-1]})
++\left(\lambda_Y(T_{[k]})-\mu_Y^\lambda\right)\frac{1-e^{-\beta_Y(T_{[k]} - T_{[k-1]})}}{\beta_Y}.
+   \end{split}
+\end{equation}
+
+Therefore, given a set of model parameters, the intensities and their integrals can be computed quickly in a recursive way starting from time 0. We refer to Section 5.2 of \cite{laub2021elements} and references therein for the method of directly computing the likelihood.
+We apply a numerical optimiser to obtain estimates of the Hawkes parameters, $\hat \beta_X, \hat \beta_Y, \hat \mu_X^\lambda, \hat \mu_Y^\lambda, \{\hat \alpha_{ij}\}_{i,j \in \{X,Y\}}$, that maximise the likelihood.
+
+\begin{proposition}[Peak-Over-Threshold for Jump Detection]
+\label{prop:pot}
+For sufficiently large thresholds, excesses over the threshold follow an exponential distribution, providing a foundation for jump size estimation in the shifted exponential framework.
+\end{proposition}
+
+\subsection{Model Validation}
+
+\begin{proposition}[Hawkes Residual Transformation]
+\label{prop:residuals}
+Under the correctly specified model, the transformed times:
+\begin{equation}
+\tau_i = \int_0^{T_i} \lambda(s) \diff s
+\end{equation}
+follow a unit rate Poisson process, enabling goodness-of-fit testing.
+\end{proposition}
+
+% ====================================================================
+\section{Empirical Results}
+% ====================================================================
+
+\subsection{Data Description}
+
+[Placeholder: Describe cryptocurrency data sources, sample period, asset pairs analyzed, summary statistics of returns and jump frequencies]
+
+\subsection{Calibration Results}
+
+[Placeholder: Present estimated parameters for Hawkes processes, jump size distributions, comparison across different cryptocurrency pairs, parameter stability over time]
+
+\subsection{Model Validation}
+
+[Placeholder: Goodness-of-fit tests, residual analysis, out-of-sample performance, comparison with simpler models]
+
+\subsection{Optimal Position Analysis}
+
+[Placeholder: Optimal weights under different risk aversion parameters, sensitivity analysis, impact of liquidation risk on position sizing, performance comparison with naive strategies]
+
+\subsection{Robustness Checks}
+
+[Placeholder: Parameter uncertainty analysis, model misspecification tests, stress testing under extreme market conditions]
+
+% ====================================================================
+\section{Conclusion}
+% ====================================================================
+
+We have developed a comprehensive framework for optimal long-short positioning on DeFi lending platforms that explicitly incorporates liquidation risk through Hawkes jump-diffusion processes. The model successfully captures wrong-way risk characteristics in cryptocurrency markets while providing tractable semi-analytical solutions for first hitting time distributions.
+
+Key contributions include:
+\begin{enumerate}
+    \item A bivariate Hawkes model capturing cross-excitation between harmful jump types
+    \item Semi-analytical computation of liquidation probabilities via exponential-affine techniques
+    \item An optimization framework balancing returns, volatility, and liquidation risk
+    \item A rigorous calibration methodology combining extreme value theory and maximum likelihood
+\end{enumerate}
+
+The framework provides practical tools for DeFi participants to optimize position sizing while managing tail risks. The mathematical approach bridges sophisticated stochastic process theory with practical portfolio management needs in the cryptocurrency markets.
+
+% ====================================================================
+% APPENDIX
+% ====================================================================
+
+\appendix
+
+\section{Laplace Transform Solutions}
+\label{sec:laplace_transform}
+
+\subsection{Alternative Formulation via Laplace Transform}
+
+As a computationally efficient alternative to the characteristic function analysis presented in the main text, the first hitting time $\tau$ can be analyzed through its Laplace transform. This approach leads to real-valued Riccati equations and leverages robust numerical inversion techniques.
+
+The Laplace transform of the first hitting time distribution is defined as:
+\begin{equation}
+\mathcal{L}\{F\}(s) = \int_0^{\infty} e^{-st} F(t) \diff t = \frac{M(s)}{s}
+\end{equation}
+where $F(t) = \P(\tau \leq t)$ and $M(s)$ is the moment generating function:
+\begin{equation}
+M(s; h_0, \lambda_{X0}, \lambda_{Y0}) = \mathbb{E}[e^{s\tau} \mid h(0) = h_0, \lambda_X(0) = \lambda_{X0}, \lambda_Y(0) = \lambda_{Y0}]
+\end{equation}
+
+Under the exponential-affine ansatz:
+\begin{equation}
+M(h, \lambda_X, \lambda_Y) = \exp\!\left( s A(h) + B(h)\,\lambda_X + C(h)\,\lambda_Y \right)
+\end{equation}
+
+with boundary conditions $A(0) = B(0) = C(0) = 0$.
+
+\begin{proposition}[Laplace Transform Riccati System]
+\label{prop:laplace_riccati}
+The functions $A(h)$, $B(h)$ and $C(h)$ solve the nonlinear second-order Riccati system:
+\[
+\begin{aligned}
+& \mu_h (s A'(h)) 
++ \frac{1}{2}\sigma_h^2 \left( s A''(h) + (s A'(h))^2 \right)
++ \beta_X \mu_X^\lambda B(h) 
++ \beta_Y \mu_Y^\lambda C(h) 
+= s, \\[1.2ex]
+& \mu_h B'(h) 
++ \frac{1}{2}\sigma_h^2 \left( B''(h) + 2 s A'(h) B'(h) + (B'(h))^2 \right)
+- \beta_X B(h) \\
+&\quad + \left( \frac{\eta_X}{\eta_X - s A'(h)} 
+\exp\!\left( s A'(h)\delta_X + \alpha_{XX} B(h) + \alpha_{XY} C(h) \right) - 1 \right) 
+= 0, \\[1.2ex]
+& \mu_h C'(h) 
++ \frac{1}{2}\sigma_h^2 \left( C''(h) + 2 s A'(h) C'(h) + (C'(h))^2 \right)
+- \beta_Y C(h) \\
+&\quad + \left( \frac{\eta_Y}{\eta_Y + s A'(h)} 
+\exp\!\left( -s A'(h)\delta_Y + \alpha_{YY} C(h) + \alpha_{YX} B(h) \right) - 1 \right) 
+= 0,
+\end{aligned}
+\]
+with boundary conditions $A(0) = B(0) = C(0) = 0$.
+\end{proposition}
+
+\subsection{Talbot Inversion Algorithm}
+
+The distribution function can be recovered from the Laplace transform using numerical inversion:
+\begin{proposition}[Talbot Inversion]
+\label{prop:talbot}
+The cumulative distribution function of the first hitting time is recovered through the Talbot algorithm:
+\begin{equation}
+F(T) = \P(\tau \leq T) = \mathcal{L}^{-1}\left[\frac{M(s)}{s}\right](T) = \frac{2}{T} \Re\left[\sum_{k=1}^{N} \omega_k \frac{M(\eta_k/T)}{\eta_k/T}\right]
+\end{equation}
+where $\eta_k = \gamma + \mu(\theta_k/\tan\theta_k + i\theta_k)$, $\theta_k = (2k-1)\pi/N$, $\mu = N/2$, and $\omega_k$ are the Talbot weights.
+\end{proposition}
+
+\subsection{6D First-Order System for Real-Valued Formulation}
+
+The Laplace transform approach benefits from real-valued functions, requiring only a 6-dimensional system.
+
+\begin{proposition}[Transformation to 6D First-Order System]
+\label{prop:6d_transform_laplace}
+The nonlinear second-order Riccati system can be transformed into a first-order system in six real variables:
+\[
+\mathbf{y} = (A, A', B, B', C, C').
+\]
+\end{proposition}
+
+\begin{proof}
+Since the Laplace parameter $s$ is real-valued, the functions $A(h)$, $B(h)$, $C(h)$ are real-valued. The second-order equations can be rearranged as:
+\[
+\begin{aligned}
+A'' &= \frac{2s - 2\mu_h s A' - \sigma_h^2 (s A')^2 - 2\beta_X \mu_X^\lambda B - 2\beta_Y \mu_Y^\lambda C}{\sigma_h^2 s}, \\[1ex]
+B'' &= \frac{-2\mu_h B' - \sigma_h^2(B'^2 + 2 s A' B') + 2 \beta_X B - 2(g_X - 1)}{\sigma_h^2}, \\[1ex]
+C'' &= \frac{-2\mu_h C' - \sigma_h^2(C'^2 + 2 s A' C') + 2 \beta_Y C - 2(g_Y - 1)}{\sigma_h^2},
+\end{aligned}
+\]
+where
+\[
+\begin{aligned}
+g_X &= \frac{\eta_X}{\eta_X - s A'} 
+\exp\!\left( s A' \delta_X + \alpha_{XX} B + \alpha_{XY} C \right), \\
+g_Y &= \frac{\eta_Y}{\eta_Y + s A'} 
+\exp\!\left( -s A' \delta_Y + \alpha_{YY} C + \alpha_{YX} B \right).
+\end{aligned}
+\]
+
+The 6-dimensional first-order system is:
+\begin{align}
+\frac{dA}{dh} &= A', \\
+\frac{dB}{dh} &= B', \\
+\frac{dC}{dh} &= C', \\
+\frac{d(A')}{dh} &= \frac{2s - 2\mu_h s A' - \sigma_h^2 (s A')^2 - 2\beta_X \mu_X^\lambda B - 2\beta_Y \mu_Y^\lambda C}{\sigma_h^2 s}, \\
+\frac{d(B')}{dh} &= \frac{-2\mu_h B' - \sigma_h^2(B'^2 + 2 s A' B') + 2 \beta_X B - 2(g_X - 1)}{\sigma_h^2}, \\
+\frac{d(C')}{dh} &= \frac{-2\mu_h C' - \sigma_h^2(C'^2 + 2 s A' C') + 2 \beta_Y C - 2(g_Y - 1)}{\sigma_h^2}.
+\end{align}
+
+The system is integrated from $h = 0$ to $h = h_0$ with boundary conditions $A(0) = B(0) = C(0) = 0$ and small perturbations for the derivatives to ensure numerical stability.
+\end{proof}
+
+\section{Mathematical Proofs}
+\label{sec:proofs}
+
+\begin{delayedproof}{prop:cf_riccati}
+We apply the generator $\mathcal{L}$ to the characteristic function ansatz. Differentiation with respect to $h$ yields
+\[
+\partial_h \varphi 
+= \left( i s A'_{\text{cf}}(h) + B'_{\text{cf}}(h)\,\lambda_X + C'_{\text{cf}}(h)\,\lambda_Y \right)\,\varphi,
+\]
+and a second derivative gives
+\[
+\partial_h^2 \varphi 
+= \left( i s A''_{\text{cf}}(h) + B''_{\text{cf}}(h)\,\lambda_X + C''_{\text{cf}}(h)\,\lambda_Y 
++ \left(i s A'_{\text{cf}}(h) + B'_{\text{cf}}(h)\,\lambda_X + C'_{\text{cf}}(h)\,\lambda_Y\right)^2 \right)\,\varphi.
+\]
+For the intensity components we obtain
+\[
+\partial_{\lambda_X}\varphi = B_{\text{cf}}(h)\,\varphi, 
+\qquad 
+\partial_{\lambda_Y}\varphi = C_{\text{cf}}(h)\,\varphi.
+\]
+
+Substituting into the generator,
+\[
+\begin{aligned}
+\mathcal{L}\varphi &= 
+\mu_h \partial_h \varphi 
++ \frac{1}{2}\sigma_h^2 \partial_h^2 \varphi
++ \beta_X(\mu_X^\lambda - \lambda_X)\,\partial_{\lambda_X}\varphi
++ \beta_Y(\mu_Y^\lambda - \lambda_Y)\,\partial_{\lambda_Y}\varphi \\
+&\quad + \lambda_X(f_X - 1)\,\varphi + \lambda_Y(f_Y - 1)\,\varphi,
+\end{aligned}
+\]
+where the characteristic functions of the jump sizes are
+\[
+\begin{aligned}
+f_X &= \frac{\eta_X}{\eta_X - i s A'_{\text{cf}}(h)} 
+\exp\!\left( i s A'_{\text{cf}}(h)\delta_X + \alpha_{XX} B_{\text{cf}}(h) + \alpha_{XY} C_{\text{cf}}(h) \right), \\
+f_Y &= \frac{\eta_Y}{\eta_Y + i s A'_{\text{cf}}(h)} 
+\exp\!\left( -i s A'_{\text{cf}}(h)\delta_Y + \alpha_{YY} C_{\text{cf}}(h) + \alpha_{YX} B_{\text{cf}}(h) \right).
+\end{aligned}
+\]
+
+Dividing by $\varphi$, the coefficients must satisfy $\mathcal{L}\varphi = -i s \varphi$. The boundary conditions follow from $\varphi(0, \lambda_X, \lambda_Y) = 1$.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:mgf_riccati}
+We apply the generator $\mathcal{L}$ to the moment generating function ansatz. Differentiation with respect to $h$ yields
+\[
+\partial_h M 
+= \left( s A'(h) + B'(h)\,\lambda_X + C'(h)\,\lambda_Y \right)\,M,
+\]
+and the second derivative gives
+\[
+\partial_h^2 M 
+= \left( s A''(h) + B''(h)\,\lambda_X + C''(h)\,\lambda_Y 
++ \left(s A'(h) + B'(h)\,\lambda_X + C'(h)\,\lambda_Y\right)^2 \right)\,M.
+\]
+For the intensity components we obtain
+\[
+\partial_{\lambda_X}M = B(h)\,M, 
+\qquad 
+\partial_{\lambda_Y}M = C(h)\,M.
+\]
+
+Substituting into the generator,
+\[
+\begin{aligned}
+\mathcal{L}M &= 
+\mu_h \partial_h M 
++ \frac{1}{2}\sigma_h^2 \partial_h^2 M
++ \beta_X(\mu_X^\lambda - \lambda_X)\,\partial_{\lambda_X}M
++ \beta_Y(\mu_Y^\lambda - \lambda_Y)\,\partial_{\lambda_Y}M \\
+&\quad + \lambda_X(g_X - 1)\,M + \lambda_Y(g_Y - 1)\,M,
+\end{aligned}
+\]
+where the moment generating functions of the jump sizes are
+\[
+\begin{aligned}
+g_X &= \frac{\eta_X}{\eta_X - s A'(h)} 
+\exp\!\left( s A'(h)\delta_X + \alpha_{XX} B(h) + \alpha_{XY} C(h) \right), \\
+g_Y &= \frac{\eta_Y}{\eta_Y + s A'(h)} 
+\exp\!\left( -s A'(h)\delta_Y + \alpha_{YY} C(h) + \alpha_{YX} B(h) \right).
+\end{aligned}
+\]
+
+Dividing by $M$, the coefficients of $1$, $\lambda_X$, and $\lambda_Y$ must separately satisfy the backward equation $\mathcal{L}M = s M$. Collecting terms yields the claimed Riccati system. The boundary conditions follow from $M(0, \lambda_X, \lambda_Y) = 1$.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:mgf_validity}
+The validity condition ensures that the moment generating functions of the jump sizes remain finite. For shifted exponential distributions:
+\begin{align}
+\int e^{sz} f_X(z) \diff z = \frac{\eta_X}{\eta_X - s} e^{s\delta_X} \quad &\text{for } s < \eta_X \\
+\int e^{-sz} f_Y(z) \diff z = \frac{\eta_Y}{\eta_Y + s} e^{-s\delta_Y} \quad &\text{for } s > -\eta_Y
+\end{align}
+
+Since $s A'(h)$ appears in the Riccati equations, the condition $s A'(h) \in (-\eta_X, \eta_Y)$ ensures convergence of both moment generating functions.
+\end{delayedproof}
+
+
+\begin{delayedproof}{prop:gilpelaez}
+The Gil-Pelaez inversion formula follows from the relationship between characteristic functions and distribution functions. For any random variable $X$ with characteristic function $\varphi(t) = \E[e^{itX}]$:
+\begin{equation}
+F(x) = \frac{1}{2} - \frac{1}{\pi} \int_0^{\infty} \frac{\text{Im}[e^{-itx}\varphi(t)]}{t} \diff t
+\end{equation}
+
+This applies directly to the first hitting time $\tau$ with characteristic function derived from the exponential-affine ansatz.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:pot}
+The peaks-over-threshold result follows from the Fisher-Tippett-Gnedenko theorem. For i.i.d. random variables with distribution $F$, if the maximum is in the domain of attraction of an extreme value distribution, then for large thresholds $u$:
+\begin{equation}
+\lim_{u \to x_F} \P(X - u > x \mid X > u) = \left(1 + \xi \frac{x}{\sigma}\right)^{-1/\xi}
+\end{equation}
+
+For $\xi = 0$ (exponential case), this reduces to $e^{-x/\sigma}$, yielding the exponential distribution for excesses.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:residuals}
+Under the correct Hawkes model specification, the compensator $\Lambda(t) = \int_0^t \lambda(s) \diff s$ transforms the original point process into a unit rate Poisson process. This follows from the random time change theorem: if $N(t)$ is a point process with compensator $\Lambda(t)$, then $M(s) = N(\Lambda^{-1}(s))$ is a unit rate Poisson process.
+\end{delayedproof}
+
+% ====================================================================
+% BIBLIOGRAPHY
+% ====================================================================
+
+\bibliographystyle{abbrvnamed}
+\bibliography{finance}
+
+\end{document}
