@@ -529,6 +529,61 @@ The following section presents empirical validation using historical DeFi rates 
 
 A reference implementation in Python is provided for replication and sensitivity analysis. The script simulates jump–diffusion dynamics for the shorted asset, computes $\pi(T)$ via Monte Carlo simulation, and evaluates the utility $\mathcal{U}(r)$ on a discrete grid of allocation ratios. The framework outputs the optimal ratio $r^*$ together with the corresponding expected wealth, variance, and liquidation probability, enabling direct numerical comparison across risk-aversion parameters $(\rho_1, \rho_2)$ and market conditions.
 
+
+\paragraph{Kelly Criterion Implementation.}
+To integrate the Kelly Criterion into this strategy, we define the 
+
+optimization problem in terms of maximizing the long-term growth rate of wealth, rather than using a mean-variance utility function. The core components of the Kelly formula—win probability ($p$), loss probability ($q$), and net odds ($b$)—are derived directly from the jump-diffusion and liquidation risk framework.
+
+\subparagraph{Defining Win/Loss Probabilities and Outcomes.}
+We define a binary outcome for the Kelly calculation over a fixed time horizon $T^*$: 
+\begin{itemize}
+    \item \textbf{Loss Event (Liquidation):} The position is liquidated within the time horizon $T^*$. The probability of this event, $q$, is the liquidation probability $\pi(T^*) = \mathbb{P}(\tau_0 \leq T^*)$. The loss incurred is assumed to be a fraction $L$ of the collateral, so the net loss on the wager is $R_{loss} = -L w_X$.
+    \item \textbf{Win Event (No Liquidation):} The position is not liquidated within the time horizon $T^*$. The probability of this event is $p = 1 - q = 1 - \pi(T^*)$. The expected gain, conditional on no liquidation, is the net return from the carry and the short position's performance. 
+\end{itemize}
+
+\subparagraph{Estimating Probabilities and Odds.}
+The probabilities are directly given by the first-hitting time analysis:
+\begin{align}
+q &= \pi(T^*) = \mathbb{P}(\tau_0 \leq T^*) = \mathcal{L}^{-1}\left[\frac {e^{-h_0 \Phi(q)}}{q}\right](T^*) \\
+p &= 1 - q
+\end{align}
+The net odds, $b$, are the ratio of the expected gain if not liquidated to the loss if liquidated:
+\begin{equation}
+b = \frac{\mathbb{E}[\text{Gain} | \tau_0 > T^*]}{\mathbb{E}[\text{Loss} | \tau_0 \leq T^*]} = \frac{w_X r_X T^* - w_Y r_Y T^* - w_Y(e^{T^* \psi_Y(1)}-1)}{L w_X}
+\end{equation}
+Here, we use the simplified expected wealth expression, assuming the stablecoin's price return is negligible and focusing on the carry and the short leg's performance.
+
+\paragraph{Optimization Problem with Kelly Criterion.}
+The objective is to find the allocation ratio $r$ that maximizes the expected logarithmic growth of wealth. The Kelly fraction, $f^*(r)$, which represents the optimal fraction of capital to allocate to this strategy, is given by:
+\begin{equation}
+f^*(r) = \frac{b(r)p(r) - q(r)}{b(r)}
+\end{equation}
+Since $p, q,$ and $b$ are all functions of the allocation ratio $r$ (through $w_X, w_Y,$ and $h_0$), the optimization problem becomes:
+\begin{equation}
+\max_{r} \quad G(r) = q(r) \log(1 - f^*(r) L w_X) + p(r) \log(1 + f^*(r) b(r) L w_X)
+\end{equation}
+where $G(r)$ is the expected logarithmic growth rate. A more direct approach is to maximize the Kelly fraction $f^*(r)$ itself, as this is equivalent to maximizing the growth rate.
+
+For practical implementation, we use a fractional Kelly approach to mitigate the risks of model error and high volatility. The target allocation fraction becomes:
+\begin{equation}
+f_{target}(r) = k \times f^*(r)
+\end{equation}
+where $k$ is the Kelly fraction (e.g., $k=0.5$ for Half Kelly, $k=0.25$ for Quarter Kelly).
+
+\paragraph{Solution.}
+As with the mean-variance approach, a closed-form solution is not available. We solve this numerically:
+\begin{enumerate}
+    \item For a given allocation ratio $r$, calculate the corresponding weights $w_X(r), w_Y(r)$ and initial log-health $h_0(r)$.
+    \item Compute the liquidation probability $q(r) = \pi(T^*)$ via numerical Laplace inversion.
+    \item Calculate the win probability $p(r) = 1 - q(r)$.
+    \item Calculate the net odds $b(r)$ based on the expected returns and liquidation loss.
+    \item Compute the full Kelly fraction $f^*(r)$.
+    \item The optimization then searches for the ratio $r$ that maximizes $f^*(r)$, subject to the constraints $h_0(r) \geq h_{\min}$ and $0 < r < 1$. This can be done using a grid search or a numerical optimization routine like projected gradient ascent on $f^*(r)$.
+\end{enumerate}
+
+The optimal allocation ratio $r^*$ under the Kelly framework represents the trade-off that maximizes the long-term geometric growth rate of the portfolio, explicitly balancing the potential for high returns from leverage against the risk of ruin from liquidation. This provides a more direct and theoretically grounded approach to position sizing compared to utility-based methods.
+
 \subsection{Long-Short Momentum Strategy}
 
 For our second use case, we consider a long–short momentum strategy: here momentum is defined as performance over a specific period of time. A long position is taken in an asset with positive recent returns (``momentum winner''), and a short position is taken in an asset with negative recent returns (``momentum loser''). The idea underlying the strategy is fairly simple: the investor must buy tokens that are outperforming and short-sell those that are underperforming..
@@ -620,6 +675,80 @@ T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
 
 \paragraph{Results.}  
 Simulation produces optimal allocation ratios $r^*$ as functions of $(\rho_1, \rho_2)$ and asset asymmetries. Key findings (Placeholder):
+\begin{enumerate}
+    \item In defective-hitting regimes ($\kappa_h>0$), moderate momentum exposure is feasible with low liquidation probability.
+    \item In almost-sure breakdown regimes ($\kappa_h<0$), $r^* \to 0$, effectively neutralizing the momentum position.
+    \item Sensitivity analysis shows $r^*$ is strongly affected by jump intensity $\lambda_S$ and volatility $\sigma_S$, as downside risk of the short leg dominates.
+\end{enumerate}
+
+
+\paragraph{Kelly Criterion Implementation.}
+To integrate the Kelly Criterion into this strategy, we define the optimization problem in terms of maximizing the long-term growth rate of wealth, rather than using a mean-variance utility function. The core components of the Kelly formula—win probability ($p$), loss probability ($q$), and net odds ($b$)—are derived directly from the jump-diffusion and liquidation risk framework.
+
+\subparagraph{Defining Win/Loss Probabilities and Outcomes.}
+We define a binary outcome for the Kelly calculation over a fixed time horizon $T^*$: 
+\begin{itemize}
+    \item \textbf{Loss Event (Liquidation):} The position is liquidated within the time horizon $T^*$. The probability of this event, $q$, is the liquidation probability $\pi(T^*) = \mathbb{P}(\tau_0 \leq T^*)$. The loss incurred is assumed to be a fraction $L$ of the collateral, so the net loss on the wager is $R_{loss} = -L w_L$.
+    \item \textbf{Win Event (No Liquidation):} The position is not liquidated within the time horizon $T^*$. The probability of this event is $p = 1 - q = 1 - \pi(T^*)$. The expected gain, conditional on no liquidation, is the net return from the long and short positions' performance. 
+\end{itemize}
+
+\subparagraph{Estimating Probabilities and Odds.}
+The probabilities are directly given by the first-hitting time analysis:
+\begin{align}
+q &= \pi(T^*) = \mathbb{P}(\tau_0 \leq T^*) = \mathcal{L}^{-1}\left[\frac {e^{-h_0 \Phi(q)}}{q}\right](T^*) \\
+p &= 1 - q
+\end{align}
+The net odds, $b$, are the ratio of the expected gain if not liquidated to the loss if liquidated:
+\begin{equation}
+b = \frac{\mathbb{E}[\text{Gain} | \tau_0 > T^*]}{\mathbb{E}[\text{Loss} | \tau_0 \leq T^*]} = \frac{w_L(e^{T^*\psi_L(1)}-1) - w_S(e^{T^*\psi_S(1)}-1)}{L w_L}
+\end{equation}
+Here, the expected gain is based on the expected returns of the long and short assets over the period $T^*$, conditional on no liquidation.
+
+\paragraph{Optimization Problem with Kelly Criterion.}
+The objective is to find the allocation ratio $r$ that maximizes the expected logarithmic growth of wealth. The Kelly fraction, $f^*(r)$, which represents the optimal fraction of the total capital to allocate to this strategy, is given by:
+\begin{equation}
+f^*(r) = \frac{b(r)p(r) - q(r)}{b(r)}
+\end{equation}
+Since $p, q,$ and $b$ are all functions of the allocation ratio $r$ (through $w_L, w_S,$ and $h_0$), the optimization problem becomes:
+\begin{equation}
+\max_{r} \quad G(r) = q(r) \log(1 - f^*(r) L w_L) + p(r) \log(1 + f^*(r) b(r) L w_L)
+\end{equation}
+where $G(r)$ is the expected logarithmic growth rate. A more direct approach is to maximize the Kelly fraction $f^*(r)$ itself, as this is equivalent to maximizing the growth rate.
+
+For practical implementation, we use a fractional Kelly approach to mitigate the risks of model error and high volatility. The target allocation fraction becomes:
+\begin{equation}
+f_{target}(r) = k \times f^*(r)
+\end{equation}
+where $k$ is the Kelly fraction (e.g., $k=0.5$ for Half Kelly, $k=0.25$ for Quarter Kelly).
+
+\paragraph{Solution.}
+As with the mean-variance approach, a closed-form solution is not available. We solve this numerically:
+\begin{enumerate}
+    \item For a given allocation ratio $r$, calculate the corresponding weights $w_L(r), w_S(r)$ and initial log-health $h_0(r)$.
+    \item Compute the liquidation probability $q(r) = \pi(T^*)$ via numerical Laplace inversion.
+    \item Calculate the win probability $p(r) = 1 - q(r)$.
+    \item Calculate the net odds $b(r)$ based on the expected returns and liquidation loss.
+    \item Compute the full Kelly fraction $f^*(r)$.
+    \item The optimization then searches for the ratio $r$ that maximizes $f^*(r)$, subject to the constraints $h_0(r) \geq h_{\min}$ and $0 < r < 1$. This can be done using a grid search or a numerical optimization routine like projected gradient ascent on $f^*(r)$.
+\end{enumerate}
+
+The optimal allocation ratio $r^*$ under the Kelly framework represents the trade-off that maximizes the long-term geometric growth rate of the portfolio, explicitly balancing the potential for high returns from leverage against the risk of ruin from liquidation. This provides a more direct and theoretically grounded approach to position sizing compared to utility-based methods.
+
+\paragraph{Calibration and Market Data.}  
+The model is calibrated on daily data for tokens with pronounced cross-sectional momentum. Momentum winners (long leg) and losers (short leg) are selected based on extreme cumulative returns over a $k=30$ day formation period. The Lévy jump-diffusion parameters $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ for all assets are then estimated through rolling windows of historical log-returns. Empirical estimates show that momentum winners are characterized by a higher drift $\mu_L$ and comparable or slightly higher volatility $\sigma_L$ relative to losers. The jump parameters $(\lambda_i, \delta_i)$ effectively capture the pronounced asymmetry and fat tails in crypto returns. This calibration aligns with the stylized fact that positive-return assets often exhibit sustained upward drift alongside elevated idiosyncratic jump risk.
+
+\paragraph{Numerical Evaluation.}  
+For each set of calibrated parameters, we compute the Kelly fraction $f^*(r)$. Laplace inversion is used to evaluate $\pi(T) = \mathbb{P}(\tau_0 \le T^*)$. Gradients are approximated numerically, and $r^*$ is located using projected gradient ascent subject to feasibility constraints.
+
+\paragraph{Parameter Values (Baseline).}
+\begin{align*}
+\mu_L &= 0.10, &\sigma_L &= 0.80, &\lambda_L &= 0.10, &\delta_L &= 0.20,\\
+\mu_S &= 0.05, &\sigma_S &= 0.70, &\lambda_S &= 0.20, &\delta_S &= 0.25,\\
+T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
+\end{align*}
+
+\paragraph{Results.}  
+Simulation produces optimal allocation ratios $r^*$ as functions of the Kelly fraction $k$ and asset asymmetries. Key findings (Placeholder):
 \begin{enumerate}
     \item In defective-hitting regimes ($\kappa_h>0$), moderate momentum exposure is feasible with low liquidation probability.
     \item In almost-sure breakdown regimes ($\kappa_h<0$), $r^* \to 0$, effectively neutralizing the momentum position.
@@ -759,6 +888,178 @@ T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
 
 \paragraph{Results.}  
 Simulation produces optimal allocation ratios $r^*$ as functions of $(\rho_1, \rho_2)$ and asset asymmetries. Key findings (Placeholder):
+\begin{enumerate}
+    \item Beta-neutral pairs exhibit lower variance but comparable expected returns to directional strategies.
+    \item Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
+    \item High correlation or elevated jump intensity reduces the feasible range of $r$ for maintaining $\beta_P \approx 0$ and $H(t)>1$.
+\end{enumerate}
+
+\paragraph{Kelly Criterion Implementation.}
+To integrate the Kelly Criterion into this strategy, we define the optimization problem in terms of maximizing the long-term growth rate of wealth, rather than using a mean-variance utility function. The core components of the Kelly formula—win probability ($p$), loss probability ($q$), and net odds ($b$)—are derived directly from the jump-diffusion and liquidation risk framework.
+
+\subparagraph{Defining Win/Loss Probabilities and Outcomes.}
+We define a binary outcome for the Kelly calculation over a fixed time horizon $T^*$: 
+\begin{itemize}
+    \item \textbf{Loss Event (Liquidation):} The position is liquidated within the time horizon $T^*$. The probability of this event, $q$, is the liquidation probability $\pi(T^*) = \mathbb{P}(\tau_0 \leq T^*)$. The loss incurred is assumed to be a fraction $L$ of the collateral, so the net loss on the wager is $R_{loss} = -L w_L$.
+    \item \textbf{Win Event (No Liquidation):} The position is not liquidated within the time horizon $T^*$. The probability of this event is $p = 1 - q = 1 - \pi(T^*)$. The expected gain, conditional on no liquidation, is the net return from the long and short positions' idiosyncratic alpha. 
+\end{itemize}
+
+\subparagraph{Estimating Probabilities and Odds.}
+The probabilities are directly given by the first-hitting time analysis:
+\begin{align}
+q &= \pi(T^*) = \mathbb{P}(\tau_0 \leq T^*) = \mathcal{L}^{-1}\left[\frac {e^{-h_0 \Phi(q)}}{q}\right](T^*) \\
+p &= 1 - q
+\end{align}
+The net odds, $b$, are the ratio of the expected gain if not liquidated to the loss if liquidated:
+\begin{equation}
+b = \frac{\mathbb{E}[\text{Gain} | \tau_0 > T^*]}{\mathbb{E}[\text{Loss} | \tau_0 \leq T^*]} = \frac{w_L \alpha_L T^* - w_S \alpha_S T^*}{L w_L}
+\end{equation}
+Here, the expected gain is based on the expected idiosyncratic returns of the long and short assets over the period $T^*$, conditional on no liquidation.
+
+\paragraph{Optimization Problem with Kelly Criterion.}
+The objective is to find the allocation ratio $r$ that maximizes the expected logarithmic growth of wealth. The Kelly fraction, $f^*(r)$, which represents the optimal fraction of the total capital to allocate to this strategy, is given by:
+\begin{equation}
+f^*(r) = \frac{b(r)p(r) - q(r)}{b(r)}
+\end{equation}
+Since $p, q,$ and $b$ are all functions of the allocation ratio $r$ (through $w_L, w_S,$ and $h_0$), the optimization problem becomes:
+\begin{equation}
+\max_{r} \quad G(r) = q(r) \log(1 - f^*(r) L w_L) + p(r) \log(1 + f^*(r) b(r) L w_L)
+\end{equation}
+where $G(r)$ is the expected logarithmic growth rate. A more direct approach is to maximize the Kelly fraction $f^*(r)$ itself, as this is equivalent to maximizing the growth rate.
+
+For practical implementation, we use a fractional Kelly approach to mitigate the risks of model error and high volatility. The target allocation fraction becomes:
+\begin{equation}
+f_{target}(r) = k \times f^*(r)
+\end{equation}
+where $k$ is the Kelly fraction (e.g., $k=0.5$ for Half Kelly, $k=0.25$ for Quarter Kelly).
+
+\paragraph{Solution.}
+As with the mean-variance approach, a closed-form solution is not available. We solve this numerically:
+\begin{enumerate}
+    \item For a given allocation ratio $r$, calculate the corresponding weights $w_L(r), w_S(r)$ and initial log-health $h_0(r)$.
+    \item Compute the liquidation probability $q(r) = \pi(T^*)$ via numerical Laplace inversion.
+    \item Calculate the win probability $p(r) = 1 - q(r)$.
+    \item Calculate the net odds $b(r)$ based on the expected idiosyncratic returns and liquidation loss.
+    \item Compute the full Kelly fraction $f^*(r)$.
+    \item The optimization then searches for the ratio $r$ that maximizes $f^*(r)$, subject to the constraints $h_0(r) \geq h_{\min}$ and $0 < r < 1$. This can be done using a grid search or a numerical optimization routine like projected gradient ascent on $f^*(r)$.
+\end{enumerate}
+
+The optimal allocation ratio $r^*$ under the Kelly framework represents the trade-off that maximizes the long-term geometric growth rate of the portfolio, explicitly balancing the potential for high returns from leverage against the risk of ruin from liquidation. This provides a more direct and theoretically grounded approach to position sizing compared to utility-based methods.
+
+\paragraph{Calibration and Market Data.}  
+We calibrate the model using historical data from crypto assets with large idiosyncratic alpha differences. The long and short assets are chosen to enforce $\beta_P \approx 0$. Parameter estimation for the Lévy jump-diffusion model $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ employs rolling windows of log-returns. Empirical results indicate that long assets have higher $\alpha_L$ and comparable or slightly higher $\sigma_L$ than short assets, and the jump parameters account for the tail asymmetry inherent in crypto markets.
+
+\paragraph{Health Process Parameters.}
+The log-health process \( h(t) \) quantifies the collateralization health of the leveraged long--short momentum portfolio. Its characteristic exponent is defined as
+\[
+\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta),
+\]
+synthesizing the Lévy dynamics of the long winner and short loser legs (cf. Equation 38). This captures the joint jump-diffusion risk, where adverse jumps in the winner or favorable jumps in the loser drive the health process downward toward liquidation.
+
+The asymptotic regime is determined by the drift
+\[
+\kappa_h = \frac{\mathbb{E}[h(t)]}{t}.
+\]
+A positive \(\kappa_h\) indicates an almost-sure (sustainable) regime, while a negative drift implies a defective regime where liquidation becomes probable. Calibration of \(\psi_h(\theta)\) and \(\kappa_h\) enables us to initialize the log-health \(h_0(r)\) via the leverage ratio \(r\) and simulate its stressed evolution, thereby endogenously linking liquidation risk to the relative performance of the momentum legs.
+
+\paragraph{Numerical Evaluation.}  
+For each calibrated parameter set, we compute the Kelly fraction $f^*(r)$. Laplace inversion is used to estimate $\pi(T) = \mathbb{P}(\tau_0 \le T^*)$. Gradients are approximated numerically, and $r^*$ is obtained using projected gradient ascent subject to feasibility constraints.
+
+\paragraph{Parameter Values (Baseline).}
+\begin{align*}
+\mu_L &= 0.08, &\sigma_L &= 0.75, &\lambda_L &= 0.08, &\delta_L &= 0.20,\\
+\mu_S &= 0.04, &\sigma_S &= 0.70, &\lambda_S &= 0.12,  &\delta_S &= 0.22,\\
+T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
+\end{align*}
+
+\paragraph{Results.}  
+Simulation produces optimal allocation ratios $r^*$ as functions of the Kelly fraction $k$ and asset asymmetries. Key findings (Placeholder):
+\begin{enumerate}
+    \item Beta-neutral pairs exhibit lower variance but comparable expected returns to directional strategies.
+    \item Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
+    \item High correlation or elevated jump intensity reduces the feasible range of $r$ for maintaining $\beta_P \approx 0$ and $H(t)>1$.
+\end{enumerate}
+
+\paragraph{Kelly Criterion Implementation.}
+To integrate the Kelly Criterion into this strategy, we define the optimization problem in terms of maximizing the long-term growth rate of wealth, rather than using a mean-variance utility function. The core components of the Kelly formula—win probability ($p$), loss probability ($q$), and net odds ($b$)—are derived directly from the jump-diffusion and liquidation risk framework.
+
+\subparagraph{Defining Win/Loss Probabilities and Outcomes.}
+We define a binary outcome for the Kelly calculation over a fixed time horizon $T^*$: 
+\begin{itemize}
+    \item \textbf{Loss Event (Liquidation):} The position is liquidated within the time horizon $T^*$. The probability of this event, $q$, is the liquidation probability $\pi(T^*) = \mathbb{P}(\tau_0 \leq T^*)$. The loss incurred is assumed to be a fraction $L$ of the collateral, so the net loss on the wager is $R_{loss} = -L w_L$.
+    \item \textbf{Win Event (No Liquidation):} The position is not liquidated within the time horizon $T^*$. The probability of this event is $p = 1 - q = 1 - \pi(T^*)$. The expected gain, conditional on no liquidation, is the net return from the long and short positions' idiosyncratic alpha. 
+\end{itemize}
+
+\subparagraph{Estimating Probabilities and Odds.}
+The probabilities are directly given by the first-hitting time analysis:
+\begin{align}
+q &= \pi(T^*) = \mathbb{P}(\tau_0 \leq T^*) = \mathcal{L}^{-1}\left[\frac {e^{-h_0 \Phi(q)}}{q}\right](T^*) \\
+p &= 1 - q
+\end{align}
+The net odds, $b$, are the ratio of the expected gain if not liquidated to the loss if liquidated:
+\begin{equation}
+b = \frac{\mathbb{E}[\text{Gain} | \tau_0 > T^*]}{\mathbb{E}[\text{Loss} | \tau_0 \leq T^*]} = \frac{w_L \alpha_L T^* - w_S \alpha_S T^*}{L w_L}
+\end{equation}
+Here, the expected gain is based on the expected idiosyncratic returns of the long and short assets over the period $T^*$, conditional on no liquidation.
+
+\paragraph{Optimization Problem with Kelly Criterion.}
+The objective is to find the allocation ratio $r$ that maximizes the expected logarithmic growth of wealth. The Kelly fraction, $f^*(r)$, which represents the optimal fraction of the total capital to allocate to this strategy, is given by:
+\begin{equation}
+f^*(r) = \frac{b(r)p(r) - q(r)}{b(r)}
+\end{equation}
+Since $p, q,$ and $b$ are all functions of the allocation ratio $r$ (through $w_L, w_S,$ and $h_0$), the optimization problem becomes:
+\begin{equation}
+\max_{r} \quad G(r) = q(r) \log(1 - f^*(r) L w_L) + p(r) \log(1 + f^*(r) b(r) L w_L)
+\end{equation}
+where $G(r)$ is the expected logarithmic growth rate. A more direct approach is to maximize the Kelly fraction $f^*(r)$ itself, as this is equivalent to maximizing the growth rate.
+
+For practical implementation, we use a fractional Kelly approach to mitigate the risks of model error and high volatility. The target allocation fraction becomes:
+\begin{equation}
+f_{target}(r) = k \times f^*(r)
+\end{equation}
+where $k$ is the Kelly fraction (e.g., $k=0.5$ for Half Kelly, $k=0.25$ for Quarter Kelly).
+
+\paragraph{Solution.}
+As with the mean-variance approach, a closed-form solution is not available. We solve this numerically:
+\begin{enumerate}
+    \item For a given allocation ratio $r$, calculate the corresponding weights $w_L(r), w_S(r)$ and initial log-health $h_0(r)$.
+    \item Compute the liquidation probability $q(r) = \pi(T^*)$ via numerical Laplace inversion.
+    \item Calculate the win probability $p(r) = 1 - q(r)$.
+    \item Calculate the net odds $b(r)$ based on the expected idiosyncratic returns and liquidation loss.
+    \item Compute the full Kelly fraction $f^*(r)$.
+    \item The optimization then searches for the ratio $r$ that maximizes $f^*(r)$, subject to the constraints $h_0(r) \geq h_{\min}$ and $0 < r < 1$. This can be done using a grid search or a numerical optimization routine like projected gradient ascent on $f^*(r)$.
+\end{enumerate}
+
+The optimal allocation ratio $r^*$ under the Kelly framework represents the trade-off that maximizes the long-term geometric growth rate of the portfolio, explicitly balancing the potential for high returns from leverage against the risk of ruin from liquidation. This provides a more direct and theoretically grounded approach to position sizing compared to utility-based methods.
+
+\paragraph{Calibration and Market Data.}  
+We calibrate the model using historical data from crypto assets with large idiosyncratic alpha differences. The long and short assets are chosen to enforce $\beta_P \approx 0$. Parameter estimation for the Lévy jump-diffusion model $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ employs rolling windows of log-returns. Empirical results indicate that long assets have higher $\alpha_L$ and comparable or slightly higher $\sigma_L$ than short assets, and the jump parameters account for the tail asymmetry inherent in crypto markets.
+
+\paragraph{Health Process Parameters.}
+The log-health process \( h(t) \) quantifies the collateralization health of the leveraged long--short momentum portfolio. Its characteristic exponent is defined as
+\[
+\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta),
+\]
+synthesizing the Lévy dynamics of the long winner and short loser legs (cf. Equation 38). This captures the joint jump-diffusion risk, where adverse jumps in the winner or favorable jumps in the loser drive the health process downward toward liquidation.
+
+The asymptotic regime is determined by the drift
+\[
+\kappa_h = \frac{\mathbb{E}[h(t)]}{t}.
+\]
+A positive \(\kappa_h\) indicates an almost-sure (sustainable) regime, while a negative drift implies a defective regime where liquidation becomes probable. Calibration of \(\psi_h(\theta)\) and \(\kappa_h\) enables us to initialize the log-health \(h_0(r)\) via the leverage ratio \(r\) and simulate its stressed evolution, thereby endogenously linking liquidation risk to the relative performance of the momentum legs.
+
+\paragraph{Numerical Evaluation.}  
+For each calibrated parameter set, we compute the Kelly fraction $f^*(r)$. Laplace inversion is used to estimate $\pi(T) = \mathbb{P}(\tau_0 \le T^*)$. Gradients are approximated numerically, and $r^*$ is obtained using projected gradient ascent subject to feasibility constraints.
+
+\paragraph{Parameter Values (Baseline).}
+\begin{align*}
+\mu_L &= 0.08, &\sigma_L &= 0.75, &\lambda_L &= 0.08, &\delta_L &= 0.20,\\
+\mu_S &= 0.04, &\sigma_S &= 0.70, &\lambda_S &= 0.12,  &\delta_S &= 0.22,\\
+T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
+\end{align*}
+
+\paragraph{Results.}  
+Simulation produces optimal allocation ratios $r^*$ as functions of the Kelly fraction $k$ and asset asymmetries. Key findings (Placeholder):
 \begin{enumerate}
     \item Beta-neutral pairs exhibit lower variance but comparable expected returns to directional strategies.
     \item Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
