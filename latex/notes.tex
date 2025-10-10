@@ -1066,6 +1066,131 @@ Simulation produces optimal allocation ratios $r^*$ as functions of the Kelly fr
     \item High correlation or elevated jump intensity reduces the feasible range of $r$ for maintaining $\beta_P \approx 0$ and $H(t)>1$.
 \end{enumerate}
 
+
+\subsection{Leveraged Yield Strategy: USDC collateral, borrow BTC, swap to USDC, deposit to AAVE}
+
+\paragraph{Strategy description.}
+Start with an initial USDC collateral \(C_0>0\). Using the protocol's collateral factor (maximum borrow fraction) \(\varphi\in(0,1)\), borrow BTC up to a USD-valued amount \(\varphi C_0\) (valued at spot price \(S_t\) USDC/BTC). Immediately swap the borrowed BTC into USDC and deposit the proceeds back into AAVE, which yields a supply rate \(r_A\) (here taken as \(r_A=0.046\)). Optionally repeat the borrow–swap–deposit loop \(k\) times to create looped leverage; when \(k\to\infty\) and the protocol allows, the deposit converges to a geometric-series multiple of original collateral. The main risks are: (i) borrow interest on the BTC debt (rate \(r_b\)), and (ii) mark-to-market exposure to BTC price moves which can trigger liquidation.
+
+\paragraph{Notation.}
+\begin{itemize}
+  \item \(C_0\) — initial USDC collateral (USD stable).
+  \item \(S_t\) — spot price of BTC in USDC (so BTC amount \(\times S_t\) gives USDC value).
+  \item \(\varphi\) — fraction of current deposited value that may be borrowed (protocol collateral factor).
+  \item \(r_A\) — AAVE supply APY for USDC (0.046 in the user's example).
+  \item \(r_b\) — borrow interest rate for BTC (in USD-term; charged on BTC-denominated debt but expressed in USDC-equivalent per unit time).
+  \item \(k\) — number of leverage loops (integer, could be \(\infty\) if permitted).
+  \item \(D_t\) — USD value of outstanding debt at time \(t\).
+  \item \(H_t\) — deposited USDC value on AAVE at time \(t\) (the “asset” side).
+  \item \(h_t = \log H_t - \log D_t\) — log-health process (buffer above liquidation).
+  \item \(L\) — liquidation threshold expressed as a (log) margin: liquidation occurs when \(h_t \le -\ell\) for some \(\ell>0\) set by the protocol (equivalently when the LTV exceeds the allowed threshold).
+\end{itemize}
+
+\paragraph{Leverage accounting (geometric loop).}
+If each loop borrows a fraction \(\varphi\) of the current deposited USD value and swaps it back to USDC and deposits, after \(k\) loops the total deposited USDC is
+\[
+H^{(k)} = C_0 \sum_{i=0}^{k} \varphi^{\,i} = C_0 \,\frac{1-\varphi^{\,k+1}}{1-\varphi}.
+\]
+If the protocol and gas allow taking \(k\to\infty\) and \(|\varphi|<1\), the infinite-loop (theoretical) leveraged deposit is
+\[
+H^{(\infty)} = \frac{C_0}{1-\varphi}.
+\]
+The outstanding USD-valued debt after \(k\) loops equals the USD value of the borrowed BTCs (which were swapped into USDC and redeposited), hence
+\[
+D^{(k)} = C_0 \sum_{i=1}^{k} \varphi^{\,i} = C_0\left(\frac{1-\varphi^{\,k+1}}{1-\varphi}-1\right)
+\]
+and for \(k\to\infty\),
+\[
+D^{(\infty)} = \frac{\varphi}{1-\varphi}\,C_0.
+\]
+Note: these accounting identities hold in USD terms only if swaps do not incur slippage/fees and BTC price remains unchanged during construction.
+
+\paragraph{Instantaneous net yield (deterministic part).}
+Ignoring BTC mark-to-market and fees/slippage, the instantaneous net yield (USD-rate) on the leveraged position for a given leverage level \(\varphi\) is approximately
+\[
+r_{\mathrm{net}}(\varphi) \approx \frac{H^{(k)}\,r_A - D^{(k)}\,r_b}{C_0}
+\]
+which, in the infinite-loop idealization, reduces to
+\[
+r_{\mathrm{net}}^{(\infty)}(\varphi) \;=\; \frac{ \frac{C_0}{1-\varphi}r_A - \frac{\varphi}{1-\varphi}C_0\,r_b }{C_0}
+\;=\; \frac{r_A - \varphi\,r_b}{1-\varphi}.
+\]
+Interpretation: the supply APY \(r_A\) is earned on the full leveraged deposit while borrow interest \(r_b\) is paid on the borrowed portion; dividing by \(1-\varphi\) magnifies these flows.
+
+\paragraph{Price-risk and health process.}
+Because the debt is denominated in BTC (and the swap to USDC at time of borrow converts that exposure into deposited USDC), future BTC price moves still matter: if BTC price falls, the USD value of collateral (if any collateral is in BTC or the protocol re-prices collateral) 
+or the effective liquidation metric can move against the position owing to revaluation of protocol-specific LTV metrics. To capture both the deterministic rates and stochastic price effects, model:
+
+\begin{itemize}
+  \item \(X_t\) — log-value process for USDC supply (practically deterministic), with Lévy exponent \(\psi_X(\theta)\) (so under our modelling \(\psi_X(\theta)\approx r_X \theta\) if USDC supply grows deterministically at rate \(r_X\)). For the present strategy we take \(r_X\) to be negligible compared to the AAVE supply APY because USDC itself is stable.
+  \item \(Y_t\) — log-price process of BTC (i.e. \(\log S_t\)) with Lévy exponent \(\psi_Y(\theta)\). This captures stochastic moves and heavy tails in BTC.
+\end{itemize}
+
+As in your earlier use-cases, define the log-health process exponent
+\[
+\psi_h(\theta) \;=\; \psi_X(\theta) \;+\; \psi_Y(-\theta),
+\]
+because health depends on the difference between USD deposit growth (driven by \(X\)) and BTC-denominated debt (driven through \(-Y\)). The sign in \(\psi_Y\) is negative because upward jumps in BTC (positive \(Y\)) reduce the USD-equivalent burden of BTC-denominated debt when measured in log-health, and vice versa.
+
+\paragraph{Liquidation condition and hitting-time risk.}
+Let the liquidation boundary be \(\{-\ell\}\) in log-health: liquidation occurs the first time
+\[
+\tau_{\mathrm{liq}} \;=\; \inf\{t\ge 0:\; h_t \le -\ell\}.
+\]
+Under the Lévy model the probability of survival to time \(T\) (no liquidation before \(T\)) can be studied via the Laplace exponent \(\psi_h\) and classical hitting-time formulas (or numerically via FFT / Monte Carlo when \(\psi_Y\) is non-Gaussian). In practice, the relevant quantities are:
+\begin{itemize}
+  \item the drift of \(h_t\): if \(\mathbb{E}[h_t]\) drifts up \(\Rightarrow\) lower liquidation risk; if it drifts down \(\Rightarrow\) almost-sure eventual liquidation in many models.
+  \item the volatility and jump intensity of \(Y_t\): both increase the chance of a downward excursion that reaches \(-\ell\).
+\end{itemize}
+
+\paragraph{First-order approximation for safe \(\varphi\).}
+A conservative, first-order stability condition (ignoring jumps) is that the expected instantaneous drift of log-health is positive:
+\[
+\underbrace{r_A}_{\text{earn on deposits}}\cdot\frac{1}{1-\varphi} \;-\; \underbrace{r_b}_{\text{pay on debt}}\cdot\frac{\varphi}{1-\varphi} \;-\; \underbrace{\mu_Y}_{\text{expected BTC log-drift impact}} \;>\; 0,
+\]
+where \(\mu_Y = -\mathbb{E}[\dot Y_t]\) enters because adverse BTC moves effectively shrink the buffer. Solving for \(\varphi\) (ignoring \(\mu_Y\) for a moment) gives the naive constraint
+\[
+r_A - \varphi\,r_b > 0 \quad\Longrightarrow\quad \varphi < \frac{r_A}{r_b}.
+\]
+This is only heuristic: in reality one must include volatility, jump risk, fees, swap slippage, and the protocol's precise LTV and liquidation penalty mechanics.
+
+\paragraph{Fees, slippage and gas.}
+All the closed-form accounting above assumes zero slippage, zero swap fees, no gas friction, and that borrow rates do not change during the construction of the position. In practice:
+\begin{itemize}
+  \item Each swap (BTC \(\to\) USDC) has a fee and possible price impact; large \(\varphi\) or rapid repeated loops amplify these costs.
+  \item Borrow rates \(r_b\) and supply APY \(r_A\) are time-varying; sensitivities to their changes should be stress-tested.
+  \item Liquidation penalties and unwind costs can be material in stressed scenarios and must be accounted for in tail-loss calculations.
+\end{itemize}
+
+\paragraph{Recommended modeling and implementation checklist.}
+\begin{enumerate}
+  \item Specify a stochastic model for \(\log S_t\) (e.g. jump-diffusion or a calibrated Lévy process), estimate \(\psi_Y\) from historical BTC returns.
+  \item Use the health-exponent \(\psi_h(\theta)=\psi_X(\theta)+\psi_Y(-\theta)\) to compute hitting probabilities / survival functions for \(\tau_{\mathrm{liq}}\) (analytically when possible, otherwise numerically).
+  \item Calibrate \(r_b\) and \(r_A\) from on-chain lending pools and include fee/slippage parameters.
+  \item Run Monte Carlo tail-scenarios to estimate expected shortfall conditional on liquidation and to stress-test \(\varphi\) and number of loops \(k\).
+  \item Use the deterministic net-yield formula \(r_{\mathrm{net}}^{(\infty)}(\varphi)=\dfrac{r_A-\varphi r_b}{1-\varphi}\) as a quick screening metric, but always complement it with the stochastic health-process analysis for liquidation risk.
+\end{enumerate}
+
+\paragraph{Short worked example (symbolic).}
+With \(r_A=0.046\), suppose \(r_b=0.02\) (example BTC borrow rate) and ignore price drift/volatility for a quick back-of-envelope. Then the infinite-loop net yield is
+\[
+r_{\mathrm{net}}^{(\infty)}(\varphi)=\frac{0.046 - 0.02\varphi}{1-\varphi}.
+\]
+If \(\varphi=0.5\) (50\% borrow fraction),
+\[
+r_{\mathrm{net}}^{(\infty)}(0.5)=\frac{0.046-0.01}{0.5}= \frac{0.036}{0.5}=0.072 = 7.2\% \text{ annualized (ignoring risks/costs).}
+\]
+This number is illustrative only; BTC volatility, liquidation mechanics, slippage and fees will materially change realized performance.
+
+\paragraph{Health Process Parameters.}
+Using the given Lévy exponents \(\psi_X(\theta)\) (USDC-deposit component) and \(\psi_Y(\theta)\) (BTC log-price), we derive the log-health process exponent as
+\[
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta).
+\]
+The system's regime—whether it is almost-surely safe or defective (i.e. eventually liquidated with probability 1)—is governed by the drift and large-jump behavior encoded in \(\psi_h\). Positive drift in \(h_t\) and light left-tail jumps in \(\psi_Y\) favour feasibility of large \(\varphi\); large negative jumps (heavy left-tail of BTC) and negative drift push the system toward defective-hitting regimes where only small \(\varphi\) are prudent.
+
+
+
 % ====================================================================
 \section{Conclusion}
 % ====================================================================
