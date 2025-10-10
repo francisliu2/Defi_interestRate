@@ -1069,8 +1069,8 @@ Simulation produces optimal allocation ratios $r^*$ as functions of the Kelly fr
 
 \subsection{Leveraged Yield Strategy: USDC collateral, borrow BTC, swap to USDC, deposit to AAVE}
 
-\paragraph{Strategy description.}
-Start with an initial USDC collateral \(C_0>0\). Using the protocol's collateral factor (maximum borrow fraction) \(\varphi\in(0,1)\), borrow BTC up to a USD-valued amount \(\varphi C_0\) (valued at spot price \(S_t\) USDC/BTC). Immediately swap the borrowed BTC into USDC and deposit the proceeds back into AAVE, which yields a supply rate \(r_A\) (here taken as \(r_A=0.046\)). Optionally repeat the borrow–swap–deposit loop \(k\) times to create looped leverage; when \(k\to\infty\) and the protocol allows, the deposit converges to a geometric-series multiple of original collateral. The main risks are: (i) borrow interest on the BTC debt (rate \(r_b\)), and (ii) mark-to-market exposure to BTC price moves which can trigger liquidation.
+We start with an initial USDC collateral \(C_0>0\). Using the protocol's collateral factor (maximum borrow fraction) \(\varphi\in(0,1)\), we borrow BTC up to a USD-valued amount \(\varphi C_0\) (valued at spot price \(S_t\) USDC/BTC). We then immediately swap the borrowed BTC into USDC and deposit the proceeds back into AAVE, which yields a supply rate \(r_A\). We can repeat the borrow–swap–deposit loop \(k\) times to create looped leverage; 
+when \(k\to\infty\) and the protocol allows, the deposit converges to a geometric-series multiple of original collateral. The main risks of this strategy are: (i) the borrow interest on the BTC debt (rate \(r_b\)), and (ii) the mark-to-market exposure to BTC price moves which can trigger liquidation.
 
 \paragraph{Notation.}
 \begin{itemize}
