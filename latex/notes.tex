@@ -400,25 +400,21 @@ In order to show the practical implications of our findings, we present three ex
 \hline
 \textbf{Feature / Parameter} & \textbf{Stablecoin LS Volatile} & \textbf{Momentum} & \textbf{Beta-Neutral LS} & \textbf{Leveraged Yield USDC} \\ \hline
 
-Collateral & Stablecoin & Crypto assets & Long/short crypto & USDC \\ \hline
+Collateral & Stablecoin & Crypto assets & Long crypto & USDC \\ \hline
 
-Leverage & Optional, moderate & Alpha-scaled & Allocation $r$, $\beta_P \approx 0$ & Borrow fraction $\varphi$, repeated $k$ loops \\ \hline
+Leverage & None & Alpha-scaled & Depends on allocation $r$ & Up to $\frac{1}{1-\phi}$ (looped borrowing) \\ \hline
 
-Target Return & Yield spread long/short & Trending returns & $R_P = w_L \alpha_L - w_S \alpha_S$ & $r_{\mathrm{net}}^{(\infty)} = \frac{r_A - \varphi r_b}{1-\varphi}$ \\ \hline
+Target Return & Yield spread of long/short & Trending returns & $R_P = w_L \alpha_L - w_S \alpha_S$ & $r_{\mathrm{net}}^{(\infty)} = \frac{r_A - \varphi r_b}{1-\varphi}$ \\ \hline
 
 Main Risks & Volatility, short squeezes & Trend reversals, shocks & Volatility, correlation breakdown, liquidation & BTC price moves, liquidation, fees/slippage \\ \hline
 
-Log-Health Process & $h(t)=\log\frac{\text{long}}{\text{short}}$ & $h(t)$ buffer & $h(t)=\log\frac{b_L w_L L_0}{w_S S_0}+(\log L-\log S)$ & $h_t=\log H_t - \log D_t$ \\ \hline
+Log-Health Process & $\log \left( \frac{b_X \, w_X \, X(t)}{w_Y \, Y(t)} \right)$ & $log \left( \frac{b_L \, w_L\, L(t)}{w_S \, S(t)} \right)$ & $\log \left( \frac{b_L \, w_L\, L(t)}{w_S \, S(t)} \right)$ & $\log \frac{(b_X w_X X(t))}{D_t}$ \\ \hline
 
-Health Exponent & $\psi_h \approx \psi_{\text{long}}+\psi_{\text{short}}(-)$ & Momentum asset dynamics & $\psi_h = \psi_L + \psi_S(-)$ & $\psi_h = \psi_X + \psi_Y(-)$ \\ \hline
+Drift & $\kappa_h=\mu_X -\mu_Y$ & Can be simplified to $\mu_Y$ for risk-specific purposes & $\kappa_h=w_L \mu_L - w_S \mu_S$  & $r_A/(1-\varphi) - r_b \varphi/(1-\varphi) - \mu_Y$ \\ \hline
 
-Drift & Mean yield diff & Expected alpha & $\kappa_h=\mathbb{E}[h(t)]/t$ & $r_A/(1-\varphi) - r_b \varphi/(1-\varphi) - \mu_Y$ \\ \hline
+Volatility / Jump & $\sigma_X,\sigma_Y, \lambda_Y$ & $\sigma_L,\sigma_S,\lambda_L,\lambda_S$ & $\sigma_L,\sigma_S,\lambda_L,\lambda_S$ & $\sigma_Y,\lambda_Y,\delta_Y$ \\ \hline
 
-Volatility / Jump & $\sigma_{\text{long}},\sigma_{\text{short}}$ & Asset vol, jumps & $\sigma_L,\sigma_S,\lambda_L,\lambda_S$ & $\sigma_Y,\lambda_Y,\delta_Y$ \\ \hline
-
-Terminal Wealth & $W_T=W_0 + R_{\text{long}} - R_{\text{short}}$ & $W_T$ from momentum & $W_T=W_0 + w_L R_L - w_S R_S$ & $W_T=H_t - D_t$ \\ \hline
-
-Liquidation & $h_t\le0$ & Margin call risk & $h_0(r)$ via $r,b_L$ & $h_t\le-\ell$ \\ \hline
+Terminal Wealth & $W_T=W_0 + R_{\text{long}} - R_{\text{short}}$ & $W_T=W_0 + w_L R_L - w_S R_S$ & $W_T=W_0 + w_L R_L - w_S R_S$ & $W_T=H_t - D_t$ \\ \hline
 
 Optimization & Max expected return / utility & Max Sharpe / alpha & Max utility / Kelly $f^*(r)$ & Max $r_{\mathrm{net}}(\varphi)$ subject to drift>0 \\ \hline
 
@@ -426,8 +422,7 @@ Calibration & Stablecoin spreads & Momentum factor history & Rolling $\mu_i,\sig
 \end{tabular}
 \label{tab:crypto_strategy_comparison}
 \end{table}
-
-
+Sidenote: $D_t$ represents outstanding debt.
 
 
 \subsection{Long Stablecoin–Short Volatile}
