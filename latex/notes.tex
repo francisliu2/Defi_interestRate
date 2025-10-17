@@ -392,804 +392,842 @@ Potential extensions include:
 % ====================================================================
 In order to show the practical implications of our findings, we present three examples of long-short strategies and the empirical results.
 
-\subsection{Long Stablecoin-Short Volatile }
-For the first use case, we consider a long-short strategy in which a stablecoin is chosen for the long position while a volatile cryptocurrency is borrowed to establish a short position. The economic incentive is based on the following ideas: 
+\begin{table}[h!]
+\centering
+\caption{Comparison of Four Crypto Strategies}
+\begin{tabular}{|l|p{3.5cm}|p{3.5cm}|p{3.5cm}|p{3.5cm}|}
+\hline
+\textbf{Feature / Parameter} & \textbf{Stablecoin Long–Short Volatile} & \textbf{Momentum Strategy} & \textbf{Beta-Neutral Long–Short} & \textbf{Leveraged Yield (USDC → BTC → USDC → AAVE)} \\ \hline
+
+Collateral & Stablecoin & Crypto assets & Long/short crypto & USDC \\ \hline
+
+Leverage & Optional, moderate & Position size scaling by alpha signals & Allocation ratio $r$, maintains $\beta_P \approx 0$ & Borrow fraction $\varphi$ per loop, repeated $k$ times \\ \hline
+
+Target Return & Earn yield spread between long and short stablecoins & Capture trending returns of selected assets & $R_P = w_L \alpha_L - w_S \alpha_S$ & $r_{\mathrm{net}}^{(\infty)} = \frac{r_A - \varphi r_b}{1-\varphi}$ \\ \hline
+
+Main Risks & Asset volatility, short squeezes & Trend reversals, market shocks & Asset volatility, correlation breakdown, liquidation & BTC price moves, liquidation, fees/slippage \\ \hline
+
+Log-Health Process & $h(t) = \log\frac{\text{long}}{\text{short}}$ & $h(t)$ linked to margin buffer & $h(t) = \log\frac{b_L w_L L_0}{w_S S_0} + (\log L(t) - \log S(t))$ & $h_t = \log H_t - \log D_t$ \\ \hline
+
+Health Process Exponent & $\psi_h(\theta) \approx \psi_{\text{long}}(\theta) + \psi_{\text{short}}(-\theta)$ & $\psi_h(\theta)$ via momentum asset dynamics & $\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta)$ & $\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta)$ \\ \hline
+
+Drift & Mean yield difference & Expected alpha drift & $\kappa_h = \mathbb{E}[h(t)]/t$ & $r_A \frac{1}{1-\varphi} - r_b \frac{\varphi}{1-\varphi} - \mu_Y$ \\ \hline
+
+Volatility / Jump Risk & $\sigma_{\text{long}}, \sigma_{\text{short}}$ & Asset volatility, jumps & $\sigma_L, \sigma_S, \lambda_L, \lambda_S$ & $\sigma_Y, \lambda_Y, \delta_Y$ \\ \hline
+
+Terminal Wealth & $W_T = W_0 + R_{\text{long}} - R_{\text{short}}$ & $W_T$ based on momentum returns & $W_T = W_0 + w_L R_L(T) - w_S R_S(T)$ & $W_T = H_t - D_t$ \\ \hline
+
+Liquidation Threshold & $h_t \le 0$ & Margin call risk from leveraged positions & $h_0(r)$ based on $r$ and $b_L$ & $h_t \le -\ell$ (protocol-defined) \\ \hline
+
+Optimization & Max expected return / utility & Max Sharpe or alpha capture & Max utility or Kelly fraction $f^*(r)$ & Max net yield $r_{\mathrm{net}}(\varphi)$ subject to health drift $>0$ \\ \hline
+
+Calibration & Historical stablecoin spreads & Historical momentum factor estimation & Rolling window $\mu_i, \sigma_i, \lambda_i, \delta_i$ & Historical BTC returns, $r_A, r_b$ from on-chain pools \\ \hline
+\end{tabular}
+\label{tab:crypto_strategy_comparison}
+\end{table}
+
+
+
+\subsection{Long Stablecoin–Short Volatile}
+
+For the first use case, we consider a long–short strategy in which a stablecoin is chosen for the long position while a volatile cryptocurrency is borrowed to establish a short position. The economic incentive is based on the following ideas: 
 \begin{itemize}
     \item the stablecoin is a relatively safe investment that earns a deterministic supply rate $r_X$, and
-    \item the short side is expected to appreciate in value, should the borrowed coin depreciate.
+    \item the short side is expected to appreciate in value, should the borrowed asset depreciate.
 \end{itemize}
+
 The net annualized carry is equal to the spread between supply and borrow rates, scaled by position weights:
 \begin{equation}
- R(w_X, w_Y) =  w_X r_X - w_Y r_Y  
+ R(w_X, w_Y) =  w_X r_X - w_Y r_Y,  
 \end{equation}
-Where $r_X$ represents the supply APY corresponding to the long asset and $r_Y$ represents the borrow APY of the borrowed token.
-As mentioned earlier, the liquidation risk is determined by the log-health process. We assume $\log X(t)$ and $\log Y(t)$ to be Lévy processes with Laplace exponents $\psi_X(\theta)$ and $\psi_Y(\theta)$. If $\log X$ and $\log Y$ are independent:
-\begin{equation}
-h(t) = \log\left( \frac{b_X w_X X_0}{w_Y Y_0} \right) + \left(\log X(t) - \log Y(t) \right) 
-\end{equation}
-The Laplace exponent of $h(t)$ is:
-\begin{equation}
-\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta)
-\end{equation}
-In the case of correlated Lévy drivers with a joint characteristic exponent ${\bf{\Psi}}_{X,Y}(\theta_1,\theta_2)$, one obtains the following:
-\begin{equation}
-\psi_h(\theta) = {\bf{\Psi}}_{X,Y} (\theta, - \theta) 
-\end{equation}
-\paragraph{Terminal Wealth.}  
-Under the spectrally negative assumption, the classical one-sided Lévy first-passage results apply. The terminal wealth at time $T$ is described by the following equation:
-\begin{equation}
- W_T = W_0 + w_XR_X (T) - w_YR_Y (T) + w_X r_X T - w_Y r_Y T - Lw_X 1_{ \{\tau_0 \leq T\}}   
-\end{equation}
-where $R_X(T) = \frac{X_T}{X_0} - 1$ and $R_Y(T) = \frac{Y_T}{Y_0} - 1$. The last term reflects the liquidation loss: upon liquidation being triggered $\tau_0 \leq T $, a certain amount $L$ of collateral is lost.  
-The first moment of the wealth process in this setting is then:
-\begin{equation}
-\mathbb{E}[W_T]=W_0 + w_x(e^{T \psi_X(1)}-1) - w_x(e^{T \psi_X(1)}-1) 
-+ w_X r_X T - w_Y r_Y T - Lw_X \pi (T)
-\end{equation}
-where $\pi(T) = \mathbb{P} (\tau_0 \leq T)$. 
-So, the variance of the wealth process will be:
-\begin{equation}
-\text{Var}(W_T) = \text{Var}(A) + L^2w_X^2 \pi(T)(1-\pi(T)) - 
-2Lw_X(\mathbb{E}[AI_T] - (\mathbb{E}[A]\pi (T)),
-\end{equation}
-where $A$ represents the difference between the returns of the two positions, and $I_T = {\bf{1}}_\{\tau_0 \leq T\}$.    
-The term $\mathbb{E}[AI_T]$, which couples terminal returns to the liquidation event, must be estimated via simulation or conditional methods. Neglecting this dependency leads to the independence approximation:
-\begin{equation}
-\text{Var}(W_T) \approx \text{Var}(A) +  L^2w_X^2 \pi(T)(1-\pi(T))
-\end{equation}
-The variance of $A$ is given by the following equation:
-\begin{equation}
-\text{Var}(A) = w_X^2 \text{Var}[R_X(T)] + w_Y^2  \text{Var}[R_Y(T)] - 
-2w_X w_Y  \text{Cov} [R_X(T), R_Y(T)]
-\end{equation}
-If the Lévy log-processes are independent:
-\begin{equation}
-\text{Var}[R_X(T)] = e^{T \psi X(2)} - e^{T \psi X(1)}, 
-\ \ 
-\text{Var}[R_Y(T)] = e^{T \psi Y(2)} - e^{T \psi Y(1)}
-\end{equation}
-For correlated Lévy drivers, the covariance is given by $\mathbb{E}[X_TY_T] = X_0Y_0 e^{T\Psi_{X,Y}(1,1)}$.
-When longing a stablecoin, an investor could assume that the returns generated by price movements are virtually null: $\psi_X(1) \approx \psi_X(2) \approx 0$ and $R_X(T) \approx 0$. Based on these assumptions, the expected value of the wealth process simplifies to:
-\begin{equation}
-\mathbb{E}[W_T]=W_0 - w_x(e^{T \psi_X(1)}-1) 
-+ w_X r_X T - w_Y r_Y T - Lw_X \pi (T)    
-\end{equation}
-And the variance, under the independence assumption, is:
-\begin{equation}
-\text{Var}(W_T) = w_Y^2(e^{T \psi_Y (2)} - e^{T \psi_Y (1)} + L^2w_X^2 \pi(T)(1-\pi(T))
-\end{equation}
-In this configuration, the expected return is a function of the carry and the anticipated depreciation of the borrowed token. Conversely, the return variance may be attributed to a combination of volatility on the short side and the risk of liquidation.
-\paragraph{Optimization Problem.}  
+where $r_X$ represents the supply APY corresponding to the long asset and $r_Y$ represents the borrow APY of the borrowed token.
 
-We now adapt the optimization problem to the stablecoin-collateral strategy. Parameterizing the problem in terms of the allocation ratio described in Section 5 reduces optimization to a one-dimensional decision problem in $r$.
-The investor’s utility is defined as:
+As mentioned earlier, the liquidation risk is determined by the log-health process. We assume $\log X(t)$ and $\log Y(t)$ to be L\'evy processes with Laplace exponents $\psi_X(\theta)$ and $\psi_Y(\theta)$. If $\log X$ and $\log Y$ are independent:
+\begin{equation}
+h(t) = \log\!\left( \frac{b_X w_X X_0}{w_Y Y_0} \right) + \big(\log X(t) - \log Y(t)\big),
+\end{equation}
+the Laplace exponent of $h(t)$ is:
+\begin{equation}
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta).
+\end{equation}
+In the case of correlated L\'evy drivers with a joint characteristic exponent ${\bf{\Psi}}_{X,Y}(\theta_1,\theta_2)$, one obtains:
+\begin{equation}
+\psi_h(\theta) = {\bf{\Psi}}_{X,Y} (\theta, - \theta). 
+\end{equation}
+
+\paragraph{Terminal Wealth.}
+Under the spectrally negative assumption, the terminal wealth at time $T$ is:
+\begin{equation}
+ W_T = W_0 + w_XR_X(T) - w_YR_Y(T) + w_X r_X T - w_Y r_Y T,
+\end{equation}
+where $R_X(T) = \frac{X_T}{X_0} - 1$ and $R_Y(T) = \frac{Y_T}{Y_0} - 1$.
+
+\paragraph{Expected Wealth.}
+\begin{equation}
+\mathbb{E}[W_T] = W_0 + w_X\!\big(e^{T \psi_X(1)}-1\big) - w_Y\!\big(e^{T \psi_Y(1)}-1\big) 
++ w_X r_X T - w_Y r_Y T.
+\end{equation}
+
+\paragraph{Variance of Wealth.}
+Let $A = w_X R_X(T) - w_Y R_Y(T)$. Then:
+\begin{equation}
+\text{Var}(W_T) = \text{Var}(A)
+= w_X^2 \text{Var}[R_X(T)] + w_Y^2 \text{Var}[R_Y(T)] - 
+2w_X w_Y  \text{Cov}[R_X(T), R_Y(T)].
+\end{equation}
+If the L\'evy log-processes are independent:
+\begin{equation}
+\text{Var}[R_X(T)] = e^{T \psi_X(2)} - e^{2T \psi_X(1)}, 
+\quad 
+\text{Var}[R_Y(T)] = e^{T \psi_Y(2)} - e^{2T \psi_Y(1)}.
+\end{equation}
+For correlated L\'evy drivers:
+\begin{equation}
+\text{Cov}[R_X(T),R_Y(T)] = e^{T {\bf \Psi}_{X,Y}(1,1)} - e^{T \psi_X(1)} e^{T \psi_Y(1)}.
+\end{equation}
+
+A stablecoin's price movements can be assumed to be negligeble: ($\psi_X(1) \approx \psi_X(2) \approx 0$):
+\begin{align}
+\mathbb{E}[W_T] &\approx W_0 - w_Y\big(e^{T \psi_Y(1)}-1\big) 
++ w_X r_X T - w_Y r_Y T, \\
+\text{Var}(W_T) &\approx w_Y^2 \big(e^{T \psi_Y(2)} - e^{2T \psi_Y(1)}\big).
+\end{align}
+
+\paragraph{Mean–Variance Optimization.}
+The utility function of the investor, parameterized by the allocation ratio $r$, is:
 \begin{equation}
 \max_{r} \quad \mathcal{U}(r) 
 = \mathbb{E}[W_T(r)] 
 - \rho_1 \, \mathbb{V}[W_T(r)] 
 - \rho_2 \, \mathbb{P}(\tau_0 \leq T^*),
-\label{eq:objective_stablecoin}
 \end{equation}
-where $W_T(r)$ denotes terminal wealth at time $T^*$. The first two terms are determined by the wealth process moments derived earlier, while the probability of liquidation is given by the first-hitting time distribution of the log-health process.  
-The initial log-health is:
+where $W_T(r)$ follows the above wealth process and the initial log-health is
 \begin{equation}
 h_0(r) = \log \left( \frac{b_X w_X X_0}{w_Y Y_0} \right) 
-= \log b_X + \log r + \log\!\left(\frac{X_0}{Y_0}\right),
-\label{eq:initial_health_stablecoin}
+= \log b_X + \log r + \log\!\left(\frac{X_0}{Y_0}\right).
 \end{equation}
-so that the risk of liquidation is explicitly linked to the allocation ratio.  
+The trade-off between expected carry and liquidation probability defines the feasible region of optimal allocations.
 
-\paragraph{Solution.} Provided that $W_T(r)$ is characterized solely by its first two moments and the probability of liquidation requires a Laplace inversion, closed-form solutions are generally not available. As a result, we adopt a numerical solution approach:
+\paragraph{Kelly Criterion Implementation.}
+To integrate the Kelly criterion, we maximize the long-term growth rate of wealth. The core components ----win probability ($p$), loss probability ($q$), and net odds ($b$) ---- are derived from the jump-diffusion and liquidation framework.
+
+\subparagraph{Win/Loss Probabilities.}
+Define a binary outcome over time $T^*$:
+\begin{itemize}
+    \item \textbf{Loss (Liquidation):} Probability $q = \pi(T^*) = \mathbb{P}(\tau_0 \le T^*)$. Net loss $R_{\text{loss}} = -L w_X$.
+    \item \textbf{Win (No Liquidation):} Probability $p = 1-q$. Expected gain is the net return from the carry and the short leg.
+\end{itemize}
+
+\subparagraph{Net Odds.}
+\begin{align}
+q &= \pi(T^*) = \mathcal{L}^{-1}\!\left[\frac{e^{-h_0 \Phi(q)}}{q}\right](T^*), & p &= 1-q, \\
+b &= \frac{\mathbb{E}[\text{Gain} \mid \tau_0 > T^*]}{\mathbb{E}[\text{Loss} \mid \tau_0 \le T^*]} 
+= \frac{w_X r_X T^* - w_Y r_Y T^* - w_Y(e^{T^* \psi_Y(1)}-1)}{L w_X}.
+\end{align}
+
+\paragraph{Kelly Optimization.}
+The optimal Kelly fraction is:
+\begin{equation}
+f^*(r) = \frac{b(r)p(r) - q(r)}{b(r)},
+\end{equation}
+and the expected log-growth rate:
+\begin{equation}
+G(r) = q(r) \log\!\big(1 - f^*(r) L w_X\big) + p(r) \log\!\big(1 + f^*(r) b(r) L w_X\big).
+\end{equation}
+A fractional Kelly approach mitigates estimation risk:
+\begin{equation}
+f_{\text{target}}(r) = k \times f^*(r), \quad k \in (0,1).
+\end{equation}
+
+\paragraph{Solution Procedure.}
+Numerical steps for both optimization frameworks:
 \begin{enumerate}
-    \item Compute $\mathbb{E}[W_T(r)]$ and $\mathbb{V}[W_T(r)]$ using the expressions described above.
-    \item Evaluate $\mathbb{P}(\tau_0 \leq T^*)$ via the Laplace transform inversion of Theorem~\ref{thm:fht_laplace_section3}.
-    \item Approximate numerical gradients $\nabla \mathcal{U}(r)$ by finite differences.
-    \item Employ projected gradient ascent to update $r$, ensuring feasibility with respect to the constraints.
-    \item Employ backtracking line search for step-size selection and terminate when both the gradient norm and objective improvement are below tolerance.
+    \item Compute $w_X(r)$, $w_Y(r)$, and initial log-health $h_0(r)$.
+    \item Evaluate the probability of liquidation $q(r) = \pi(T^*)$ by numerical Laplace inversion; set $p(r) = 1 - q(r)$.
+    \item Compute expected wealth and variance for mean–variance optimization.
+    \item Calculate the net odds $b(r)$ and the Kelly fraction $f^*(r)$ for the Kelly problem.
+    \item Optimize over $r$, ensuring feasibility: $h_0(r) \ge h_{\min}$ and $0 < r < 1$.
 \end{enumerate}
 
-The optimization problem highlights the fundamental trade-off between over-collateralization and return amplification. Increasing $r$ improves initial health $h_0(r)$, thus lowering the probability of liquidation, but concurrently reduces expected carry. Conversely, decreasing $r$ leverages the short exposure, raising expected returns but pushing the process toward the almost sure liquidation regime.  
-The optimal collateral ratio $r^*$ represents a trade-off between carry yield, volatility risk, and liquidation probability. A feasible optimum exists only in the defective hitting regime, where liquidation is not certain; in the alternative regime, no sustainable position exists. Thus, this framework rigorously determines feasible and optimal leverage for DeFi strategies.
-\\
-\paragraph{Calibration and DeFi Market Data.}  
-To demonstrate the practical implications of our framework, we calibrate the model using data from decentralized lending protocols and cryptocurrency markets. This calibration evaluates the strategy's feasibility under realistic conditions and quantifies the sensitivity of key outputs—optimal allocations and liquidation probabilities—to market volatility and jump risk.
+\paragraph{Calibration and DeFi Market Data.}
+We calibrate the model using data from decentralized lending protocols and cryptocurrency markets. Stablecoin supply rates $r_X$ typically range from 2--6\% per annum, while borrowing rates for volatile assets (e.g. ETH) range from 5--10\%.  
+L\'evy jump–diffusion parameters $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ are estimated using daily log returns. Stablecoins exhibit negligible diffusion and jump components ($\sigma_X \approx 0$, $\lambda_X \approx 0$), while volatile assets show significant jump intensities and fat tails.
 
-We use historical data from two major lending platforms, namely \textit{Aave} and \textit{Compound}, focusing on weekly averages of supply and borrow APY. Stablecoin supply rates $r_X$ are typically in the range of 2--6\% per annum, while borrowing rates for the most volatile assets (e.g. ETH, WBTC) range from 5--10\%. These rates determine the deterministic carry component from equation 36.
+\paragraph{Health Process Parameters.}
+The log-health process exponent is given by $\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta)$. The drift $\kappa_h = \mathbb{E}[h(t)]/t$ determines whether the regime is defective ($\kappa_h>0$) or almost-sure liquidation ($\kappa_h<0$).
 
-As mentioned earlier, the asset prices $\log X(t)$ and $\log Y(t)$ are modeled as Lévy jump-diffusions. The parameters $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ are estimated using daily log returns of representative assets, using a rolling window.
-We assume stablecoins to exhibit negligible diffusion and jump terms, i.e. $\sigma_X \approx 0$, $\lambda_X \approx 0$, while rather volatile assets (e.g. SOL, BTC) display significant jump intensities and fat-tailed return distributions.
+\paragraph{Numerical Evaluation.}
+For each parameter set, we compute:
+\begin{itemize}
+    \item $\mathbb{E}[W_T(r)]$ and $\mathbb{V}[W_T(r)]$ for mean–variance optimization,
+    \item $\mathbb{P}(\tau_0 \leq T^*)$ by Laplace inversion,
+    \item $f^*(r)$ and $G(r)$ for Kelly optimization.
+\end{itemize}
+Laplace inversions use the Gaver–Stehfest algorithm with $N=16$ terms.
 
-\paragraph{Health Process Parameters.}  
-Using the given Lévy exponents $\psi_X(\theta)$ and $\psi_Y(\theta)$, we derive the log-health process exponent as $\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta)$ (see Equation 38). The system's regime—whether it is almost-sure or defective—is determined by the drift $\kappa_h = \mathbb{E}[h(t)]/t$. This calibration allows us to directly set the initial log-health $h_0(r)$ and manage its evolution during market stress.
-
-\paragraph{Numerical Evaluation.}  
-For each set of estimated parameters, we compute the objective function in Eq.~\eqref{eq:objective_stablecoin}. The moments of terminal wealth, $\mathbb{E}[W_T(r)]$ and $\mathbb{V}[W_T(r)]$, are derived from their analytical expressions, while the liquidation probabilities $\mathbb{P}(\tau_0 \leq T^*)$ are obtained by numerical Laplace inversion. Specifically, we invert the expression $\mathbb{E}[e^{-q \tau_0}] = e^{-h_0 \Phi(q)}$ using the stable Gaver–Stehfest algorithm with $N=16$ terms.
-
-\paragraph{Parameter Values.}  
-Placeholder parameters:
+\paragraph{Parameter Values.}
 \begin{align*}
 r_X &= 0.04, \quad r_Y = 0.08,\quad\sigma_Y = 0.85,\\
- \lambda_Y &= 0.12,\quad \delta_Y = 0.25, \quad h_{\min} = 0.1,\\
- T^* &= 30 \text{ days}.
+\lambda_Y &= 0.12,\quad \delta_Y = 0.25, \quad h_{\min} = 0.1,\\
+T^* &= 30 \text{ days.}
 \end{align*}
 
-\paragraph{Implementation.}  
-All computations are performed in \texttt{Python}, with Laplace inversions handled by custom routines built on \texttt{mpmath}. Projected gradient ascent is used to solve the optimization problem, ensuring $h_0(r) \geq h_{\min}$ and $0 < r < 1$ at each iteration.
-
-\paragraph{Results.}  
-Simulation results yield optimal allocation ratios $r^*$ as functions of the risk-aversion parameters $(\rho_1, \rho_2)$, collateral thresholds, and volatility levels. The resulting efficient frontier highlights the nonlinear trade-off between expected carry and liquidation probability.  
-In particular, we find that(Placeholders):
+\paragraph{Results.}
+Simulation results yield optimal allocation ratios $r^*$ under both optimization frameworks:
 \begin{enumerate}
-    \item For defective-hitting regimes (positive effective drift $\kappa_h > 0$), feasible long-term allocations exist with moderate leverage and low liquidation probability. 
-    \item In almost-sure liquidation regimes (negative $\kappa_h$ dominated by jumps), optimal allocations collapse toward $r \to 1$, implying that leveraged shorting is not sustainable.
-    \item Sensitivity analysis confirms that the stability of optimal $r^*$ depends strongly on jump intensity $\lambda_Y$ and the initial health $h_0$, underscoring the importance of jump-risk calibration.
+    \item Under mean–variance optimization, $r^*$ balances carry and volatility risk, with higher $\rho_1$ reducing leverage.
+    \item Under the Kelly criterion, $r^*$ maximizes geometric growth, explicitly accounting for liquidation probability and expected gain.
+    \item For defective-hitting regimes ($\kappa_h > 0$), feasible allocations exist with moderate leverage and low liquidation probability.
+    \item In almost-sure liquidation regimes ($\kappa_h < 0$), both frameworks converge to $r \to 1$, implying that leveraged shorting is unsustainable.
 \end{enumerate}
 
-The following section presents empirical validation using historical DeFi rates and price data. We evaluate realized liquidation frequencies against model-implied probabilities, test robustness under different collateral factors, and compare the optimal allocation rule to naive leverage strategies.
-
-A reference implementation in Python is provided for replication and sensitivity analysis. The script simulates jump–diffusion dynamics for the shorted asset, computes $\pi(T)$ via Monte Carlo simulation, and evaluates the utility $\mathcal{U}(r)$ on a discrete grid of allocation ratios. The framework outputs the optimal ratio $r^*$ together with the corresponding expected wealth, variance, and liquidation probability, enabling direct numerical comparison across risk-aversion parameters $(\rho_1, \rho_2)$ and market conditions.
-
-
-\paragraph{Kelly Criterion Implementation.}
-To integrate the Kelly Criterion into this strategy, we define the 
-
-optimization problem in terms of maximizing the long-term growth rate of wealth, rather than using a mean-variance utility function. The core components of the Kelly formula—win probability ($p$), loss probability ($q$), and net odds ($b$)—are derived directly from the jump-diffusion and liquidation risk framework.
-
-\subparagraph{Defining Win/Loss Probabilities and Outcomes.}
-We define a binary outcome for the Kelly calculation over a fixed time horizon $T^*$: 
-\begin{itemize}
-    \item \textbf{Loss Event (Liquidation):} The position is liquidated within the time horizon $T^*$. The probability of this event, $q$, is the liquidation probability $\pi(T^*) = \mathbb{P}(\tau_0 \leq T^*)$. The loss incurred is assumed to be a fraction $L$ of the collateral, so the net loss on the wager is $R_{loss} = -L w_X$.
-    \item \textbf{Win Event (No Liquidation):} The position is not liquidated within the time horizon $T^*$. The probability of this event is $p = 1 - q = 1 - \pi(T^*)$. The expected gain, conditional on no liquidation, is the net return from the carry and the short position's performance. 
-\end{itemize}
-
-\subparagraph{Estimating Probabilities and Odds.}
-The probabilities are directly given by the first-hitting time analysis:
-\begin{align}
-q &= \pi(T^*) = \mathbb{P}(\tau_0 \leq T^*) = \mathcal{L}^{-1}\left[\frac {e^{-h_0 \Phi(q)}}{q}\right](T^*) \\
-p &= 1 - q
-\end{align}
-The net odds, $b$, are the ratio of the expected gain if not liquidated to the loss if liquidated:
-\begin{equation}
-b = \frac{\mathbb{E}[\text{Gain} | \tau_0 > T^*]}{\mathbb{E}[\text{Loss} | \tau_0 \leq T^*]} = \frac{w_X r_X T^* - w_Y r_Y T^* - w_Y(e^{T^* \psi_Y(1)}-1)}{L w_X}
-\end{equation}
-Here, we use the simplified expected wealth expression, assuming the stablecoin's price return is negligible and focusing on the carry and the short leg's performance.
-
-\paragraph{Optimization Problem with Kelly Criterion.}
-The objective is to find the allocation ratio $r$ that maximizes the expected logarithmic growth of wealth. The Kelly fraction, $f^*(r)$, which represents the optimal fraction of capital to allocate to this strategy, is given by:
-\begin{equation}
-f^*(r) = \frac{b(r)p(r) - q(r)}{b(r)}
-\end{equation}
-Since $p, q,$ and $b$ are all functions of the allocation ratio $r$ (through $w_X, w_Y,$ and $h_0$), the optimization problem becomes:
-\begin{equation}
-\max_{r} \quad G(r) = q(r) \log(1 - f^*(r) L w_X) + p(r) \log(1 + f^*(r) b(r) L w_X)
-\end{equation}
-where $G(r)$ is the expected logarithmic growth rate. A more direct approach is to maximize the Kelly fraction $f^*(r)$ itself, as this is equivalent to maximizing the growth rate.
-
-For practical implementation, we use a fractional Kelly approach to mitigate the risks of model error and high volatility. The target allocation fraction becomes:
-\begin{equation}
-f_{target}(r) = k \times f^*(r)
-\end{equation}
-where $k$ is the Kelly fraction (e.g., $k=0.5$ for Half Kelly, $k=0.25$ for Quarter Kelly).
-
-\paragraph{Solution.}
-As with the mean-variance approach, a closed-form solution is not available. We solve this numerically:
-\begin{enumerate}
-    \item For a given allocation ratio $r$, calculate the corresponding weights $w_X(r), w_Y(r)$ and initial log-health $h_0(r)$.
-    \item Compute the liquidation probability $q(r) = \pi(T^*)$ via numerical Laplace inversion.
-    \item Calculate the win probability $p(r) = 1 - q(r)$.
-    \item Calculate the net odds $b(r)$ based on the expected returns and liquidation loss.
-    \item Compute the full Kelly fraction $f^*(r)$.
-    \item The optimization then searches for the ratio $r$ that maximizes $f^*(r)$, subject to the constraints $h_0(r) \geq h_{\min}$ and $0 < r < 1$. This can be done using a grid search or a numerical optimization routine like projected gradient ascent on $f^*(r)$.
-\end{enumerate}
-
-The optimal allocation ratio $r^*$ under the Kelly framework represents the trade-off that maximizes the long-term geometric growth rate of the portfolio, explicitly balancing the potential for high returns from leverage against the risk of ruin from liquidation. This provides a more direct and theoretically grounded approach to position sizing compared to utility-based methods.
-
-\subsection{Long-Short Momentum Strategy}
-
-For our second use case, we consider a long–short momentum strategy: here momentum is defined as performance over a specific period of time. A long position is taken in an asset with positive recent returns (``momentum winner''), and a short position is taken in an asset with negative recent returns (``momentum loser''). The idea underlying the strategy is fairly simple: the investor must buy tokens that are outperforming and short-sell those that are underperforming..
-
-The net expected return is proportional to the difference in expected performance between the two assets, scaled by position weights:
-\begin{equation}
-R(w_L, w_S) = w_L r_L - w_S r_S,
-\end{equation}
-where $r_L$ is the expected return of the long asset, and $r_S$ the expected return of the short asset.  
-
-In this different setting, we update the log-health process:
-\begin{equation}
-h(t) = \log\left(\frac{b_L w_L L_0}{w_S S_0}\right) + \left(\log L(t) - \log S(t)\right),
-\end{equation}
-where $L(t)$ and $S(t)$ are the long and short asset price processes, $L_0, S_0$ their initial prices, and $b_L$ is a collateral factor for the long asset.
-
-Assuming $\log L$ and $\log S$ follow Lévy processes with Laplace exponents $\psi_L(\theta)$ and $\psi_S(\theta)$, the Laplace exponent of $h(t)$ is
-\begin{equation}
-\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta).
-\end{equation}
-In the case of correlated drivers with joint characteristic exponent ${\bf{\Psi}}_{L,S}(\theta_1,\theta_2)$:
-\begin{equation}
-\psi_h(\theta) = {\bf{\Psi}}_{L,S}(\theta,-\theta).
-\end{equation}
-
-\paragraph{Terminal Wealth.}  
-The total wealth of the portfolio at time $T$ is:
-\begin{equation}
-W_T = W_0 + w_L R_L(T) - w_S R_S(T) - L w_L 1_{\{\tau_0 \leq T\}},
-\end{equation}
-where $R_L(T) = \frac{L_T}{L_0}-1$ and $R_S(T) = \frac{S_T}{S_0}-1$. The last term represents the liquidation loss triggered by $h(t)$ reaching zero.
-
-The first two moments of the wealth process are the following:
-\begin{equation}
-\mathbb{E}[W_T] = W_0 + w_L(e^{T\psi_L(1)}-1) - w_S(e^{T\psi_S(1)}-1) - L w_L \pi(T),
-\end{equation}
-\begin{equation}
-\text{Var}(W_T) = \text{Var}(A) + L^2 w_L^2 \pi(T)(1-\pi(T)) - 2L w_L (\mathbb{E}[A I_T] - \mathbb{E}[A]\pi(T)),
-\end{equation}
-where $A = w_L R_L(T) - w_S R_S(T)$ and $I_T = 1_{\{\tau_0 \leq T\}}$. Under the independence approximation:
-\begin{equation}
-\text{Var}(W_T) \approx \text{Var}(A) + L^2 w_L^2 \pi(T)(1-\pi(T)),
-\end{equation}
-with
-\begin{equation}
-\text{Var}(A) = w_L^2 \text{Var}[R_L(T)] + w_S^2 \text{Var}[R_S(T)] - 2 w_L w_S \text{Cov}[R_L(T),R_S(T)].
-\end{equation}
-
-In this configuration, the expected return is a function of the collateralized carry and the relative performance of the borrowed asset. The variance of the wealth process arises from both asset volatility and the risk of liquidation.  
-
-\paragraph{Optimization Problem.}  
-The investor’s utility is:
-\begin{equation}
-\max_{r} \quad \mathcal{U}(r) 
-= \mathbb{E}[W_T(r)] 
-- \rho_1 \, \mathbb{V}[W_T(r)] 
-- \rho_2 \, \mathbb{P}(\tau_0 \leq T^*),
-\label{eq:objective_momentum_defi}
-\end{equation}
-with $W_T(r)$ the terminal wealth at $T^*$. The initial log-health is
-\begin{equation}
-h_0(r) = \log \left( \frac{b_L w_L L_0}{w_S S_0} \right) 
-= \log b_L + \log r + \log\!\left(\frac{L_0}{S_0}\right),
-\end{equation}
-which links the probability of liquidation to the allocation and initial asset prices.
-
-\paragraph{Solution.}  
-As in the stablecoin strategy, closed-form solutions are generally unavailable, so we adopt a numerical approach:
-\begin{enumerate}
-    \item Compute $\mathbb{E}[W_T(r)]$ and $\mathbb{V}[W_T(r)]$ using the moment formulas above.
-    \item Evaluate $\mathbb{P}(\tau_0 \leq T^*)$ via Laplace inversion of the first-passage time of $h(t)$.
-    \item Approximate $\nabla \mathcal{U}(r)$ using finite differences.
-    \item Apply projected gradient ascent to update $r$, enforcing $r>0$.
-    \item Use backtracking line search and terminate when the gradient and objective improvements are below tolerance.
-\end{enumerate}
-
-\paragraph{Calibration and Market Data.}  
-The model is calibrated on daily data for tokens with pronounced cross-sectional momentum. Momentum winners (long leg) and losers (short leg) are selected based on extreme cumulative returns over a $k=30$ day formation period. The Lévy jump-diffusion parameters $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ for all assets are then estimated through rolling windows of historical log-returns. Empirical estimates show that momentum winners are characterized by a higher drift $\mu_L$ and comparable or slightly higher volatility $\sigma_L$ relative to losers. The jump parameters $(\lambda_i, \delta_i)$ effectively capture the pronounced asymmetry and fat tails in crypto returns. This calibration aligns with the stylized fact that positive-return assets often exhibit sustained upward drift alongside elevated idiosyncratic jump risk.
-
-\paragraph{Numerical Evaluation.}  
-For each set of calibrated parameters, we compute the utility in \eqref{eq:objective_momentum_defi}. Laplace inversion is used to evaluate $\pi(T) = \mathbb{P}(\tau_0 \le T^*)$. Gradients are approximated numerically, and $r^*$ is located using projected gradient ascent subject to feasibility constraints.
-
-\paragraph{Parameter Values (Baseline).}
-\begin{align*}
-\mu_L &= 0.10, &\sigma_L &= 0.80, &\lambda_L &= 0.10, &\delta_L &= 0.20,\\
-\mu_S &= 0.05, &\sigma_S &= 0.70, &\lambda_S &= 0.20, &\delta_S &= 0.25,\\
-T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
-\end{align*}
-
-\paragraph{Results.}  
-Simulation produces optimal allocation ratios $r^*$ as functions of $(\rho_1, \rho_2)$ and asset asymmetries. Key findings (Placeholder):
-\begin{enumerate}
-    \item In defective-hitting regimes ($\kappa_h>0$), moderate momentum exposure is feasible with low liquidation probability.
-    \item In almost-sure breakdown regimes ($\kappa_h<0$), $r^* \to 0$, effectively neutralizing the momentum position.
-    \item Sensitivity analysis shows $r^*$ is strongly affected by jump intensity $\lambda_S$ and volatility $\sigma_S$, as downside risk of the short leg dominates.
-\end{enumerate}
-
-
-\paragraph{Kelly Criterion Implementation.}
-To integrate the Kelly Criterion into this strategy, we define the optimization problem in terms of maximizing the long-term growth rate of wealth, rather than using a mean-variance utility function. The core components of the Kelly formula—win probability ($p$), loss probability ($q$), and net odds ($b$)—are derived directly from the jump-diffusion and liquidation risk framework.
-
-\subparagraph{Defining Win/Loss Probabilities and Outcomes.}
-We define a binary outcome for the Kelly calculation over a fixed time horizon $T^*$: 
-\begin{itemize}
-    \item \textbf{Loss Event (Liquidation):} The position is liquidated within the time horizon $T^*$. The probability of this event, $q$, is the liquidation probability $\pi(T^*) = \mathbb{P}(\tau_0 \leq T^*)$. The loss incurred is assumed to be a fraction $L$ of the collateral, so the net loss on the wager is $R_{loss} = -L w_L$.
-    \item \textbf{Win Event (No Liquidation):} The position is not liquidated within the time horizon $T^*$. The probability of this event is $p = 1 - q = 1 - \pi(T^*)$. The expected gain, conditional on no liquidation, is the net return from the long and short positions' performance. 
-\end{itemize}
-
-\subparagraph{Estimating Probabilities and Odds.}
-The probabilities are directly given by the first-hitting time analysis:
-\begin{align}
-q &= \pi(T^*) = \mathbb{P}(\tau_0 \leq T^*) = \mathcal{L}^{-1}\left[\frac {e^{-h_0 \Phi(q)}}{q}\right](T^*) \\
-p &= 1 - q
-\end{align}
-The net odds, $b$, are the ratio of the expected gain if not liquidated to the loss if liquidated:
-\begin{equation}
-b = \frac{\mathbb{E}[\text{Gain} | \tau_0 > T^*]}{\mathbb{E}[\text{Loss} | \tau_0 \leq T^*]} = \frac{w_L(e^{T^*\psi_L(1)}-1) - w_S(e^{T^*\psi_S(1)}-1)}{L w_L}
-\end{equation}
-Here, the expected gain is based on the expected returns of the long and short assets over the period $T^*$, conditional on no liquidation.
-
-\paragraph{Optimization Problem with Kelly Criterion.}
-The objective is to find the allocation ratio $r$ that maximizes the expected logarithmic growth of wealth. The Kelly fraction, $f^*(r)$, which represents the optimal fraction of the total capital to allocate to this strategy, is given by:
-\begin{equation}
-f^*(r) = \frac{b(r)p(r) - q(r)}{b(r)}
-\end{equation}
-Since $p, q,$ and $b$ are all functions of the allocation ratio $r$ (through $w_L, w_S,$ and $h_0$), the optimization problem becomes:
-\begin{equation}
-\max_{r} \quad G(r) = q(r) \log(1 - f^*(r) L w_L) + p(r) \log(1 + f^*(r) b(r) L w_L)
-\end{equation}
-where $G(r)$ is the expected logarithmic growth rate. A more direct approach is to maximize the Kelly fraction $f^*(r)$ itself, as this is equivalent to maximizing the growth rate.
-
-For practical implementation, we use a fractional Kelly approach to mitigate the risks of model error and high volatility. The target allocation fraction becomes:
-\begin{equation}
-f_{target}(r) = k \times f^*(r)
-\end{equation}
-where $k$ is the Kelly fraction (e.g., $k=0.5$ for Half Kelly, $k=0.25$ for Quarter Kelly).
-
-\paragraph{Solution.}
-As with the mean-variance approach, a closed-form solution is not available. We solve this numerically:
-\begin{enumerate}
-    \item For a given allocation ratio $r$, calculate the corresponding weights $w_L(r), w_S(r)$ and initial log-health $h_0(r)$.
-    \item Compute the liquidation probability $q(r) = \pi(T^*)$ via numerical Laplace inversion.
-    \item Calculate the win probability $p(r) = 1 - q(r)$.
-    \item Calculate the net odds $b(r)$ based on the expected returns and liquidation loss.
-    \item Compute the full Kelly fraction $f^*(r)$.
-    \item The optimization then searches for the ratio $r$ that maximizes $f^*(r)$, subject to the constraints $h_0(r) \geq h_{\min}$ and $0 < r < 1$. This can be done using a grid search or a numerical optimization routine like projected gradient ascent on $f^*(r)$.
-\end{enumerate}
-
-The optimal allocation ratio $r^*$ under the Kelly framework represents the trade-off that maximizes the long-term geometric growth rate of the portfolio, explicitly balancing the potential for high returns from leverage against the risk of ruin from liquidation. This provides a more direct and theoretically grounded approach to position sizing compared to utility-based methods.
-
-\paragraph{Calibration and Market Data.}  
-The model is calibrated on daily data for tokens with pronounced cross-sectional momentum. Momentum winners (long leg) and losers (short leg) are selected based on extreme cumulative returns over a $k=30$ day formation period. The Lévy jump-diffusion parameters $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ for all assets are then estimated through rolling windows of historical log-returns. Empirical estimates show that momentum winners are characterized by a higher drift $\mu_L$ and comparable or slightly higher volatility $\sigma_L$ relative to losers. The jump parameters $(\lambda_i, \delta_i)$ effectively capture the pronounced asymmetry and fat tails in crypto returns. This calibration aligns with the stylized fact that positive-return assets often exhibit sustained upward drift alongside elevated idiosyncratic jump risk.
-
-\paragraph{Numerical Evaluation.}  
-For each set of calibrated parameters, we compute the Kelly fraction $f^*(r)$. Laplace inversion is used to evaluate $\pi(T) = \mathbb{P}(\tau_0 \le T^*)$. Gradients are approximated numerically, and $r^*$ is located using projected gradient ascent subject to feasibility constraints.
-
-\paragraph{Parameter Values (Baseline).}
-\begin{align*}
-\mu_L &= 0.10, &\sigma_L &= 0.80, &\lambda_L &= 0.10, &\delta_L &= 0.20,\\
-\mu_S &= 0.05, &\sigma_S &= 0.70, &\lambda_S &= 0.20, &\delta_S &= 0.25,\\
-T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
-\end{align*}
-
-\paragraph{Results.}  
-Simulation produces optimal allocation ratios $r^*$ as functions of the Kelly fraction $k$ and asset asymmetries. Key findings (Placeholder):
-\begin{enumerate}
-    \item In defective-hitting regimes ($\kappa_h>0$), moderate momentum exposure is feasible with low liquidation probability.
-    \item In almost-sure breakdown regimes ($\kappa_h<0$), $r^* \to 0$, effectively neutralizing the momentum position.
-    \item Sensitivity analysis shows $r^*$ is strongly affected by jump intensity $\lambda_S$ and volatility $\sigma_S$, as downside risk of the short leg dominates.
-\end{enumerate}
-
-\subsection{Beta-Neutral Long–Short Strategy}
-
-The third use case implements a beta-neutral long-short strategy with the goal of isolating idiosyncratic returns. The mechanism is to neutralize the exposure to the aggregate cryptocurrency market. This is achieved by taking a long position in a high-alpha asset $\alpha_L$ and a short position in an asset with a similar beta but lower alpha $\alpha_S$, thus capturing the spread of alpha while mitigating the systematic risk.
-The net expected return is given by the weighted difference in the assets' idiosyncratic alphas:
-\begin{equation}
-R(w_L, w_S) = w_L \alpha_L - w_S \alpha_S,
-\end{equation}
-where $\alpha_L$ is the expected idiosyncratic return of the long asset, and $\alpha_S$ is the expected idiosyncratic return of the short asset.
-
-Let $\beta_i$ denote the estimated market beta of asset $i$ with respect to the representative crypto market index CRIX. We construct a portfolio composed of a long leg $\mathcal{L}$ and a short leg $\mathcal{S}$, with corresponding portfolio weights $w_{\mathcal{L}}$ and $w_{\mathcal{S}}$. Beta-neutrality means that the total systematic exposure vanishes:
-\begin{equation}
-    \beta_P = \sum_{i \in \mathcal{L}} w_i \beta_i - \sum_{j \in \mathcal{S}} w_j \beta_j \approx 0.
-\end{equation}
-To ensure market neutrality, we adjust the scaling between the two legs such that
-\begin{equation}
-    \frac{\sum_{i \in \mathcal{L}} w_i \beta_i}{\sum_{j \in \mathcal{S}} w_j \beta_j} = 1,
-\end{equation}
-while maintaining a net positive collateralization ratio.
+\paragraph{Comparative Analysis.}
+The Kelly framework provides a direct growth-optimal benchmark, while the mean–variance approach offers a risk-adjusted perspective more suitable for institutional investors. Fractional Kelly scaling aligns the two, yielding practical allocations that manage risk without sacrificing growth potential.
 
 \paragraph{Implementation.}
-\begin{enumerate}
-    \item Supply the lending pool with a bluechip cryptocurrency as collateral on a lending protocol.
-    \item Borrow a correlated cryptocurrency to short.
-    \item Periodically rebalance to maintain beta neutrality.
-\end{enumerate}
+All computations are performed in \texttt{Python}. Laplace inversions use \texttt{mpmath}, and projected gradient ascent ensures $h_0(r) \ge h_{\min}$ at each iteration. The code simulates jump–diffusion dynamics, computes $\pi(T^*)$, and outputs optimal $r^*$, expected wealth, variance, and liquidation probabilities for varying $(\rho_1, \rho_2)$ and Kelly fractions $k$.
 
-The economic rationale hinges on the pronounced common-factor behavior observed in cryptocurrency markets, primarily driven by liquidity and sentiment. By neutralizing market beta, the portfolio hedges out this systematic exposure, generating returns from relative performance and transient valuation spreads between fundamentally aligned assets. The target expected return is calculated from the following equation:
-\begin{equation}
-    \mathbb{E}[r_P] \approx \sum_{i \in \mathcal{L}} w_i \alpha_i - \sum_{j \in \mathcal{S}} w_j \alpha_j,
-\end{equation}
-where $\alpha_i$ denotes the idiosyncratic excess return of asset $i$. 
+\subsection{Beta-Neutral Long--Short Strategy}
 
-In this different setting, we update the log-health process:
-\begin{equation}
-h(t) = \log\left(\frac{b_L w_L L_0}{w_S S_0}\right) + \left(\log L(t) - \log S(t)\right),
-\end{equation}
-where $L(t)$ and $S(t)$ are the long and short asset price processes, $L_0, S_0$ their initial prices, and $b_L$ is a collateral factor for the long asset.
+The beta-neutral long-short strategy isolates idiosyncratic returns by neutralizing exposure to the aggregate cryptocurrency market. The portfolio takes a long position in a high-alpha asset $\alpha_L$ and a short position in an asset with similar beta but lower alpha $\alpha_S$, capturing the alpha spread while mitigating systematic risk.  
 
-Assuming $\log L$ and $\log S$ follow Lévy processes with Laplace exponents $\psi_L(\theta)$ and $\psi_S(\theta)$, the Laplace exponent of $h(t)$ is
+\paragraph{Portfolio Construction.}  
+Let $\beta_i$ denote the market beta of asset $i$. Construct long leg $\mathcal{L}$ and short leg $\mathcal{S}$ with weights $w_{\mathcal{L}}, w_{\mathcal{S}}$. Beta-neutrality requires
+\[
+\beta_P = \sum_{i \in \mathcal{L}} w_i \beta_i - \sum_{j \in \mathcal{S}} w_j \beta_j \approx 0,
+\]
+enforced via scaling between legs while maintaining positive collateralization.
+
+\paragraph{Expected Return and Variance.}  
+Ignoring liquidation events, the expected terminal wealth is
 \begin{equation}
-\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta).
+\mathbb{E}[W_T] = W_0 + w_L(e^{T\psi_L(1)}-1) - w_S(e^{T\psi_S(1)}-1),
 \end{equation}
-In the case of correlated drivers with joint characteristic exponent ${\bf{\Psi}}_{L,S}(\theta_1,\theta_2)$:
+and the variance is
+\begin{equation}
+\text{Var}[W_T] = w_L^2 \text{Var}[R_L(T)] + w_S^2 \text{Var}[R_S(T)] - 2 w_L w_S \text{Cov}[R_L(T),R_S(T)],
+\end{equation}
+with $R_i(T) = \frac{P_i(T)}{P_i(0)} - 1$ and $\psi_i(\theta)$ the Laplace exponent of the Lévy process for asset $i$.
+
+\paragraph{Log-Health Process.}  
+Define
+\begin{equation}
+h(t) = \log\left(\frac{b_L w_L L_0}{w_S S_0}\right) + (\log L(t) - \log S(t)),
+\end{equation}
+with $L(t)$, $S(t)$ the long and short price processes and $b_L$ a collateral factor. The Laplace exponent of $h(t)$ is
+\begin{equation}
+\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta),
+\end{equation}
+or, in the presence of correlated drivers,
 \begin{equation}
 \psi_h(\theta) = {\bf{\Psi}}_{L,S}(\theta,-\theta).
 \end{equation}
 
-\paragraph{Terminal Wealth.}  
-The total wealth of the portfolio at time $T$ is:
+\paragraph{Kelly Criterion Implementation.}  
+We define a binary outcome over horizon $T^*$:
+\begin{itemize}
+    \item \textbf{Loss Event:} liquidation occurs with probability $q = \pi(T^*) = \mathbb{P}(\tau_0 \le T^*)$. The net loss is $R_{\text{loss}} = -L w_L$.
+    \item \textbf{Win Event:} no liquidation, probability $p = 1-q$. The gain is the expected idiosyncratic return $R_{\text{gain}} = w_L \alpha_L T^* - w_S \alpha_S T^*$.
+\end{itemize}
+
+The net odds are
 \begin{equation}
-W_T = W_0 + w_L R_L(T) - w_S R_S(T) - L w_L 1_{\{\tau_0 \leq T\}},
-\end{equation}
-where $R_L(T) = \frac{L_T}{L_0}-1$ and $R_S(T) = \frac{S_T}{S_0}-1$. The last term represents the liquidation loss triggered by $h(t)$ reaching zero.
-The first two moments of the wealth process are:
-\begin{equation}
-\mathbb{E}[W_T] = W_0 + w_L(e^{T\psi_L(1)}-1) - w_S(e^{T\psi_S(1)}-1) - L w_L \pi(T),
-\end{equation}
-\begin{equation}
-\text{Var}(W_T) = \text{Var}(A) + L^2 w_L^2 \pi(T)(1-\pi(T)) - 2L w_L (\mathbb{E}[A I_T] - \mathbb{E}[A]\pi(T)),
-\end{equation}
-where $A = w_L R_L(T) - w_S R_S(T)$ and $I_T = 1_{\{\tau_0 \leq T\}}$. Under the independence approximation:
-\begin{equation}
-\text{Var}(W_T) \approx \text{Var}(A) + L^2 w_L^2 \pi(T)(1-\pi(T)),
-\end{equation}
-with
-\begin{equation}
-\text{Var}(A) = w_L^2 \text{Var}[R_L(T)] + w_S^2 \text{Var}[R_S(T)] - 2 w_L w_S \text{Cov}[R_L(T),R_S(T)].
+b = \frac{R_{\text{gain}}}{|R_{\text{loss}}|} = \frac{w_L \alpha_L T^* - w_S \alpha_S T^*}{L w_L}.
 \end{equation}
 
-This configuration models the expected return as a function of the collateralized carry and the relative performance of the borrowed asset. The variance of the terminal wealth, in contrast, is driven by the combined effects of asset price volatility and the risk of a liquidation event.
+The optimal Kelly fraction is
+\begin{equation}
+f^*(r) = \frac{b(r)p(r)-q(r)}{b(r)},
+\end{equation}
+and the expected logarithmic growth to maximize is
+\begin{equation}
+G(r) = q(r) \log(1 - f^*(r) L w_L) + p(r) \log(1 + f^*(r) b(r) L w_L).
+\end{equation}
 
-\paragraph{Optimization Problem.}  
-The investor’s utility is:
-\begin{equation}
-\max_{r} \quad \mathcal{U}(r) 
-= \mathbb{E}[W_T(r)] 
-- \rho_1 \, \mathbb{V}[W_T(r)] 
-- \rho_2 \, \mathbb{P}(\tau_0 \leq T^*),
-\label{eq:objective_beta_neutral}
-\end{equation}
-with $W_T(r)$ the terminal wealth at $T^*$. The initial log-health is
-\begin{equation}
-h_0(r) = \log \left( \frac{b_L w_L L_0}{w_S S_0} \right) 
-= \log b_L + \log r + \log\!\left(\frac{L_0}{S_0}\right),
-\end{equation}
-which links the probability of liquidation to the allocation, collateral factor, and initial asset prices.
+For practical implementation, a fractional Kelly $f_{\rm target}(r) = k f^*(r)$ (e.g., $k=0.5$) is recommended to reduce tail risk.  
 
 \paragraph{Solution.}  
-As in the previous sections, we adopt a numerical approach:
 \begin{enumerate}
-    \item Compute $\mathbb{E}[W_T(r)]$ and $\mathbb{V}[W_T(r)]$ using the moment formulas above.
-    \item Evaluate $\mathbb{P}(\tau_0 \leq T^*)$ via Laplace inversion of the first-passage time of $h(t)$.
-    \item Approximate $\nabla \mathcal{U}(r)$ using finite differences.
-    \item Apply projected gradient ascent to update $r$, enforcing $r>0$.
-    \item Use backtracking line search and terminate when the gradient and objective improvements are below tolerance.
+    \item For a given allocation ratio $r$, compute $w_L(r), w_S(r)$ and initial log-health $h_0(r)$.
+    \item Estimate $q(r) = \pi(T^*)$ via Laplace inversion.
+    \item Compute $p(r) = 1-q(r)$ and net odds $b(r)$.
+    \item Evaluate $f^*(r)$ and $G(r)$.
+    \item Maximize $G(r)$ numerically over feasible $r$ with $h_0(r) \ge h_{\min}$.
 \end{enumerate}
 
-\paragraph{Calibration and Market Data.}  
-We calibrate the model using historical data from crypto assets with large idiosyncratic alpha differences. The long and short assets are chosen to enforce $\beta_P \approx 0$. Parameter estimation for the Lévy jump-diffusion model $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ employs rolling windows of log-returns. Empirical results indicate that long assets have higher $\alpha_L$ and comparable or slightly higher $\sigma_L$ than short assets, and the jump parameters account for the tail asymmetry inherent in crypto markets.
+\paragraph{Calibration and Data.}  
+Historical crypto returns are used to calibrate $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ for Lévy jump-diffusion processes. Long and short assets are chosen to enforce $\beta_P \approx 0$. Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
 
-\paragraph{Health Process Parameters.}
-The log-health process \( h(t) \) quantifies the collateralization health of the leveraged long--short momentum portfolio. Its characteristic exponent is defined as
-\[
-\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta),
-\]
-synthesizing the Lévy dynamics of the long winner and short loser legs (cf. Equation 38). This captures the joint jump-diffusion risk, where adverse jumps in the winner or favorable jumps in the loser drive the health process downward toward liquidation.
-
-The asymptotic regime is determined by the drift
-\[
-\kappa_h = \frac{\mathbb{E}[h(t)]}{t}.
-\]
-A positive \(\kappa_h\) indicates an almost-sure (sustainable) regime, while a negative drift implies a defective regime where liquidation becomes probable. Calibration of \(\psi_h(\theta)\) and \(\kappa_h\) enables us to initialize the log-health \(h_0(r)\) via the leverage ratio \(r\) and simulate its stressed evolution, thereby endogenously linking liquidation risk to the relative performance of the momentum legs.
-
-\paragraph{Numerical Evaluation.}  
-For each calibrated parameter set, we compute $\mathcal{U}(r)$ in \eqref{eq:objective_beta_neutral}. Laplace inversion is used to estimate $\pi(T) = \mathbb{P}(\tau_0 \le T^*)$. Gradients are approximated numerically, and $r^*$ is obtained using projected gradient ascent subject to feasibility constraints.
-
-\paragraph{Health Process Parameters.}
-The log-health process exponent is derived from the Lévy exponents of the portfolio's long and short legs:
-\begin{equation}
-\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta)
-\end{equation}
-(see Equation 38). The system's regime—almost-sure or defective—is determined by the drift $\kappa_h = \mathbb{E}[h(t)]/t$.
-This calibration directly sets the initial log-health $h_0(r)$ via the collateral ratio and position scaling, allowing us to manage its evolution under market stress while preserving beta neutrality and a positive health factor.
-
-\paragraph{Parameter Values (Baseline).}
+\paragraph{Baseline Parameters.}
 \begin{align*}
 \mu_L &= 0.08, &\sigma_L &= 0.75, &\lambda_L &= 0.08, &\delta_L &= 0.20,\\
-\mu_S &= 0.04, &\sigma_S &= 0.70, &\lambda_S &= 0.12,  &\delta_S &= 0.22,\\
+\mu_S &= 0.04, &\sigma_S &= 0.70, &\lambda_S &= 0.12, &\delta_S &= 0.22,\\
 T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
 \end{align*}
 
-\paragraph{Results.}  
-Simulation produces optimal allocation ratios $r^*$ as functions of $(\rho_1, \rho_2)$ and asset asymmetries. Key findings (Placeholder):
-\begin{enumerate}
-    \item Beta-neutral pairs exhibit lower variance but comparable expected returns to directional strategies.
-    \item Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
-    \item High correlation or elevated jump intensity reduces the feasible range of $r$ for maintaining $\beta_P \approx 0$ and $H(t)>1$.
-\end{enumerate}
-
-\paragraph{Kelly Criterion Implementation.}
-To integrate the Kelly Criterion into this strategy, we define the optimization problem in terms of maximizing the long-term growth rate of wealth, rather than using a mean-variance utility function. The core components of the Kelly formula—win probability ($p$), loss probability ($q$), and net odds ($b$)—are derived directly from the jump-diffusion and liquidation risk framework.
-
-\subparagraph{Defining Win/Loss Probabilities and Outcomes.}
-We define a binary outcome for the Kelly calculation over a fixed time horizon $T^*$: 
+\paragraph{Key Insights.}  
 \begin{itemize}
-    \item \textbf{Loss Event (Liquidation):} The position is liquidated within the time horizon $T^*$. The probability of this event, $q$, is the liquidation probability $\pi(T^*) = \mathbb{P}(\tau_0 \leq T^*)$. The loss incurred is assumed to be a fraction $L$ of the collateral, so the net loss on the wager is $R_{loss} = -L w_L$.
-    \item \textbf{Win Event (No Liquidation):} The position is not liquidated within the time horizon $T^*$. The probability of this event is $p = 1 - q = 1 - \pi(T^*)$. The expected gain, conditional on no liquidation, is the net return from the long and short positions' idiosyncratic alpha. 
+    \item Beta-neutral portfolios have lower variance than directional positions for similar expected returns.
+    \item Positive drift in $h(t)$ ensures feasibility of larger allocations.
+    \item Heavy-tailed jumps or strong correlations restrict the feasible allocation ratio $r$ for maintaining beta neutrality and healthy collateral.
 \end{itemize}
 
-\subparagraph{Estimating Probabilities and Odds.}
-The probabilities are directly given by the first-hitting time analysis:
-\begin{align}
-q &= \pi(T^*) = \mathbb{P}(\tau_0 \leq T^*) = \mathcal{L}^{-1}\left[\frac {e^{-h_0 \Phi(q)}}{q}\right](T^*) \\
-p &= 1 - q
-\end{align}
-The net odds, $b$, are the ratio of the expected gain if not liquidated to the loss if liquidated:
-\begin{equation}
-b = \frac{\mathbb{E}[\text{Gain} | \tau_0 > T^*]}{\mathbb{E}[\text{Loss} | \tau_0 \leq T^*]} = \frac{w_L \alpha_L T^* - w_S \alpha_S T^*}{L w_L}
-\end{equation}
-Here, the expected gain is based on the expected idiosyncratic returns of the long and short assets over the period $T^*$, conditional on no liquidation.
 
-\paragraph{Optimization Problem with Kelly Criterion.}
-The objective is to find the allocation ratio $r$ that maximizes the expected logarithmic growth of wealth. The Kelly fraction, $f^*(r)$, which represents the optimal fraction of the total capital to allocate to this strategy, is given by:
-\begin{equation}
-f^*(r) = \frac{b(r)p(r) - q(r)}{b(r)}
-\end{equation}
-Since $p, q,$ and $b$ are all functions of the allocation ratio $r$ (through $w_L, w_S,$ and $h_0$), the optimization problem becomes:
-\begin{equation}
-\max_{r} \quad G(r) = q(r) \log(1 - f^*(r) L w_L) + p(r) \log(1 + f^*(r) b(r) L w_L)
-\end{equation}
-where $G(r)$ is the expected logarithmic growth rate. A more direct approach is to maximize the Kelly fraction $f^*(r)$ itself, as this is equivalent to maximizing the growth rate.
 
-For practical implementation, we use a fractional Kelly approach to mitigate the risks of model error and high volatility. The target allocation fraction becomes:
-\begin{equation}
-f_{target}(r) = k \times f^*(r)
-\end{equation}
-where $k$ is the Kelly fraction (e.g., $k=0.5$ for Half Kelly, $k=0.25$ for Quarter Kelly).
+\subsection{Beta-Neutral Long--Short Strategy}
 
-\paragraph{Solution.}
-As with the mean-variance approach, a closed-form solution is not available. We solve this numerically:
-\begin{enumerate}
-    \item For a given allocation ratio $r$, calculate the corresponding weights $w_L(r), w_S(r)$ and initial log-health $h_0(r)$.
-    \item Compute the liquidation probability $q(r) = \pi(T^*)$ via numerical Laplace inversion.
-    \item Calculate the win probability $p(r) = 1 - q(r)$.
-    \item Calculate the net odds $b(r)$ based on the expected idiosyncratic returns and liquidation loss.
-    \item Compute the full Kelly fraction $f^*(r)$.
-    \item The optimization then searches for the ratio $r$ that maximizes $f^*(r)$, subject to the constraints $h_0(r) \geq h_{\min}$ and $0 < r < 1$. This can be done using a grid search or a numerical optimization routine like projected gradient ascent on $f^*(r)$.
-\end{enumerate}
+The third case we consider is a beta-neutral long-short strategy: this strategy aims to isolate idiosyncratic returns by neutralizing exposure to the aggregate cryptocurrency market. The portfolio takes a long position in a high-alpha asset $\alpha_L$ and a short position in an asset with similar beta but lower alpha $\alpha_S$, capturing the alpha spread while mitigating systematic risk.  
 
-The optimal allocation ratio $r^*$ under the Kelly framework represents the trade-off that maximizes the long-term geometric growth rate of the portfolio, explicitly balancing the potential for high returns from leverage against the risk of ruin from liquidation. This provides a more direct and theoretically grounded approach to position sizing compared to utility-based methods.
-
-\paragraph{Calibration and Market Data.}  
-We calibrate the model using historical data from crypto assets with large idiosyncratic alpha differences. The long and short assets are chosen to enforce $\beta_P \approx 0$. Parameter estimation for the Lévy jump-diffusion model $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ employs rolling windows of log-returns. Empirical results indicate that long assets have higher $\alpha_L$ and comparable or slightly higher $\sigma_L$ than short assets, and the jump parameters account for the tail asymmetry inherent in crypto markets.
-
-\paragraph{Health Process Parameters.}
-The log-health process \( h(t) \) quantifies the collateralization health of the leveraged long--short momentum portfolio. Its characteristic exponent is defined as
+\paragraph{Portfolio Construction.}  
+Let $\beta_i$ denote the market beta of asset $i$. Construct long leg $\mathcal{L}$ and short leg $\mathcal{S}$ with weights $w_{\mathcal{L}}, w_{\mathcal{S}}$. Beta-neutrality requires
 \[
+\beta_P = \sum_{i \in \mathcal{L}} w_i \beta_i - \sum_{j \in \mathcal{S}} w_j \beta_j \approx 0,
+\]
+enforced via scaling between legs while maintaining positive collateralization.
+
+\paragraph{Expected Return and Variance.}  
+Ignoring liquidation events, the expected terminal wealth is
+\begin{equation}
+\mathbb{E}[W_T] = W_0 + w_L(e^{T\psi_L(1)}-1) - w_S(e^{T\psi_S(1)}-1),
+\end{equation}
+and the variance is
+\begin{equation}
+\text{Var}[W_T] = w_L^2 \text{Var}[R_L(T)] + w_S^2 \text{Var}[R_S(T)] - 2 w_L w_S \text{Cov}[R_L(T),R_S(T)],
+\end{equation}
+with $R_i(T) = \frac{P_i(T)}{P_i(0)} - 1$ and $\psi_i(\theta)$ the Laplace exponent of the Lévy process for asset $i$.
+
+\paragraph{Log-Health Process.}  
+Define
+\begin{equation}
+h(t) = \log\left(\frac{b_L w_L L_0}{w_S S_0}\right) + (\log L(t) - \log S(t)),
+\end{equation}
+with $L(t)$, $S(t)$ the long and short price processes and $b_L$ a collateral factor. The Laplace exponent of $h(t)$ is
+\begin{equation}
 \psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta),
-\]
-synthesizing the Lévy dynamics of the long winner and short loser legs (cf. Equation 38). This captures the joint jump-diffusion risk, where adverse jumps in the winner or favorable jumps in the loser drive the health process downward toward liquidation.
+\end{equation}
+or, in the presence of correlated drivers,
+\begin{equation}
+\psi_h(\theta) = {\bf{\Psi}}_{L,S}(\theta,-\theta).
+\end{equation}
 
-The asymptotic regime is determined by the drift
-\[
-\kappa_h = \frac{\mathbb{E}[h(t)]}{t}.
-\]
-A positive \(\kappa_h\) indicates an almost-sure (sustainable) regime, while a negative drift implies a defective regime where liquidation becomes probable. Calibration of \(\psi_h(\theta)\) and \(\kappa_h\) enables us to initialize the log-health \(h_0(r)\) via the leverage ratio \(r\) and simulate its stressed evolution, thereby endogenously linking liquidation risk to the relative performance of the momentum legs.
-
-\paragraph{Numerical Evaluation.}  
-For each calibrated parameter set, we compute the Kelly fraction $f^*(r)$. Laplace inversion is used to estimate $\pi(T) = \mathbb{P}(\tau_0 \le T^*)$. Gradients are approximated numerically, and $r^*$ is obtained using projected gradient ascent subject to feasibility constraints.
-
-\paragraph{Parameter Values (Baseline).}
-\begin{align*}
-\mu_L &= 0.08, &\sigma_L &= 0.75, &\lambda_L &= 0.08, &\delta_L &= 0.20,\\
-\mu_S &= 0.04, &\sigma_S &= 0.70, &\lambda_S &= 0.12,  &\delta_S &= 0.22,\\
-T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
-\end{align*}
-
-\paragraph{Results.}  
-Simulation produces optimal allocation ratios $r^*$ as functions of the Kelly fraction $k$ and asset asymmetries. Key findings (Placeholder):
-\begin{enumerate}
-    \item Beta-neutral pairs exhibit lower variance but comparable expected returns to directional strategies.
-    \item Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
-    \item High correlation or elevated jump intensity reduces the feasible range of $r$ for maintaining $\beta_P \approx 0$ and $H(t)>1$.
-\end{enumerate}
-
-\paragraph{Kelly Criterion Implementation.}
-To integrate the Kelly Criterion into this strategy, we define the optimization problem in terms of maximizing the long-term growth rate of wealth, rather than using a mean-variance utility function. The core components of the Kelly formula—win probability ($p$), loss probability ($q$), and net odds ($b$)—are derived directly from the jump-diffusion and liquidation risk framework.
-
-\subparagraph{Defining Win/Loss Probabilities and Outcomes.}
-We define a binary outcome for the Kelly calculation over a fixed time horizon $T^*$: 
+\paragraph{Kelly Criterion Implementation.}  
+We define a binary outcome over horizon $T^*$:
 \begin{itemize}
-    \item \textbf{Loss Event (Liquidation):} The position is liquidated within the time horizon $T^*$. The probability of this event, $q$, is the liquidation probability $\pi(T^*) = \mathbb{P}(\tau_0 \leq T^*)$. The loss incurred is assumed to be a fraction $L$ of the collateral, so the net loss on the wager is $R_{loss} = -L w_L$.
-    \item \textbf{Win Event (No Liquidation):} The position is not liquidated within the time horizon $T^*$. The probability of this event is $p = 1 - q = 1 - \pi(T^*)$. The expected gain, conditional on no liquidation, is the net return from the long and short positions' idiosyncratic alpha. 
+    \item \textbf{Loss Event:} liquidation occurs with probability $q = \pi(T^*) = \mathbb{P}(\tau_0 \le T^*)$. The net loss is $R_{\text{loss}} = -L w_L$.
+    \item \textbf{Win Event:} no liquidation, probability $p = 1-q$. The gain is the expected idiosyncratic return $R_{\text{gain}} = w_L \alpha_L T^* - w_S \alpha_S T^*$.
 \end{itemize}
 
-\subparagraph{Estimating Probabilities and Odds.}
-The probabilities are directly given by the first-hitting time analysis:
-\begin{align}
-q &= \pi(T^*) = \mathbb{P}(\tau_0 \leq T^*) = \mathcal{L}^{-1}\left[\frac {e^{-h_0 \Phi(q)}}{q}\right](T^*) \\
-p &= 1 - q
-\end{align}
-The net odds, $b$, are the ratio of the expected gain if not liquidated to the loss if liquidated:
+The net odds are
 \begin{equation}
-b = \frac{\mathbb{E}[\text{Gain} | \tau_0 > T^*]}{\mathbb{E}[\text{Loss} | \tau_0 \leq T^*]} = \frac{w_L \alpha_L T^* - w_S \alpha_S T^*}{L w_L}
+b = \frac{R_{\text{gain}}}{|R_{\text{loss}}|} = \frac{w_L \alpha_L T^* - w_S \alpha_S T^*}{L w_L}.
 \end{equation}
-Here, the expected gain is based on the expected idiosyncratic returns of the long and short assets over the period $T^*$, conditional on no liquidation.
 
-\paragraph{Optimization Problem with Kelly Criterion.}
-The objective is to find the allocation ratio $r$ that maximizes the expected logarithmic growth of wealth. The Kelly fraction, $f^*(r)$, which represents the optimal fraction of the total capital to allocate to this strategy, is given by:
+The optimal Kelly fraction is
 \begin{equation}
-f^*(r) = \frac{b(r)p(r) - q(r)}{b(r)}
+f^*(r) = \frac{b(r)p(r)-q(r)}{b(r)},
 \end{equation}
-Since $p, q,$ and $b$ are all functions of the allocation ratio $r$ (through $w_L, w_S,$ and $h_0$), the optimization problem becomes:
+and the expected logarithmic growth to maximize is
 \begin{equation}
-\max_{r} \quad G(r) = q(r) \log(1 - f^*(r) L w_L) + p(r) \log(1 + f^*(r) b(r) L w_L)
+G(r) = q(r) \log(1 - f^*(r) L w_L) + p(r) \log(1 + f^*(r) b(r) L w_L).
 \end{equation}
-where $G(r)$ is the expected logarithmic growth rate. A more direct approach is to maximize the Kelly fraction $f^*(r)$ itself, as this is equivalent to maximizing the growth rate.
 
-For practical implementation, we use a fractional Kelly approach to mitigate the risks of model error and high volatility. The target allocation fraction becomes:
-\begin{equation}
-f_{target}(r) = k \times f^*(r)
-\end{equation}
-where $k$ is the Kelly fraction (e.g., $k=0.5$ for Half Kelly, $k=0.25$ for Quarter Kelly).
+For practical implementation, a fractional Kelly $f_{\rm target}(r) = k f^*(r)$ (e.g., $k=0.5$) is recommended to reduce tail risk.  
 
-\paragraph{Solution.}
-As with the mean-variance approach, a closed-form solution is not available. We solve this numerically:
+\paragraph{Solution.}  
 \begin{enumerate}
-    \item For a given allocation ratio $r$, calculate the corresponding weights $w_L(r), w_S(r)$ and initial log-health $h_0(r)$.
-    \item Compute the liquidation probability $q(r) = \pi(T^*)$ via numerical Laplace inversion.
-    \item Calculate the win probability $p(r) = 1 - q(r)$.
-    \item Calculate the net odds $b(r)$ based on the expected idiosyncratic returns and liquidation loss.
-    \item Compute the full Kelly fraction $f^*(r)$.
-    \item The optimization then searches for the ratio $r$ that maximizes $f^*(r)$, subject to the constraints $h_0(r) \geq h_{\min}$ and $0 < r < 1$. This can be done using a grid search or a numerical optimization routine like projected gradient ascent on $f^*(r)$.
+    \item For a given allocation ratio $r$, compute $w_L(r), w_S(r)$ and initial log-health $h_0(r)$.
+    \item Estimate $q(r) = \pi(T^*)$ via Laplace inversion.
+    \item Compute $p(r) = 1-q(r)$ and net odds $b(r)$.
+    \item Evaluate $f^*(r)$ and $G(r)$.
+    \item Maximize $G(r)$ numerically over feasible $r$ with $h_0(r) \ge h_{\min}$.
 \end{enumerate}
 
-The optimal allocation ratio $r^*$ under the Kelly framework represents the trade-off that maximizes the long-term geometric growth rate of the portfolio, explicitly balancing the potential for high returns from leverage against the risk of ruin from liquidation. This provides a more direct and theoretically grounded approach to position sizing compared to utility-based methods.
+\paragraph{Calibration and Data.}  
+Historical crypto returns are used to calibrate $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ for Lévy jump-diffusion processes. Long and short assets are chosen to enforce $\beta_P \approx 0$. Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
 
-\paragraph{Calibration and Market Data.}  
-We calibrate the model using historical data from crypto assets with large idiosyncratic alpha differences. The long and short assets are chosen to enforce $\beta_P \approx 0$. Parameter estimation for the Lévy jump-diffusion model $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ employs rolling windows of log-returns. Empirical results indicate that long assets have higher $\alpha_L$ and comparable or slightly higher $\sigma_L$ than short assets, and the jump parameters account for the tail asymmetry inherent in crypto markets.
-
-\paragraph{Health Process Parameters.}
-The log-health process \( h(t) \) quantifies the collateralization health of the leveraged long--short momentum portfolio. Its characteristic exponent is defined as
-\[
-\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta),
-\]
-synthesizing the Lévy dynamics of the long winner and short loser legs (cf. Equation 38). This captures the joint jump-diffusion risk, where adverse jumps in the winner or favorable jumps in the loser drive the health process downward toward liquidation.
-
-The asymptotic regime is determined by the drift
-\[
-\kappa_h = \frac{\mathbb{E}[h(t)]}{t}.
-\]
-A positive \(\kappa_h\) indicates an almost-sure (sustainable) regime, while a negative drift implies a defective regime where liquidation becomes probable. Calibration of \(\psi_h(\theta)\) and \(\kappa_h\) enables us to initialize the log-health \(h_0(r)\) via the leverage ratio \(r\) and simulate its stressed evolution, thereby endogenously linking liquidation risk to the relative performance of the momentum legs.
-
-\paragraph{Numerical Evaluation.}  
-For each calibrated parameter set, we compute the Kelly fraction $f^*(r)$. Laplace inversion is used to estimate $\pi(T) = \mathbb{P}(\tau_0 \le T^*)$. Gradients are approximated numerically, and $r^*$ is obtained using projected gradient ascent subject to feasibility constraints.
-
-\paragraph{Parameter Values (Baseline).}
+\paragraph{Baseline Parameters.}
 \begin{align*}
 \mu_L &= 0.08, &\sigma_L &= 0.75, &\lambda_L &= 0.08, &\delta_L &= 0.20,\\
-\mu_S &= 0.04, &\sigma_S &= 0.70, &\lambda_S &= 0.12,  &\delta_S &= 0.22,\\
+\mu_S &= 0.04, &\sigma_S &= 0.70, &\lambda_S &= 0.12, &\delta_S &= 0.22,\\
 T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
 \end{align*}
 
-\paragraph{Results.}  
-Simulation produces optimal allocation ratios $r^*$ as functions of the Kelly fraction $k$ and asset asymmetries. Key findings (Placeholder):
-\begin{enumerate}
-    \item Beta-neutral pairs exhibit lower variance but comparable expected returns to directional strategies.
-    \item Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
-    \item High correlation or elevated jump intensity reduces the feasible range of $r$ for maintaining $\beta_P \approx 0$ and $H(t)>1$.
-\end{enumerate}
+\paragraph{Key Insights.}  
+\begin{itemize}
+    \item Beta-neutral portfolios have lower variance than directional positions for similar expected returns.
+    \item Positive drift in $h(t)$ ensures feasibility of larger allocations.
+    \item Heavy-tailed jumps or strong correlations restrict the feasible allocation ratio $r$ for maintaining beta neutrality and healthy collateral.
+\end{itemize}
 
+\subsection{Leveraged Yield Strategy: USDC Collateral, Borrow BTC, Swap to USDC, Deposit to AAVE}
 
-\subsection{Leveraged Yield Strategy: USDC collateral, borrow BTC, swap to USDC, deposit to AAVE}
-
-We start with an initial USDC collateral \(C_0>0\). Using the protocol's collateral factor (maximum borrow fraction) \(\varphi\in(0,1)\), we borrow BTC up to a USD-valued amount \(\varphi C_0\) (valued at spot price \(S_t\) USDC/BTC). We then immediately swap the borrowed BTC into USDC and deposit the proceeds back into AAVE, which yields a supply rate \(r_A\). We can repeat the borrow–swap–deposit loop \(k\) times to create looped leverage; 
-when \(k\to\infty\) and the protocol allows, the deposit converges to a geometric-series multiple of original collateral. The main risks of this strategy are: (i) the borrow interest on the BTC debt (rate \(r_b\)), and (ii) the mark-to-market exposure to BTC price moves which can trigger liquidation.
+Consider an initial USDC collateral \(C_0>0\). Using the protocol's collateral factor \(\varphi \in (0,1)\), BTC is borrowed up to a USD-valued amount \(\varphi C_0\). The borrowed BTC is immediately swapped into USDC and deposited back into AAVE at a supply rate \(r_A\). Repeating the borrow–swap–deposit loop \(k\) times generates a geometric series of leveraged deposits. The primary risks are the BTC borrow interest \(r_b\) and mark-to-market exposure to BTC price movements, which can trigger liquidation.
 
 \paragraph{Notation.}
 \begin{itemize}
-  \item \(C_0\) — initial USDC collateral (USD stable).
-  \item \(S_t\) — spot price of BTC in USDC (so BTC amount \(\times S_t\) gives USDC value).
-  \item \(\varphi\) — fraction of current deposited value that may be borrowed (protocol collateral factor).
-  \item \(r_A\) — AAVE supply APY for USDC (0.046 in the user's example).
-  \item \(r_b\) — borrow interest rate for BTC (in USD-term; charged on BTC-denominated debt but expressed in USDC-equivalent per unit time).
-  \item \(k\) — number of leverage loops (integer, could be \(\infty\) if permitted).
-  \item \(D_t\) — USD value of outstanding debt at time \(t\).
-  \item \(H_t\) — deposited USDC value on AAVE at time \(t\) (the “asset” side).
-  \item \(h_t = \log H_t - \log D_t\) — log-health process (buffer above liquidation).
-  \item \(L\) — liquidation threshold expressed as a (log) margin: liquidation occurs when \(h_t \le -\ell\) for some \(\ell>0\) set by the protocol (equivalently when the LTV exceeds the allowed threshold).
+  \item \(C_0\) — initial USDC collateral.
+  \item \(S_t\) — spot price of BTC in USDC.
+  \item \(\varphi\) — protocol collateral factor.
+  \item \(r_A\) — AAVE supply APY for USDC.
+  \item \(r_b\) — borrow interest rate for BTC (USD-equivalent).
+  \item \(k\) — number of leverage loops.
+  \item \(D_t\) — USD value of outstanding debt.
+  \item \(H_t\) — deposited USDC value.
+  \item \(h_t = \log H_t - \log D_t\) — log-health process.
+  \item \(L\) — liquidation threshold in log-health: liquidation occurs when \(h_t \le -\ell\).
 \end{itemize}
 
-\paragraph{Leverage accounting (geometric loop).}
-If each loop borrows a fraction \(\varphi\) of the current deposited USD value and swaps it back to USDC and deposits, after \(k\) loops the total deposited USDC is
+\paragraph{Leverage Accounting.}
+After \(k\) loops, the total deposited USDC is
 \[
-H^{(k)} = C_0 \sum_{i=0}^{k} \varphi^{\,i} = C_0 \,\frac{1-\varphi^{\,k+1}}{1-\varphi}.
+H^{(k)} = C_0 \sum_{i=0}^{k} \varphi^{\,i} = C_0 \frac{1-\varphi^{\,k+1}}{1-\varphi},
 \]
-If the protocol and gas allow taking \(k\to\infty\) and \(|\varphi|<1\), the infinite-loop (theoretical) leveraged deposit is
+and the USD-valued debt is
 \[
-H^{(\infty)} = \frac{C_0}{1-\varphi}.
+D^{(k)} = C_0 \sum_{i=1}^{k} \varphi^{\,i} = C_0\left(\frac{1-\varphi^{\,k+1}}{1-\varphi}-1\right).
 \]
-The outstanding USD-valued debt after \(k\) loops equals the USD value of the borrowed BTCs (which were swapped into USDC and redeposited), hence
+For \(k \to \infty\), these converge to
 \[
-D^{(k)} = C_0 \sum_{i=1}^{k} \varphi^{\,i} = C_0\left(\frac{1-\varphi^{\,k+1}}{1-\varphi}-1\right)
+H^{(\infty)} = \frac{C_0}{1-\varphi}, \qquad D^{(\infty)} = \frac{\varphi}{1-\varphi}\,C_0.
 \]
-and for \(k\to\infty\),
-\[
-D^{(\infty)} = \frac{\varphi}{1-\varphi}\,C_0.
-\]
-Note: these accounting identities hold in USD terms only if swaps do not incur slippage/fees and BTC price remains unchanged during construction.
 
-\paragraph{Instantaneous net yield (deterministic part).}
-Ignoring BTC mark-to-market and fees/slippage, the instantaneous net yield (USD-rate) on the leveraged position for a given leverage level \(\varphi\) is approximately
+\paragraph{Instantaneous Net Yield.}
+Ignoring BTC mark-to-market, fees, and slippage, the infinite-loop net yield is
 \[
-r_{\mathrm{net}}(\varphi) \approx \frac{H^{(k)}\,r_A - D^{(k)}\,r_b}{C_0}
+r_{\mathrm{net}}^{(\infty)}(\varphi) = \frac{r_A - \varphi\, r_b}{1-\varphi}.
 \]
-which, in the infinite-loop idealization, reduces to
+
+\paragraph{Price Risk and Log-Health Process.}
+Let \(X_t\) denote the log-value process of USDC deposits and \(Y_t = \log S_t\) the BTC log-price, with Lévy exponents \(\psi_X(\theta)\) and \(\psi_Y(\theta)\). The log-health process exponent is
 \[
-r_{\mathrm{net}}^{(\infty)}(\varphi) \;=\; \frac{ \frac{C_0}{1-\varphi}r_A - \frac{\varphi}{1-\varphi}C_0\,r_b }{C_0}
-\;=\; \frac{r_A - \varphi\,r_b}{1-\varphi}.
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta),
 \]
-Interpretation: the supply APY \(r_A\) is earned on the full leveraged deposit while borrow interest \(r_b\) is paid on the borrowed portion; dividing by \(1-\varphi\) magnifies these flows.
+reflecting that upward BTC moves reduce the USD-equivalent debt burden, and downward moves increase it.
 
-\paragraph{Price-risk and health process.}
-Because the debt is denominated in BTC (and the swap to USDC at time of borrow converts that exposure into deposited USDC), future BTC price moves still matter: if BTC price falls, the USD value of collateral (if any collateral is in BTC or the protocol re-prices collateral) 
-or the effective liquidation metric can move against the position owing to revaluation of protocol-specific LTV metrics. To capture both the deterministic rates and stochastic price effects, model:
-
-\begin{itemize}
-  \item \(X_t\) — log-value process for USDC supply (practically deterministic), with Lévy exponent \(\psi_X(\theta)\) (so under our modelling \(\psi_X(\theta)\approx r_X \theta\) if USDC supply grows deterministically at rate \(r_X\)). For the present strategy we take \(r_X\) to be negligible compared to the AAVE supply APY because USDC itself is stable.
-  \item \(Y_t\) — log-price process of BTC (i.e. \(\log S_t\)) with Lévy exponent \(\psi_Y(\theta)\). This captures stochastic moves and heavy tails in BTC.
-\end{itemize}
-
-The log-health process exponent
+Liquidation occurs at the first hitting time
 \[
-\psi_h(\theta) \;=\; \psi_X(\theta) \;+\; \psi_Y(-\theta),
+\tau_{\mathrm{liq}} = \inf \{ t \ge 0 : h_t \le -\ell \}.
 \]
-because health depends on the difference between USD deposit growth (driven by \(X\)) and BTC-denominated debt (driven through \(-Y\)). The sign in \(\psi_Y\) is negative because upward jumps in BTC (positive \(Y\)) reduce the USD-equivalent burden of BTC-denominated debt when measured in log-health, and vice versa.
+The drift and jump intensity of \(Y_t\) determine survival probabilities to a given horizon and influence the feasibility of leverage \(\varphi\).
 
-\paragraph{Liquidation condition and hitting-time risk.}
-Let the liquidation boundary be \(\{-\ell\}\) in log-health: liquidation occurs the first time
+\paragraph{First-Order Stability.}
+A positive drift of log-health implies
 \[
-\tau_{\mathrm{liq}} \;=\; \inf\{t\ge 0:\; h_t \le -\ell\}.
+\frac{r_A}{1-\varphi} - \frac{r_b \varphi}{1-\varphi} - \mu_Y > 0,
 \]
-Under the Lévy model the probability of survival to time \(T\) (no liquidation before \(T\)) can be studied via the Laplace exponent \(\psi_h\) and classical hitting-time formulas (or numerically via FFT / Monte Carlo when \(\psi_Y\) is non-Gaussian). In practice, the relevant quantities are:
-\begin{itemize}
-  \item the drift of \(h_t\): if \(\mathbb{E}[h_t]\) drifts up \(\Rightarrow\) lower liquidation risk; if it drifts down \(\Rightarrow\) almost-sure eventual liquidation in many models.
-  \item the volatility and jump intensity of \(Y_t\): both increase the chance of a downward excursion that reaches \(-\ell\).
-\end{itemize}
+with \(\mu_Y = -\mathbb{E}[\dot Y_t]\) representing the effect of BTC price drift. Ignoring \(\mu_Y\) yields the heuristic constraint \(\varphi < r_A / r_b\).
 
-\paragraph{First-order approximation for safe \(\varphi\).}
-A conservative, first-order stability condition (ignoring jumps) is that the expected instantaneous drift of log-health is positive:
-\[
-\underbrace{r_A}_{\text{earn on deposits}}\cdot\frac{1}{1-\varphi} \;-\; \underbrace{r_b}_{\text{pay on debt}}\cdot\frac{\varphi}{1-\varphi} \;-\; \underbrace{\mu_Y}_{\text{expected BTC log-drift impact}} \;>\; 0,
-\]
-where \(\mu_Y = -\mathbb{E}[\dot Y_t]\) enters because adverse BTC moves effectively shrink the buffer. Solving for \(\varphi\) (ignoring \(\mu_Y\) for a moment) gives the naive constraint
-\[
-r_A - \varphi\,r_b > 0 \quad\Longrightarrow\quad \varphi < \frac{r_A}{r_b}.
-\]
-This is only heuristic: in reality one must include volatility, jump risk, fees, swap slippage, and the protocol's precise LTV and liquidation penalty mechanics.
-
-\paragraph{Fees, slippage and gas.}
-All the closed-form accounting above assumes zero slippage, zero swap fees, no gas friction, and that borrow rates do not change during the construction of the position. In practice:
-\begin{itemize}
-  \item Each swap (BTC \(\to\) USDC) has a fee and possible price impact; large \(\varphi\) or rapid repeated loops amplify these costs.
-  \item Borrow rates \(r_b\) and supply APY \(r_A\) are time-varying; sensitivities to their changes should be stress-tested.
-  \item Liquidation penalties and unwind costs can be material in stressed scenarios and must be accounted for in tail-loss calculations.
-\end{itemize}
-
-\paragraph{Recommended modeling and implementation checklist.}
-\begin{enumerate}
-  \item Specify a stochastic model for \(\log S_t\) (e.g. jump-diffusion or a calibrated Lévy process), estimate \(\psi_Y\) from historical BTC returns.
-  \item Use the health-exponent \(\psi_h(\theta)=\psi_X(\theta)+\psi_Y(-\theta)\) to compute hitting probabilities / survival functions for \(\tau_{\mathrm{liq}}\) (analytically when possible, otherwise numerically).
-  \item Calibrate \(r_b\) and \(r_A\) from on-chain lending pools and include fee/slippage parameters.
-  \item Run Monte Carlo tail-scenarios to estimate expected shortfall conditional on liquidation and to stress-test \(\varphi\) and number of loops \(k\).
-  \item Use the deterministic net-yield formula \(r_{\mathrm{net}}^{(\infty)}(\varphi)=\dfrac{r_A-\varphi r_b}{1-\varphi}\) as a quick screening metric, but always complement it with the stochastic health-process analysis for liquidation risk.
-\end{enumerate}
-
-\paragraph{Short worked example (symbolic).}
-With \(r_A=0.046\), suppose \(r_b=0.02\) (example BTC borrow rate) and ignore price drift/volatility for a quick back-of-envelope. Then the infinite-loop net yield is
-\[
-r_{\mathrm{net}}^{(\infty)}(\varphi)=\frac{0.046 - 0.02\varphi}{1-\varphi}.
-\]
-If \(\varphi=0.5\) (50\% borrow fraction),
-\[
-r_{\mathrm{net}}^{(\infty)}(0.5)=\frac{0.046-0.01}{0.5}= \frac{0.036}{0.5}=0.072 = 7.2\% \text{ annualized (ignoring risks/costs).}
-\]
-This number is illustrative only; BTC volatility, liquidation mechanics, slippage and fees will materially change realized performance.
+\paragraph{Fees, Slippage, and Gas.}
+Realized performance is affected by swap fees, gas costs, variable borrow rates, and liquidation penalties. High leverage and repeated loops amplify these effects.
 
 \paragraph{Health Process Parameters.}
-Using the given Lévy exponents \(\psi_X(\theta)\) (USDC-deposit component) and \(\psi_Y(\theta)\) (BTC log-price), we derive the log-health process exponent as
+The Lévy exponents \(\psi_X(\theta)\) and \(\psi_Y(\theta)\) define
 \[
-\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta).
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta),
 \]
-The system's regime—whether it is almost-surely safe or defective (i.e. eventually liquidated with probability 1)—is governed by the drift and large-jump behavior encoded in \(\psi_h\). Positive drift in \(h_t\) and light left-tail jumps in \(\psi_Y\) favour feasibility of large \(\varphi\); large negative jumps (heavy left-tail of BTC) and negative drift push the system toward defective-hitting regimes where only small \(\varphi\) are prudent.
+and the drift and tail behavior of \(\psi_h\) determine whether the system is almost-surely safe or defective. Positive drift and light left-tail jumps in BTC favor larger feasible \(\varphi\); negative drift and heavy left-tail jumps require smaller \(\varphi\) to avoid liquidation.
+
+\paragraph{Worked Example.}
+With \(r_A = 0.046\) and \(r_b = 0.02\), the infinite-loop net yield is
+\[
+r_{\mathrm{net}}^{(\infty)}(\varphi) = \frac{0.046 - 0.02\varphi}{1-\varphi}.
+\]
+For \(\varphi = 0.5\),
+\[
+r_{\mathrm{net}}^{(\infty)}(0.5) = \frac{0.046-0.01}{0.5} = 0.072 = 7.2\%,
+\]
+ignoring BTC volatility, liquidation mechanics, slippage, and fees.
+
+% ====================================================================
+\section{Conclusion}
+% ====================================================================
+
+We have developed a practical framework for first-hitting time analysis in DeFi long-short positioning using constant-intensity jump-diffusion models. Although simpler than Hawkes processes, this approach provides robust semi-analytical solutions suitable for real-time risk management.
+
+Key contributions include:
+\begin{enumerate}
+    \item Spectrally negative Lévy process formulation for log-health dynamics
+    \item Semi-analytical computation via Laplace transforms and Gaver-Stehfest inversion
+    \item Practical optimization framework balancing returns and liquidation risk
+    \item Straightforward calibration methodology for constant-intensity parameters
+\end{enumerate}
+
+The framework demonstrates that sophisticated risk management in DeFi applications need not require computationally intensive models. The constant-intensity approach provides sufficient complexity to capture wrong-way risk while maintaining the analytical tractability necessary for practical implementation.
+
+% ====================================================================
+% APPENDIX
+% ====================================================================
+
+\appendix
+
+\section{Mathematical Proofs}
+\label{sec:proofs}
+
+\begin{delayedproof}{prop:log_health_dynamics}
+We prove this by applying Itô's lemma to the log-health function and carefully tracking jump contributions from both assets.
+
+\textbf{Step 1: Setup and Itô decomposition}
+
+Starting from $h(t) = \log(b_X w_X) + \log X(t) - \log(w_Y) - \log Y(t)$, define $f(x,y) = \log x - \log y$ so that $h(t) = \text{const} + f(X(t), Y(t))$.
+
+Applying Itô's lemma to $f(X(t), Y(t))$ with jump-diffusion processes:
+\begin{align}
+df(X(t), Y(t)) &= \frac{\partial f}{\partial x} dX(t) + \frac{\partial f}{\partial y} dY(t) + \frac{1}{2}\frac{\partial^2 f}{\partial x^2} d[X]_t^c + \frac{1}{2}\frac{\partial^2 f}{\partial y^2} d[Y]_t^c \nonumber\\
+&\quad + \frac{\partial^2 f}{\partial x \partial y} d[X,Y]_t^c + \sum_{\text{jumps}} \Delta f
+\end{align}
+
+\textbf{Step 2: Compute partial derivatives}
+
+For $f(x,y) = \log x - \log y$:
+\begin{align}
+\frac{\partial f}{\partial x} &= \frac{1}{x}, \quad \frac{\partial f}{\partial y} = -\frac{1}{y}\\
+\frac{\partial^2 f}{\partial x^2} &= -\frac{1}{x^2}, \quad \frac{\partial^2 f}{\partial y^2} = \frac{1}{y^2}, \quad \frac{\partial^2 f}{\partial x \partial y} = 0
+\end{align}
+
+\textbf{Step 3: Continuous part analysis}
+
+The continuous parts of $X(t)$ and $Y(t)$ satisfy:
+\begin{align}
+dX(t) &= X(t^-)[\mu_X dt + \sigma_X dB_X(t)] + X(t^-)\Delta J_X(t)\\
+dY(t) &= Y(t^-)[\mu_Y dt + \sigma_Y dB_Y(t)] + Y(t^-)\Delta J_Y(t)
+\end{align}
+
+For the continuous part (ignoring jumps temporarily):
+\begin{align}
+df^c(X(t), Y(t)) &= \frac{1}{X(t)}[\mu_X X(t) dt + \sigma_X X(t) dB_X(t)] - \frac{1}{Y(t)}[\mu_Y Y(t) dt + \sigma_Y Y(t) dB_Y(t)] \nonumber\\
+&\quad - \frac{1}{2X(t)^2} \sigma_X^2 X(t)^2 dt + \frac{1}{2Y(t)^2} \sigma_Y^2 Y(t)^2 dt
+\end{align}
+
+The correct continuous part, accounting for correlation $\rho$, is:
+\begin{align}
+df^c(X(t), Y(t)) &= [\mu_X - \mu_Y - \frac{1}{2}(\sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y)] dt \nonumber\\
+&\quad + \sigma_X dB_X(t) - \sigma_Y dB_Y(t)
+\end{align}
+
+\textbf{Step 4: Jump part analysis}
+
+When $X(t)$ jumps at time $T_i$ with size $\Delta J_X(T_i) = U_X^i = -(\delta_X + E_X^i)$:
+\begin{align}
+\Delta f|_{X\text{-jump}} &= \log(X(T_i^-)(1 + U_X^i)) - \log(X(T_i^-)) = \log(1 + U_X^i) = U_X^i
+\end{align}
+
+When $Y(t)$ jumps at time $T_j$ with $\Delta J_Y(T_j) = U_Y^j = +(\delta_Y + E_Y^j)$:
+\begin{align}
+\Delta f|_{Y\text{-jump}} &= -\log(1 + U_Y^j) = -U_Y^j
+\end{align}
+
+\textbf{Step 5: Combine results}
+
+The total jump contribution to $h(t)$ is:
+\begin{align}
+J_h^X(t) &= \sum_{i=1}^{N_X(t)} U_X^i = \sum_{i=1}^{N_X(t)} [-(\delta_X + E_X^i)]\\
+J_h^Y(t) &= \sum_{j=1}^{N_Y(t)} (-U_Y^j) = \sum_{j=1}^{N_Y(t)} [+(\delta_Y + E_Y^j)]
+\end{align}
+
+The diffusion coefficient becomes:
+\[
+\sigma_h^2 = \mathbb{V}[\sigma_X dB_X(t) - \sigma_Y dB_Y(t)] = \sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y
+\]
+
+Therefore, $h(t) = h_0 + \mu_h t + \sigma_h B_h(t) + J_h^X(t) + J_h^Y(t)$ where all parameters are as stated.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:laplace_exponent}
+We derive the Laplace exponent by computing the cumulant generating function for each component of $h(t)$.
+
+\textbf{Step 1: Decompose the log-health process}
+
+From Proposition \ref{prop:log_health_dynamics}:
+\[
+h(t) = h_0 + \mu_h t + \sigma_h B_h(t) + J_h^X(t) + J_h^Y(t)
+\]
+
+\textbf{Step 2: Brownian motion contribution}
+
+For $\sigma_h B_h(t)$, the contribution is:
+\[
+\psi_B(\theta) = \frac{1}{2}\sigma_h^2 \theta^2
+\]
+
+\textbf{Step 3: Drift contribution}
+
+The drift contributes $-\mu_h \theta$ (negative sign for spectrally negative processes).
+
+\textbf{Step 4: X-jump contribution}
+
+For $J_h^X(t)$ with intensity $\hat\lambda_X$ and jump sizes $U_X^i = -(\delta_X + E_X^i)$:
+\[
+\psi_X(\theta) = \hat\lambda_X (\mathbb{E}[e^{\theta U_X}] - 1)
+\]
+
+Computing $\mathbb{E}[e^{\theta U_X}]$ where $U_X = -(\delta_X + E_X)$:
+\begin{align}
+\mathbb{E}[e^{\theta U_X}] &= e^{-\theta \delta_X} \mathbb{E}[e^{-\theta E_X}] = e^{-\theta \delta_X} \frac{\eta_X}{\eta_X + \theta}
+\end{align}
+
+\textbf{Step 5: Y-jump contribution}
+
+For $J_h^Y(t)$, Y-jumps contribute negatively to health (they worsen it), so:
+\[
+\mathbb{E}[e^{\theta(-U_Y)}] = e^{-\theta \delta_Y} \frac{\eta_Y}{\eta_Y + \theta}
+\]
+
+\textbf{Step 6: Combine all contributions}
+
+\[
+\psi(\theta) = \frac{1}{2}\sigma_h^2 \theta^2 - \mu_h \theta + \hat\lambda_X \left( e^{-\theta \delta_X} \frac{\eta_X}{\eta_X+\theta} - 1 \right) + \hat\lambda_Y \left( e^{-\theta \delta_Y} \frac{\eta_Y}{\eta_Y+\theta} - 1 \right)
+\]
+
+The properties follow from direct computation: $\psi(0) = 0$, and 
+\[
+\psi'(0) = -\mu_h - \hat\lambda_X(\delta_X + 1/\eta_X) - \hat\lambda_Y(\delta_Y + 1/\eta_Y)
+\]
+\end{delayedproof}
+
+\section{Numerical Methods and Implementation}
+\label{sec:numerical_methods}
+
+This appendix details the computational procedures for evaluating first-hitting time distributions through Laplace transform inversion.
+
+\subsection{Gaver-Stehfest Inversion Algorithm}
+
+The Gaver-Stehfest algorithm provides a robust method for numerically inverting Laplace transforms. For the first-hitting time distribution:
+
+\begin{algorithm}
+\caption{First-Hitting Time CDF via Gaver-Stehfest Inversion}
+\label{alg:gaver_stehfest_appendix}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Initial log-health $h_0 > 0$, evaluation time $T > 0$, Stehfest order $N$ (typically 10-14)
+\STATE Compute adjustment coefficient $R = \Phi(0)$ by solving $\psi(R) = 0$
+\STATE Precompute Stehfest weights $V_k$ for $k = 1, \ldots, N$:
+\[
+V_k = (-1)^{N/2+k} \sum_{j=\lfloor(k+1)/2\rfloor}^{\min(k,N/2)} \frac{j^{N/2} (2j)!}{(N/2-j)! j! (j-1)! (k-j)! (2j-k)!}
+\]
+\FOR{$k = 1$ to $N$}
+    \STATE Compute $q_k = k \ln 2 / T$
+    \STATE Solve $\psi(\theta) = q_k$ numerically to obtain $\Phi(q_k)$
+    \STATE Evaluate $\mathcal{L}\{F\}(q_k) = e^{-h_0 \Phi(q_k)} / q_k$
+\ENDFOR
+\STATE Compute the inversion:
+\[
+F(T,h_0) = \frac{\ln 2}{T} \sum_{k=1}^{N} V_k \mathcal{L}\{F\}(q_k)
+\]
+\STATE Clamp result to $[0,1]$
+\STATE \textbf{Output:} $F(T,h_0) = \mathbb{P}(\tau_0 \leq T)$
+\end{algorithmic}
+\end{algorithm}
+
+For the conditional distribution in defective cases, replace step 8 with:
+\[
+\mathcal{L}\{F_{\mathrm{cond}}\}(q_k) = \frac{e^{-h_0 (\Phi(q_k+R) - R)}}{q_k}
+\]
+
+\subsection{Root Finding for $\Phi(q)$}
+
+The root function $\Phi(q)$ requires solving $\psi(\theta) = q$ for each $q_k$ in the Stehfest algorithm. We employ Brent's method with search interval $[0, \theta_{\max}]$ where $\theta_{\max}$ is chosen to ensure $\psi(\theta_{\max}) > q_{\max}$.
+
+\textbf{Implementation details:}
+\begin{itemize}
+    \item Initialize with bracketing: $\theta_{\min} = 0$, $\theta_{\max} = 10 \max(\eta_X, \eta_Y)$
+    \item Verify $\psi(0) < q < \psi(\theta_{\max})$ before root finding
+    \item Use relative tolerance $10^{-12}$ for convergence
+    \item Cache $\psi(\theta)$ evaluations to avoid recomputation
+\end{itemize}
+
+\subsection{Numerical Stability Considerations}
+
+\begin{itemize}
+    \item \textbf{Stehfest order}: Use moderate orders (10-14) to balance accuracy and stability. Higher orders may amplify numerical errors.
+    \item \textbf{High precision}: Employ extended precision arithmetic for large $N$ or small $T$ to avoid catastrophic cancellation.
+    \item \textbf{Alternative inversion}: For very small $T$ or large $h_0$, consider Talbot or de Hoog methods which may be more stable.
+    \item \textbf{Parameter validation}: Ensure $\eta_X + \theta > 0$ and $\eta_Y + \theta > 0$ to avoid singularities.
+    \item \textbf{Clamping}: Final probabilities should be clamped to $[0,1]$ to handle numerical errors.
+    \item \textbf{Conditioning detection}: Automatically detect defective hitting by checking if $\psi'(0) < 0$.
+\end{itemize}
+
+\subsection{Computational Complexity}
+
+For each distribution evaluation:
+\begin{itemize}
+    \item $O(N)$ Laplace transform evaluations (typically $N = 10-14$)
+    \item Each evaluation requires solving $\psi(\theta) = q_k$ via root finding
+    \item Root finding: $O(\log \epsilon^{-1})$ iterations for tolerance $\epsilon$
+    \item Total complexity: $O(N \log \epsilon^{-1})$ per distribution evaluation
+\end{itemize}
+
+% ====================================================================
+% BIBLIOGRAPHY
+% ====================================================================
+
+%\bibliographystyle{abbrvnamed}
+%\bibliography{finance}
+
+\end{document}
 
 
+\subsection{Beta-Neutral Long--Short Strategy}
+
+The third case we consider is a beta-neutral long-short strategy: this strategy aims to isolate idiosyncratic returns by neutralizing exposure to the aggregate cryptocurrency market. The portfolio takes a long position in a high-alpha asset $\alpha_L$ and a short position in an asset with similar beta but lower alpha $\alpha_S$, capturing the alpha spread while mitigating systematic risk.  
+
+\paragraph{Portfolio Construction.}  
+Let $\beta_i$ denote the market beta of asset $i$. Construct long leg $\mathcal{L}$ and short leg $\mathcal{S}$ with weights $w_{\mathcal{L}}, w_{\mathcal{S}}$. Beta-neutrality requires
+\[
+\beta_P = \sum_{i \in \mathcal{L}} w_i \beta_i - \sum_{j \in \mathcal{S}} w_j \beta_j \approx 0,
+\]
+enforced via scaling between legs while maintaining positive collateralization.
+
+\paragraph{Expected Return and Variance.}  
+Ignoring liquidation events, the expected terminal wealth is
+\begin{equation}
+\mathbb{E}[W_T] = W_0 + w_L(e^{T\psi_L(1)}-1) - w_S(e^{T\psi_S(1)}-1),
+\end{equation}
+and the variance is
+\begin{equation}
+\text{Var}[W_T] = w_L^2 \text{Var}[R_L(T)] + w_S^2 \text{Var}[R_S(T)] - 2 w_L w_S \text{Cov}[R_L(T),R_S(T)],
+\end{equation}
+with $R_i(T) = \frac{P_i(T)}{P_i(0)} - 1$ and $\psi_i(\theta)$ the Laplace exponent of the Lévy process for asset $i$.
+
+\paragraph{Log-Health Process.}  
+Define
+\begin{equation}
+h(t) = \log\left(\frac{b_L w_L L_0}{w_S S_0}\right) + (\log L(t) - \log S(t)),
+\end{equation}
+with $L(t)$, $S(t)$ the long and short price processes and $b_L$ a collateral factor. The Laplace exponent of $h(t)$ is
+\begin{equation}
+\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta),
+\end{equation}
+or, in the presence of correlated drivers,
+\begin{equation}
+\psi_h(\theta) = {\bf{\Psi}}_{L,S}(\theta,-\theta).
+\end{equation}
+
+\paragraph{Kelly Criterion Implementation.}  
+We define a binary outcome over horizon $T^*$:
+\begin{itemize}
+    \item \textbf{Loss Event:} liquidation occurs with probability $q = \pi(T^*) = \mathbb{P}(\tau_0 \le T^*)$. The net loss is $R_{\text{loss}} = -L w_L$.
+    \item \textbf{Win Event:} no liquidation, probability $p = 1-q$. The gain is the expected idiosyncratic return $R_{\text{gain}} = w_L \alpha_L T^* - w_S \alpha_S T^*$.
+\end{itemize}
+
+The net odds are
+\begin{equation}
+b = \frac{R_{\text{gain}}}{|R_{\text{loss}}|} = \frac{w_L \alpha_L T^* - w_S \alpha_S T^*}{L w_L}.
+\end{equation}
+
+The optimal Kelly fraction is
+\begin{equation}
+f^*(r) = \frac{b(r)p(r)-q(r)}{b(r)},
+\end{equation}
+and the expected logarithmic growth to maximize is
+\begin{equation}
+G(r) = q(r) \log(1 - f^*(r) L w_L) + p(r) \log(1 + f^*(r) b(r) L w_L).
+\end{equation}
+
+For practical implementation, a fractional Kelly $f_{\rm target}(r) = k f^*(r)$ (e.g., $k=0.5$) is recommended to reduce tail risk.  
+
+\paragraph{Solution.}  
+\begin{enumerate}
+    \item For a given allocation ratio $r$, compute $w_L(r), w_S(r)$ and initial log-health $h_0(r)$.
+    \item Estimate $q(r) = \pi(T^*)$ via Laplace inversion.
+    \item Compute $p(r) = 1-q(r)$ and net odds $b(r)$.
+    \item Evaluate $f^*(r)$ and $G(r)$.
+    \item Maximize $G(r)$ numerically over feasible $r$ with $h_0(r) \ge h_{\min}$.
+\end{enumerate}
+
+\paragraph{Calibration and Data.}  
+Historical crypto returns are used to calibrate $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ for Lévy jump-diffusion processes. Long and short assets are chosen to enforce $\beta_P \approx 0$. Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
+
+\paragraph{Baseline Parameters.}
+\begin{align*}
+\mu_L &= 0.08, &\sigma_L &= 0.75, &\lambda_L &= 0.08, &\delta_L &= 0.20,\\
+\mu_S &= 0.04, &\sigma_S &= 0.70, &\lambda_S &= 0.12, &\delta_S &= 0.22,\\
+T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
+\end{align*}
+
+\paragraph{Key Insights.}  
+\begin{itemize}
+    \item Beta-neutral portfolios have lower variance than directional positions for similar expected returns.
+    \item Positive drift in $h(t)$ ensures feasibility of larger allocations.
+    \item Heavy-tailed jumps or strong correlations restrict the feasible allocation ratio $r$ for maintaining beta neutrality and healthy collateral.
+\end{itemize}
+
+\subsection{Leveraged Yield Strategy: USDC Collateral, Borrow BTC, Swap to USDC, Deposit to AAVE}
+
+Consider an initial USDC collateral \(C_0>0\). Using the protocol's collateral factor \(\varphi \in (0,1)\), BTC is borrowed up to a USD-valued amount \(\varphi C_0\). The borrowed BTC is immediately swapped into USDC and deposited back into AAVE at a supply rate \(r_A\). Repeating the borrow–swap–deposit loop \(k\) times generates a geometric series of leveraged deposits. The primary risks are the BTC borrow interest \(r_b\) and mark-to-market exposure to BTC price movements, which can trigger liquidation.
+
+\paragraph{Notation.}
+\begin{itemize}
+  \item \(C_0\) — initial USDC collateral.
+  \item \(S_t\) — spot price of BTC in USDC.
+  \item \(\varphi\) — protocol collateral factor.
+  \item \(r_A\) — AAVE supply APY for USDC.
+  \item \(r_b\) — borrow interest rate for BTC (USD-equivalent).
+  \item \(k\) — number of leverage loops.
+  \item \(D_t\) — USD value of outstanding debt.
+  \item \(H_t\) — deposited USDC value.
+  \item \(h_t = \log H_t - \log D_t\) — log-health process.
+  \item \(L\) — liquidation threshold in log-health: liquidation occurs when \(h_t \le -\ell\).
+\end{itemize}
+
+\paragraph{Leverage Accounting.}
+After \(k\) loops, the total deposited USDC is
+\[
+H^{(k)} = C_0 \sum_{i=0}^{k} \varphi^{\,i} = C_0 \frac{1-\varphi^{\,k+1}}{1-\varphi},
+\]
+and the USD-valued debt is
+\[
+D^{(k)} = C_0 \sum_{i=1}^{k} \varphi^{\,i} = C_0\left(\frac{1-\varphi^{\,k+1}}{1-\varphi}-1\right).
+\]
+For \(k \to \infty\), these converge to
+\[
+H^{(\infty)} = \frac{C_0}{1-\varphi}, \qquad D^{(\infty)} = \frac{\varphi}{1-\varphi}\,C_0.
+\]
+
+\paragraph{Instantaneous Net Yield.}
+Ignoring BTC mark-to-market, fees, and slippage, the infinite-loop net yield is
+\[
+r_{\mathrm{net}}^{(\infty)}(\varphi) = \frac{r_A - \varphi\, r_b}{1-\varphi}.
+\]
+
+\paragraph{Price Risk and Log-Health Process.}
+Let \(X_t\) denote the log-value process of USDC deposits and \(Y_t = \log S_t\) the BTC log-price, with Lévy exponents \(\psi_X(\theta)\) and \(\psi_Y(\theta)\). The log-health process exponent is
+\[
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta),
+\]
+reflecting that upward BTC moves reduce the USD-equivalent debt burden, and downward moves increase it.
+
+Liquidation occurs at the first hitting time
+\[
+\tau_{\mathrm{liq}} = \inf \{ t \ge 0 : h_t \le -\ell \}.
+\]
+The drift and jump intensity of \(Y_t\) determine survival probabilities to a given horizon and influence the feasibility of leverage \(\varphi\).
+
+\paragraph{First-Order Stability.}
+A positive drift of log-health implies
+\[
+\frac{r_A}{1-\varphi} - \frac{r_b \varphi}{1-\varphi} - \mu_Y > 0,
+\]
+with \(\mu_Y = -\mathbb{E}[\dot Y_t]\) representing the effect of BTC price drift. Ignoring \(\mu_Y\) yields the heuristic constraint \(\varphi < r_A / r_b\).
+
+\paragraph{Fees, Slippage, and Gas.}
+Realized performance is affected by swap fees, gas costs, variable borrow rates, and liquidation penalties. High leverage and repeated loops amplify these effects.
+
+\paragraph{Health Process Parameters.}
+The Lévy exponents \(\psi_X(\theta)\) and \(\psi_Y(\theta)\) define
+\[
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta),
+\]
+and the drift and tail behavior of \(\psi_h\) determine whether the system is almost-surely safe or defective. Positive drift and light left-tail jumps in BTC favor larger feasible \(\varphi\); negative drift and heavy left-tail jumps require smaller \(\varphi\) to avoid liquidation.
+
+\paragraph{Worked Example.}
+With \(r_A = 0.046\) and \(r_b = 0.02\), the infinite-loop net yield is
+\[
+r_{\mathrm{net}}^{(\infty)}(\varphi) = \frac{0.046 - 0.02\varphi}{1-\varphi}.
+\]
+For \(\varphi = 0.5\),
+\[
+r_{\mathrm{net}}^{(\infty)}(0.5) = \frac{0.046-0.01}{0.5} = 0.072 = 7.2\%,
+\]
+ignoring BTC volatility, liquidation mechanics, slippage, and fees.
 
 % ====================================================================
 \section{Conclusion}

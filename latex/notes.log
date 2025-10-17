@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.5.24)  10 OCT 2025 12:02
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.5.24)  17 OCT 2025 08:21
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -459,15 +459,103 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 [5]
 
 [6]
+Underfull \hbox (badness 10000) in paragraph at lines 400--400
+[]\OT1/cmr/bx/n/10 Stablecoin
+ []
+
+
+Underfull \hbox (badness 7888) in paragraph at lines 400--400
+[]\OT1/cmr/bx/n/10 Momentum Strat-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 400--400
+[]\OT1/cmr/bx/n/10 Beta-Neutral
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 400--400
+[]\OT1/cmr/bx/n/10 Leveraged Yield
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 404--404
+[]\OT1/cmr/m/n/10 Allocation ra-tio $\OML/cmm/m/it/10 r$\OT1/cmr/m/n/10 ,
+ []
+
+
+Underfull \hbox (badness 1931) in paragraph at lines 406--406
+[]\OT1/cmr/m/n/10 Capture trend-ing re-
+ []
+
+
+Underfull \hbox (badness 1769) in paragraph at lines 412--412
+[]$\OML/cmm/m/it/10  []\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 ^^R\OT1/cmr/m/n/10 ) \OMS/cmsy/m/n/10 ^^Y \OML/cmm/m/it/10  []\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 ^^R\OT1/cmr/m/n/10 ) +
+ []
+
+
+Underfull \hbox (badness 6316) in paragraph at lines 412--412
+[]$\OML/cmm/m/it/10  []\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 ^^R\OT1/cmr/m/n/10 ) = \OML/cmm/m/it/10  []\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 ^^R\OT1/cmr/m/n/10 ) +
+ []
+
+
+Underfull \hbox (badness 5231) in paragraph at lines 412--412
+[]$\OML/cmm/m/it/10  []\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 ^^R\OT1/cmr/m/n/10 ) = \OML/cmm/m/it/10  []\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 ^^R\OT1/cmr/m/n/10 ) +
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 418--418
+[]$\OML/cmm/m/it/10 W[] \OT1/cmr/m/n/10 = \OML/cmm/m/it/10 W[] \OT1/cmr/m/n/10 +
+ []
+
+
+Underfull \hbox (badness 1708) in paragraph at lines 420--420
+[]$\OML/cmm/m/it/10 h[] \OMS/cmsy/m/n/10 ^^T ^^@\OML/cmm/m/it/10 `$ \OT1/cmr/m/n/10 (protocol-
+ []
+
+
+Underfull \hbox (badness 1215) in paragraph at lines 422--422
+[]\OT1/cmr/m/n/10 Max util-ity or Kelly
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 424--424
+[]\OT1/cmr/m/n/10 Historical sta-ble-coin
+ []
+
+
+Underfull \hbox (badness 2790) in paragraph at lines 424--424
+[]\OT1/cmr/m/n/10 Historical mo-men-tum
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 424--424
+[]\OT1/cmr/m/n/10 Rolling win-dow
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 424--424
+[]\OT1/cmr/m/n/10 Historical BTC re-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 424--424
+\OT1/cmr/m/n/10 turns, $\OML/cmm/m/it/10 r[]; r[]$ \OT1/cmr/m/n/10 from
+ []
+
+
+Overfull \hbox (99.27821pt too wide) in paragraph at lines 398--427
+ [][] 
+ []
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+
 
 [7]
 
 [8]
-Underfull \hbox (badness 10000) in paragraph at lines 491--494
-
- []
-
-
 
 [9]
 
@@ -484,67 +572,47 @@ Underfull \hbox (badness 10000) in paragraph at lines 491--494
 [15]
 
 [16]
+Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on input line 997.
+
 
 [17]
 
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1025.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Phi' on input line 1025.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1025.
+
+
+
 [18]
 
-[19]
-
-[20]
-
-[21]
-
-[22]
-
-[23]
-
-[24]
-
-[25]
-
-[26]
-Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on input line 1350.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1378.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\Phi' on input line 1378.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1378.
-
-
-
-[27]
-
-[28]
-
-[29] (./notes.aux)
+[19] (./notes.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
 Package rerunfilecheck Info: File `notes.out' has not changed.
-(rerunfilecheck)             Checksum: 2D5EB6ED34A8E031FB0B6E4838CAE706;7183.
+(rerunfilecheck)             Checksum: 13AB4B0BB0DC6924C54B49CB91B3A256;7201.
  ) 
 Here is how much of TeX's memory you used:
- 14094 strings out of 473190
- 227272 string characters out of 5715800
- 659534 words of memory out of 5000000
+ 13980 strings out of 473190
+ 226164 string characters out of 5715800
+ 665534 words of memory out of 5000000
  36827 multiletter control sequences out of 15000+600000
- 569396 words of font info for 76 fonts, out of 8000000 for 9000
+ 569736 words of font info for 77 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,11n,79p,910b,583s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx9.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on notes.pdf (29 pages, 397542 bytes).
+ 75i,15n,79p,825b,579s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx9.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
+Output written on notes.pdf (19 pages, 367087 bytes).
 PDF statistics:
- 768 PDF objects out of 1000 (max. 8388607)
- 686 compressed objects within 7 object streams
- 353 named destinations out of 1000 (max. 500000)
+ 605 PDF objects out of 1000 (max. 8388607)
+ 530 compressed objects within 6 object streams
+ 238 named destinations out of 1000 (max. 500000)
  297 words of extra memory for PDF output out of 10000 (max. 10000000)
 
