@@ -16,6 +16,7 @@ We construct:
 from dataclasses import dataclass
 from typing import Annotated
 import numpy as np
+import math
 
 
 # Type aliases for clarity
@@ -59,8 +60,10 @@ class HealthProcessParameters:
         """Validate all parameters are in valid ranges."""
         if self.w_Y <= 0:
             raise ValueError("w_Y must be positive (short-side exposure/funding).")
-        if self.w_X - self.w_Y != 1:
-            raise ValueError("weights must satisfy w_X - w_Y = 1")
+        # Allow for small floating-point rounding when checking the weights
+        if not math.isclose(self.w_X - self.w_Y, 1.0, rel_tol=1e-12, abs_tol=1e-12):
+            diff = self.w_X - self.w_Y
+            raise ValueError(f"weights must satisfy w_X - w_Y = 1 (got {diff})")
         if self.sigma_X < 0:
             raise ValueError("sigma_X must be non-negative")
         if self.sigma_Y < 0:

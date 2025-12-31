@@ -41,8 +41,10 @@ class StablecoinShortStrategy:
         # Build log-health process (h = log(b_X * w_X * X / (w_Y * Y)))
         self.health_process = LogHealthProcess(
             HealthProcessParameters(
-                w_X=1.0,  # placeholder, updated per allocation
-                w_Y=0.0,  # placeholder
+                # small positive placeholders so parameter validation passes;
+                # actual values are updated from `weights_from_r` before use
+                w_X=1.00000001,
+                w_Y=0.00000001,
                 b_X=self.p.b_X,
                 mu_X=self.p.X_params.mu,
                 mu_Y=self.p.Y_params.mu,
@@ -59,6 +61,10 @@ class StablecoinShortStrategy:
                 Y0=self.p.Y0
             )
         )
+
+    def psi_h(self, theta: float) -> float:
+        """Convenience wrapper: forward psi_h calls to the internal health process."""
+        return self.health_process.psi_h(theta)
 
     # ---------------------------
     # Weight mapping: r -> (w_X, w_Y)
