@@ -7,7 +7,6 @@ import requests
 from pathlib import Path
 import re
 
-# Try to load `a.env` located next to this script first, then fall back to cwd
 env_path = Path(__file__).resolve().parent / ".env"
 if not env_path.exists():
     env_path = Path.cwd() / ".env"
