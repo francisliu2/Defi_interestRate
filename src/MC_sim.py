@@ -12,7 +12,7 @@ Outputs:
 from dataclasses import dataclass
 import numpy as np
 from typing import Optional
-from params import LogHealthParameters
+from params_MLE import LogHealthParameters
 
 
 @dataclass

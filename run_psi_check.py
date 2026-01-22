@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath("src"))
 
 import numpy as np
-from params import JumpDiffusionParams
+from params_MLE import JumpDiffusionParams
 from stable_strat import create_stablecoin_short_strategy
 
 X_params = JumpDiffusionParams(mu=0.0, sigma=0.001, lam=0.001, delta=0.0, eta=10.0)

@@ -11,6 +11,7 @@ Modules:
     gil_pelaez: Gil-Pelaez CDF inversion formula
     calibration: Parameter calibration using POT and MLE methods
     simulation: Monte Carlo simulation tools
+    monte_carlo: Advanced Monte Carlo simulation engine
     utils: Utility functions and helpers
 """
 
@@ -24,6 +25,15 @@ from .riccati_solver import FirstHittingTimeRiccatiSolver
 from .gil_pelaez import GilPelaezCDF
 from .calibration import POTCalibrator, MLECalibrator
 from .simulation import HawkesSimulator
+from .monte_carlo import (
+    MonteCarloEngine,
+    ParallelMonteCarloEngine,
+    SimulationConfig,
+    SimulationResult,
+    FirstPassageResult,
+    simulate_cir_paths,
+    quick_liquidation_estimate,
+)
 
 __all__ = [
     "HawkesJumpDiffusion",
@@ -32,4 +42,12 @@ __all__ = [
     "POTCalibrator",
     "MLECalibrator",
     "HawkesSimulator",
+    # Monte Carlo
+    "MonteCarloEngine",
+    "ParallelMonteCarloEngine",
+    "SimulationConfig",
+    "SimulationResult",
+    "FirstPassageResult",
+    "simulate_cir_paths",
+    "quick_liquidation_estimate",
 ]

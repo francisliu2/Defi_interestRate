@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Callable, Dict, Any, Tuple
 import numpy as np
-from params import JumpDiffusionParams
+from params_MLE import JumpDiffusionParams
 from log_health import HealthProcessParameters, LogHealthProcess  
 
 @dataclass
