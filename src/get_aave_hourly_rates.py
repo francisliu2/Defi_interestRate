@@ -8,9 +8,9 @@ from pathlib import Path
 import re
 
 # Try to load `a.env` located next to this script first, then fall back to cwd
-env_path = Path(__file__).resolve().parent / ".env"
+env_path = Path(__file__).resolve().parent / "a.env"
 if not env_path.exists():
-    env_path = Path.cwd() / ".env"
+    env_path = Path.cwd() / "a.env"
     
 if env_path.exists():
     load_dotenv(str(env_path))
@@ -38,7 +38,7 @@ if not _is_valid_api_key(API_KEY):
                        """  
 
 
-# token ETH addresses
+# token ETH addresses - will add those of interest
 USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"  
 USDT_ADDRESS = "0xdac17f958d2ee523a2206206994597c13d831ec7"  
 DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
@@ -77,6 +77,7 @@ def to_row(snap: dict) -> dict:
             "borrowed_USD"   : float(snap["totalBorrowBalanceUSD"]),
             "liquidations"   : float(snap['hourlyLiquidateUSD']),
             "token_balance"  : float(snap["inputTokenBalance"]),
+            "close"          : float(snap.get('inputTokenPriceUSD', 0) or 0),
         }
 
         # initialise APR columns with NaN
@@ -146,6 +147,7 @@ def get_data_coin_aave(name, start_ts, endpoint):
         totalBorrowBalanceUSD
         hourlyLiquidateUSD
         inputTokenBalance
+        inputTokenPriceUSD
         rates {
             side          # LENDER / BORROWER
             type          # VARIABLE / STABLE
