@@ -13,7 +13,11 @@
       "Bash(ls:*)",
       "Bash(pip3 list:*)",
       "Bash(python:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(git checkout:*)",
+      "Bash(mkdir -p /Users/francis/Defi_interestRate/development)",
+      "Bash(git mv:*)",
+      "Bash(brew --version)"
     ],
     "deny": []
   }

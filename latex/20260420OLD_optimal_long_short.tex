@@ -1,0 +1,924 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+
+% ==== PACKAGES ====
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage[longnamesfirst,sort&compress]{natbib}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+% Citation punctuation style
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+% ==== CUSTOM COMMANDS ====
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\diff}{\mathrm{d}}
+\newcommand{\F}{\mathcal{F}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\Rea}{\operatorname{Re}}
+
+% ==== THEOREM ENVIRONMENTS ====
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{remark}{Remark}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{assumption}{Assumption}[section]
+
+\title{Sepp-Style Laplace--Resolvent Semi-Analytics for a Ratio Barrier Payoff under Kou Dynamics}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+
+% ============================================================
+\section{Problem Setup and One-Dimensional Reduction}
+% ============================================================
+
+Let $(\Omega,\F,(\F_t)_{t\ge 0},\P)$ be a filtered probability space.
+Consider two strictly positive asset prices $S_1,S_2$ with initial values $S_{1,0},S_{2,0}>0$.
+We write
+\[
+S_{i,t}=S_{i,0}e^{X_{i,t}},\qquad X_{i,0}=0,\quad i=1,2.
+\]
+
+Fix $b\in(0,1)$ and portfolio weights $w_1,w_2>0$. The health ratio is defined by
+\[
+H_t := \frac{b\,w_1S_{1,t}}{w_2S_{2,t}},
+\qquad
+h_t:=\log H_t,
+\qquad
+\tau:=\inf\{t\ge 0:\; H_t<1\}.
+\]
+Since
+\[
+h_t
+=
+\log\!\Big(\frac{b\,w_1S_{1,0}}{w_2S_{2,0}}\Big)+(X_{1,t}-X_{2,t}),
+\]
+it is natural to define
+\[
+h_0:=\log\!\Big(\frac{b\,w_1S_{1,0}}{w_2S_{2,0}}\Big),
+\qquad
+Z_t:=X_{1,t}-X_{2,t},
+\]
+so that
+\[
+h_t=h_0+Z_t,
+\qquad
+\tau=\inf\{t\ge 0:\; Z_t<-h_0\}.
+\]
+
+The terminal payoff is
+\[
+\Pi_T:=(w_1S_{1,T}-w_2S_{2,T})^+\,\one_{\{\tau>T\}}.
+\]
+Using
+\[
+H_T=\frac{b\,w_1S_{1,T}}{w_2S_{2,T}},
+\]
+one obtains the factorization
+\begin{equation}\label{eq:payoff-factor}
+\boxed{
+\Pi_T
+=
+\frac{w_2}{b}\,S_{2,0}e^{X_{2,T}}\,(e^{h_0+Z_T}-b)^+\,\one_{\{\tau>T\}}.
+}
+\end{equation}
+
+We impose the portfolio normalization
+\[
+w_1S_{1,0}-w_2S_{2,0}=1.
+\]
+This leaves only one degree of freedom. Since the valuation problem enters through $h_0$, it is natural to use
+$h_0$ as the scalar control parameter. Let
+\[
+x:=w_2S_{2,0}.
+\]
+Then
+\[
+w_1S_{1,0}=1+x,
+\qquad
+e^{h_0}=\frac{b(1+x)}{x}.
+\]
+Solving for $x$ gives
+\[
+x=\frac{b}{e^{h_0}-b}.
+\]
+Hence
+\begin{equation}\label{eq:w-from-h0}
+\boxed{
+w_2(h_0)=\frac{b}{S_{2,0}(e^{h_0}-b)},
+\qquad
+w_1(h_0)=\frac{e^{h_0}}{S_{1,0}(e^{h_0}-b)}.
+}
+\end{equation}
+Since $w_1,w_2>0$, the feasible set is
+\[
+h_0>\ln b.
+\]
+Thus the original two-weight optimization problem is equivalently reduced to a one-dimensional optimization over
+\[
+h_0\in(\ln b,\infty).
+\]
+
+% ============================================================
+\section{Kou Model, Tilted Dynamics, and Notation}
+% ============================================================
+
+We assume under $\P$ that $(X_{1,t},X_{2,t})_{t\ge 0}$ is a bivariate jump--diffusion with correlated Brownian part
+(volatilities $\sigma_1,\sigma_2$, correlation $\rho$) and independent Kou compound Poisson jumps in each coordinate,
+independent of the Brownian part.
+
+Its joint L\'evy--Khintchine exponent is defined by
+\[
+\E_{\P}\!\left[e^{i(uX_{1,t}+vX_{2,t})}\right]=\exp\!\big(t\,\Psi(u,v)\big),\qquad u,v\in\R,
+\]
+with
+\begin{equation}\label{eq:Psi}
+\boxed{
+\begin{aligned}
+\Psi(u,v)
+&= i(\mu_1 u+\mu_2 v)
+-\tfrac12\Big(\sigma_1^2u^2+\sigma_2^2v^2+2\rho\sigma_1\sigma_2uv\Big)\\
+&\quad +\lambda_1\big(\varphi_{J_1}(u)-1\big)
++\lambda_2\big(\varphi_{J_2}(v)-1\big).
+\end{aligned}}
+\end{equation}
+
+The Kou jump law is
+\[
+f_i(j)
+=
+p_i\eta_{i,+}e^{-\eta_{i,+}j}\one_{\{j>0\}}
++
+(1-p_i)\eta_{i,-}e^{\eta_{i,-}j}\one_{\{j<0\}},
+\qquad
+\eta_{i,+},\eta_{i,-}>0,
+\quad
+p_i\in(0,1),
+\]
+so that
+\begin{equation}\label{eq:Kou-char-mgf}
+\boxed{
+\varphi_{J_i}(u)
+=
+p_i\frac{\eta_{i,+}}{\eta_{i,+}-iu}
++
+(1-p_i)\frac{\eta_{i,-}}{\eta_{i,-}+iu},
+\qquad
+M_i(s):=\E[e^{sJ_i}]
+=
+p_i\frac{\eta_{i,+}}{\eta_{i,+}-s}
++
+(1-p_i)\frac{\eta_{i,-}}{\eta_{i,-}+s}.
+}
+\end{equation}
+
+For each integer $k\ge 1$, define the tilted measure $\P^{(2,k)}$ by
+\[
+\left.\frac{\diff\P^{(2,k)}}{\diff\P}\right|_{\F_t}
+=
+\frac{e^{kX_{2,t}}}{\E_{\P}[e^{kX_{2,t}}]}
+=
+\exp\!\left(kX_{2,t}-t\,\Psi(0,-ik)\right),
+\]
+assuming $\eta_{2,+}>k$. Under $\P^{(2,k)}$, the one-dimensional process $Z$ is again L\'evy with exponent
+\begin{equation}\label{eq:psiZk}
+\boxed{
+\psi_Z^{(k)}(s)
+=
+\mu_Z^{(k)}s+\tfrac12\sigma_Z^2 s^2
++\lambda_1\big(M_1(s)-1\big)
++\lambda_2\big(M_2(k-s)-M_2(k)\big),
+}
+\end{equation}
+where
+\[
+\sigma_Z^2:=\sigma_1^2+\sigma_2^2-2\rho\sigma_1\sigma_2 \ge 0,
+\qquad
+\mu_Z^{(k)}:=(\mu_1-\mu_2)-k(\sigma_2^2-\rho\sigma_1\sigma_2).
+\]
+Let $\mathcal L^{(k)}$ denote the generator of $Z$ under $\P^{(2,k)}$. Then
+\begin{equation}\label{eq:generator-eigen}
+\boxed{
+\mathcal L^{(k)}e^{sz}=\psi_Z^{(k)}(s)e^{sz}.
+}
+\end{equation}
+
+For the Kou structure under the $k$-tilted measure, we introduce the $k$-dependent phase rates
+\[
+r_{1,+}^{(k)}:=\eta_{1,+},
+\qquad
+r_{2,+}^{(k)}:=\eta_{2,-}+k,
+\]
+\[
+r_{1,-}^{(k)}:=\eta_{1,-},
+\qquad
+r_{2,-}^{(k)}:=\eta_{2,+}-k.
+\]
+The associated phase operators are
+\[
+K_{j,+}^{(k)}[f](z)
+:=
+\int_0^\infty f(z+y)\,r_{j,+}^{(k)}e^{-r_{j,+}^{(k)}y}\,\diff y,
+\qquad j=1,2,
+\]
+and
+\[
+K_{j,-}^{(k)}[f](z)
+:=
+\int_{-\infty}^0 f(z+y)\,r_{j,-}^{(k)}e^{r_{j,-}^{(k)}y}\,\diff y,
+\qquad j=1,2.
+\]
+For exponentials,
+\begin{equation}\label{eq:phase-on-exp}
+\boxed{
+K_{j,+}^{(k)}[e^{\gamma\cdot}](z)
+=
+\frac{r_{j,+}^{(k)}}{r_{j,+}^{(k)}-\gamma}e^{\gamma z},
+\qquad
+K_{j,-}^{(k)}[e^{\gamma\cdot}](z)
+=
+\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma}e^{\gamma z}.
+}
+\end{equation}
+
+The role of these phase rates is structural: they convert the nonlocal jump terms into a finite set of phase variables.
+This is what makes the matching conditions at the payoff kink and the absorbing conditions at the barrier reducible to
+finite-dimensional linear systems.
+
+% ============================================================
+\section{Moment Reduction}
+% ============================================================
+
+Define
+\[
+g_k(z;h_0):=\big((e^{h_0+z}-b)^+\big)^k.
+\]
+From \eqref{eq:payoff-factor},
+\[
+\Pi_T^k
+=
+\Big(\frac{w_2}{b}\Big)^k S_{2,0}^k e^{kX_{2,T}}\,g_k(Z_T;h_0)\,\one_{\{\tau>T\}}.
+\]
+Let
+\[
+A_k:=\E_{\P}[e^{kX_{2,T}}]=\exp\!\big(T\Psi(0,-ik)\big).
+\]
+Then
+\begin{equation}\label{eq:moment-reduction}
+\boxed{
+\E_{\P}[\Pi_T^k]
+=
+\Big(\frac{w_2}{b}\Big)^k S_{2,0}^k\,A_k\;
+\E_{\P^{(2,k)}}\!\Big[g_k(Z_T;h_0)\,\one_{\{\tau>T\}}\Big].
+}
+\end{equation}
+
+\begin{proposition}[First two moments]\label{prop:first-two-moments}
+Assume $k=1,2$ satisfy $\eta_{2,+}>k$. Define
+\[
+m_k(T;h_0):=\E_{\P^{(2,k)}}\!\Big[g_k(Z_T;h_0)\,\one_{\{\tau>T\}}\Big].
+\]
+Then
+\[
+\E_{\P}[\Pi_T]=\Big(\frac{w_2}{b}\Big) S_{2,0}\,e^{T\Psi(0,-i)}\,m_1(T;h_0),
+\]
+\[
+\E_{\P}[\Pi_T^2]=\Big(\frac{w_2}{b}\Big)^2 S_{2,0}^2\,e^{T\Psi(0,-2i)}\,m_2(T;h_0),
+\]
+and consequently
+\[
+\mathrm{Var}_{\P}(\Pi_T)=\E_{\P}[\Pi_T^2]-\big(\E_{\P}[\Pi_T]\big)^2.
+\]
+\end{proposition}
+
+The remainder of the analysis is therefore devoted to computing the killed expectations $m_1(T;h_0)$ and $m_2(T;h_0)$.
+
+% ============================================================
+\section{Three-Step Resolvent Construction}
+% ============================================================
+
+The valuation problem is most transparent when built progressively. We begin with the atomic response to a single
+exponential source, then restore the payoff kink on the full line, and finally impose the absorbing barrier by a
+homogeneous correction.
+
+\paragraph{Step 1: atomic full-line resolvent.}
+The first object is the Laplace transform of exponential moments,
+\[
+\widehat U_{\mathrm{atom}}^{(k)}(q,z;s)
+=
+\int_0^\infty e^{-qt}\,\E_z^{(2,k)}[e^{sZ_t}]\,\diff t.
+\]
+This is not yet the payoff value itself, but it is the basic building block because the payoff-active branch is a
+finite linear combination of exponentials.
+
+The problem is
+\[
+(q-\mathcal L^{(k)})u(z)=e^{sz},\qquad z\in\R.
+\]
+The domain is the full line $\R$; there is no interface and no boundary.
+
+\begin{proposition}[Step 1: atomic resolvent]\label{prop:Uatom}
+For any $q>0$ and any $s$ in the moment domain such that $q\neq \psi_Z^{(k)}(s)$,
+\[
+\boxed{
+\widehat U_{\mathrm{atom}}^{(k)}(q,z;s)
+=
+\frac{e^{sz}}{q-\psi_Z^{(k)}(s)}.
+}
+\]
+Equivalently,
+\[
+(q-\mathcal L^{(k)})\widehat U_{\mathrm{atom}}^{(k)}(q,z;s)=e^{sz}.
+\]
+\end{proposition}
+
+\paragraph{Step 2: full-line resolvent with payoff kink.}
+We now restore the actual payoff but still ignore liquidation. The quantity of interest is
+\[
+\widehat U_{\mathrm{kink}}^{(k)}(q,z;h_0)
+=
+\int_0^\infty e^{-qt}
+\E_z^{(2,k)}\!\left[\big(e^{h_0+Z_t}-b\big)_+^k\right]\diff t.
+\]
+This is the no-barrier payoff value.
+
+The problem is
+\[
+(q-\mathcal L^{(k)})\widehat U_{\mathrm{kink}}^{(k)}(q,z;h_0)
+=
+g_k(z;h_0),
+\qquad z\in\R,
+\]
+with
+\[
+g_k(z;h_0)=\big(e^{h_0+z}-b\big)_+^k.
+\]
+Define
+\[
+z_*(h_0):=\ln b-h_0.
+\]
+Then
+\[
+g_k(z;h_0)=
+\begin{cases}
+0, & z<z_*(h_0),\\[4pt]
+(e^{h_0+z}-b)^k, & z>z_*(h_0).
+\end{cases}
+\]
+For $z>z_*(h_0)$,
+\[
+(e^{h_0+z}-b)^k
+=
+\sum_{j=0}^k c_{k,j}^{(z)}(h_0)e^{jz},
+\qquad
+c_{k,j}^{(z)}(h_0):=\binom{k}{j}(-1)^{k-j}b^{\,k-j}e^{jh_0}.
+\]
+
+The domain is the full line $\R$. There is a single interface at $z=z_*(h_0)$. There is no barrier boundary in this
+step; instead, one imposes asymptotic boundedness as $z\to\pm\infty$.
+
+\begin{assumption}[Generic six-root regime]\label{ass:six-root}
+Fix $k\in\{1,2\}$ and $q>0$. Assume:
+\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\item $\sigma_Z>0$;
+\item the characteristic equation
+\[
+\psi_Z^{(k)}(\gamma)=q
+\]
+has six simple roots $\gamma_1(q),\dots,\gamma_6(q)$, ordered so that
+\[
+\Rea(\gamma_{1,2,3})>0,\qquad \Rea(\gamma_{4,5,6})<0;
+\]
+\item $q\neq \psi_Z^{(k)}(j)$ for all $j=0,\dots,k$.
+\end{enumerate}
+\end{assumption}
+
+\begin{proposition}[Step 2: full-line kinked resolvent]\label{prop:Ukink}
+Under \Cref{ass:six-root}, the full-line resolvent admits the decomposition
+\[
+\widehat U_{\mathrm{kink}}^{(k)}(q,z;h_0)
+=
+\widehat U_{\mathrm{pay}}^{(k)}(q,z;h_0)
++
+\widehat U_{\mathrm{kink\text{-}corr}}^{(k)}(q,z;h_0),
+\]
+where the payoff-driven particular term is
+\[
+\boxed{
+\widehat U_{\mathrm{pay}}^{(k)}(q,z;h_0)
+=
+\one_{\{z>z_*(h_0)\}}
+\sum_{j=0}^{k}
+\frac{c_{k,j}^{(z)}(h_0)}{q-\psi_Z^{(k)}(j)}e^{jz}.
+}
+\]
+Moreover,
+\[
+\boxed{
+\widehat U_{\mathrm{kink}}^{(k)}(q,z;h_0)=
+\begin{cases}
+\displaystyle \sum_{m=1}^3 A_m^{(k)}(q;h_0)e^{\gamma_m(q)z}, & z<z_*(h_0),\\[10pt]
+\displaystyle \sum_{m=4}^6 A_m^{(k)}(q;h_0)e^{\gamma_m(q)z}
++\sum_{j=0}^{k}\frac{c_{k,j}^{(z)}(h_0)}{q-\psi_Z^{(k)}(j)}e^{jz}, & z>z_*(h_0).
+\end{cases}
+}
+\]
+
+The coefficients $A_1^{(k)},\dots,A_6^{(k)}$ are determined by the following interface conditions at $z=z_*(h_0)$:
+\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\item continuity of the value;
+\item continuity of the first derivative;
+\item continuity of the downward phase variables
+\[
+K_{j,-}^{(k)}[\widehat U_{\mathrm{kink}}^{(k)}](z_*(h_0)-)
+=
+K_{j,-}^{(k)}[\widehat U_{\mathrm{kink}}^{(k)}](z_*(h_0)+),
+\qquad j=1,2;
+\]
+\item continuity of the upward phase variables
+\[
+K_{j,+}^{(k)}[\widehat U_{\mathrm{kink}}^{(k)}](z_*(h_0)-)
+=
+K_{j,+}^{(k)}[\widehat U_{\mathrm{kink}}^{(k)}](z_*(h_0)+),
+\qquad j=1,2.
+\]
+\end{enumerate}
+
+Equivalently, defining
+\[
+\mathbf A^{(k)}(q;h_0):=
+\begin{pmatrix}
+A_1^{(k)}(q;h_0)\\
+A_2^{(k)}(q;h_0)\\
+A_3^{(k)}(q;h_0)\\
+A_4^{(k)}(q;h_0)\\
+A_5^{(k)}(q;h_0)\\
+A_6^{(k)}(q;h_0)
+\end{pmatrix},
+\]
+\[
+P_0^{(k)}(q;h_0):=
+\sum_{m=0}^{k}\frac{c_{k,m}^{(z)}(h_0)}{q-\psi_Z^{(k)}(m)}e^{mz_*(h_0)},
+\]
+\[
+P_1^{(k)}(q;h_0):=
+\sum_{m=0}^{k}m\,\frac{c_{k,m}^{(z)}(h_0)}{q-\psi_Z^{(k)}(m)}e^{mz_*(h_0)},
+\]
+and, for $j=1,2$,
+\[
+P_{j,-}^{(k)}(q;h_0):=
+\sum_{m=0}^{k}\frac{c_{k,m}^{(z)}(h_0)}{q-\psi_Z^{(k)}(m)}
+\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+m}e^{mz_*(h_0)},
+\]
+\[
+P_{j,+}^{(k)}(q;h_0):=
+\sum_{m=0}^{k}\frac{c_{k,m}^{(z)}(h_0)}{q-\psi_Z^{(k)}(m)}
+\frac{r_{j,+}^{(k)}}{r_{j,+}^{(k)}-m}e^{mz_*(h_0)},
+\]
+and
+\[
+\mathbf p^{(k)}(q;h_0):=
+\begin{pmatrix}
+P_0^{(k)}(q;h_0)\\
+P_1^{(k)}(q;h_0)\\
+P_{1,-}^{(k)}(q;h_0)\\
+P_{2,-}^{(k)}(q;h_0)\\
+P_{1,+}^{(k)}(q;h_0)\\
+P_{2,+}^{(k)}(q;h_0)
+\end{pmatrix},
+\]
+the coefficients solve
+\[
+\mathbf M_{\mathrm{kink}}^{(k)}(q;h_0)\,\mathbf A^{(k)}(q;h_0)=\mathbf p^{(k)}(q;h_0),
+\]
+where
+\[
+\mathbf M_{\mathrm{kink}}^{(k)}(q;h_0)=
+\begin{pmatrix}
+e^{\gamma_1 z_*} & e^{\gamma_2 z_*} & e^{\gamma_3 z_*} & -e^{\gamma_4 z_*} & -e^{\gamma_5 z_*} & -e^{\gamma_6 z_*}\\
+\gamma_1 e^{\gamma_1 z_*} & \gamma_2 e^{\gamma_2 z_*} & \gamma_3 e^{\gamma_3 z_*}
+& -\gamma_4 e^{\gamma_4 z_*} & -\gamma_5 e^{\gamma_5 z_*} & -\gamma_6 e^{\gamma_6 z_*}\\
+\frac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_1}e^{\gamma_1 z_*} &
+\frac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_2}e^{\gamma_2 z_*} &
+\frac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_3}e^{\gamma_3 z_*} &
+-\frac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_4}e^{\gamma_4 z_*} &
+-\frac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_5}e^{\gamma_5 z_*} &
+-\frac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_6}e^{\gamma_6 z_*}\\
+\frac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_1}e^{\gamma_1 z_*} &
+\frac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_2}e^{\gamma_2 z_*} &
+\frac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_3}e^{\gamma_3 z_*} &
+-\frac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_4}e^{\gamma_4 z_*} &
+-\frac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_5}e^{\gamma_5 z_*} &
+-\frac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_6}e^{\gamma_6 z_*}\\
+\frac{r_{1,+}^{(k)}}{r_{1,+}^{(k)}-\gamma_1}e^{\gamma_1 z_*} &
+\frac{r_{1,+}^{(k)}}{r_{1,+}^{(k)}-\gamma_2}e^{\gamma_2 z_*} &
+\frac{r_{1,+}^{(k)}}{r_{1,+}^{(k)}-\gamma_3}e^{\gamma_3 z_*} &
+-\frac{r_{1,+}^{(k)}}{r_{1,+}^{(k)}-\gamma_4}e^{\gamma_4 z_*} &
+-\frac{r_{1,+}^{(k)}}{r_{1,+}^{(k)}-\gamma_5}e^{\gamma_5 z_*} &
+-\frac{r_{1,+}^{(k)}}{r_{1,+}^{(k)}-\gamma_6}e^{\gamma_6 z_*}\\
+\frac{r_{2,+}^{(k)}}{r_{2,+}^{(k)}-\gamma_1}e^{\gamma_1 z_*} &
+\frac{r_{2,+}^{(k)}}{r_{2,+}^{(k)}-\gamma_2}e^{\gamma_2 z_*} &
+\frac{r_{2,+}^{(k)}}{r_{2,+}^{(k)}-\gamma_3}e^{\gamma_3 z_*} &
+-\frac{r_{2,+}^{(k)}}{r_{2,+}^{(k)}-\gamma_4}e^{\gamma_4 z_*} &
+-\frac{r_{2,+}^{(k)}}{r_{2,+}^{(k)}-\gamma_5}e^{\gamma_5 z_*} &
+-\frac{r_{2,+}^{(k)}}{r_{2,+}^{(k)}-\gamma_6}e^{\gamma_6 z_*}
+\end{pmatrix},
+\qquad z_*=z_*(h_0).
+\]
+\end{proposition}
+
+\paragraph{Step 3: killed problem with absorbing barrier.}
+We finally restore liquidation. The resulting object is
+\[
+\widehat U_{\mathrm{bar}}^{(k)}(q,z;h_0)
+=
+\int_0^\infty e^{-qt}
+\E_z^{(2,k)}\!\left[\big(e^{h_0+Z_t}-b\big)_+^k\one_{\{\tau(h_0)>t\}}\right]\diff t.
+\]
+This is the final barrier-adjusted payoff value.
+
+The problem is
+\[
+(q-\mathcal L^{(k)})\widehat U_{\mathrm{bar}}^{(k)}(q,z;h_0)
+=
+g_k(z;h_0),
+\qquad z>-h_0,
+\]
+with
+\[
+\widehat U_{\mathrm{bar}}^{(k)}(q,z;h_0)=0,
+\qquad z\le -h_0.
+\]
+
+The domain is the half-line $(-h_0,\infty)$. The boundary is absorbing at $z=-h_0$. There is no new unknown interface;
+the kink was already resolved in Step 2. However, because $z_*(h_0)<-h_0$, the downward convolution terms evaluated at
+the barrier cross the kink.
+
+\begin{proposition}[Step 3: barrier correction]\label{prop:Ubar}
+Under \Cref{ass:six-root}, the killed resolvent may be written as
+\[
+\widehat U_{\mathrm{bar}}^{(k)}(q,z;h_0)
+=
+\widehat U_{\mathrm{kink}}^{(k)}(q,z;h_0)
++
+\widehat U_{\mathrm{corr}}^{(k)}(q,z;h_0),
+\qquad z>-h_0,
+\]
+where the correction is homogeneous:
+\[
+(q-\mathcal L^{(k)})\widehat U_{\mathrm{corr}}^{(k)}(q,z;h_0)=0,
+\qquad z>-h_0.
+\]
+Moreover,
+\[
+\boxed{
+\widehat U_{\mathrm{corr}}^{(k)}(q,z;h_0)
+=
+B_1^{(k)}(q;h_0)e^{\gamma_4(q)(z+h_0)}
++
+B_2^{(k)}(q;h_0)e^{\gamma_5(q)(z+h_0)}
++
+B_3^{(k)}(q;h_0)e^{\gamma_6(q)(z+h_0)}.
+}
+\]
+The coefficients are determined by the barrier conditions
+\[
+\widehat U_{\mathrm{bar}}^{(k)}(q,-h_0^+;h_0)=0,
+\]
+\[
+K_{1,-}^{(k)}\!\left[\widehat U_{\mathrm{bar}}^{(k)}(q,\cdot;h_0)\right](-h_0^+)=0,
+\qquad
+K_{2,-}^{(k)}\!\left[\widehat U_{\mathrm{bar}}^{(k)}(q,\cdot;h_0)\right](-h_0^+)=0.
+\]
+Equivalently,
+\[
+\mathbf M_{\mathrm{bar}}^{(k)}(q)\,\mathbf B^{(k)}(q;h_0)
+=
+-\mathbf b^{(k)}(q;h_0),
+\]
+where
+\[
+\mathbf B^{(k)}(q;h_0):=
+\begin{pmatrix}
+B_1^{(k)}(q;h_0)\\
+B_2^{(k)}(q;h_0)\\
+B_3^{(k)}(q;h_0)
+\end{pmatrix},
+\qquad
+\mathbf b^{(k)}(q;h_0):=
+\begin{pmatrix}
+u_0^{(k)}(q;h_0)\\
+u_{1,-}^{(k)}(q;h_0)\\
+u_{2,-}^{(k)}(q;h_0)
+\end{pmatrix},
+\]
+with
+\[
+u_0^{(k)}(q;h_0)=\widehat U_{\mathrm{kink}}^{(k)}(q,-h_0;h_0),
+\]
+\[
+u_{j,-}^{(k)}(q;h_0)
+=
+K_{j,-}^{(k)}\!\left[\widehat U_{\mathrm{kink}}^{(k)}(q,\cdot;h_0)\right](-h_0),
+\qquad j=1,2.
+\]
+The barrier matrix is
+\[
+\boxed{
+\mathbf M_{\mathrm{bar}}^{(k)}(q)=
+\begin{pmatrix}
+1 & 1 & 1\\[6pt]
+\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_4(q)} &
+\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_5(q)} &
+\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_6(q)}\\[12pt]
+\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_4(q)} &
+\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_5(q)} &
+\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_6(q)}
+\end{pmatrix}.
+}
+\]
+Assuming invertibility,
+\[
+\mathbf B^{(k)}(q;h_0)
+=
+-\big(\mathbf M_{\mathrm{bar}}^{(k)}(q)\big)^{-1}\mathbf b^{(k)}(q;h_0).
+\]
+\end{proposition}
+
+\begin{remark}[Explicit boundary inputs for $b\in(0,1)$]
+Since the barrier point lies on the right branch of $\widehat U_{\mathrm{kink}}^{(k)}$ but the downward convolutions
+cross the kink,
+\[
+u_0^{(k)}(q;h_0)
+=
+\sum_{m=4}^6 A_m^{(k)}(q;h_0)e^{-\gamma_m(q)h_0}
++
+\sum_{j=0}^{k}\frac{c_{k,j}^{(z)}(h_0)}{q-\psi_Z^{(k)}(j)}e^{-jh_0},
+\]
+and for $j=1,2$,
+\[
+u_{j,-}^{(k)}(q;h_0)
+=
+\sum_{m=1}^3
+A_m^{(k)}(q;h_0)e^{-\gamma_m(q)h_0}
+\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_m(q)}
+\,b^{\,r_{j,-}^{(k)}+\gamma_m(q)}
+\]
+\[
+\qquad
++\sum_{m=4}^6
+A_m^{(k)}(q;h_0)e^{-\gamma_m(q)h_0}
+\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_m(q)}
+\Big(1-b^{\,r_{j,-}^{(k)}+\gamma_m(q)}\Big)
+\]
+\[
+\qquad
++\sum_{m=0}^{k}
+\frac{c_{k,m}^{(z)}(h_0)}{q-\psi_Z^{(k)}(m)}e^{-mh_0}
+\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+m}
+\Big(1-b^{\,r_{j,-}^{(k)}+m}\Big).
+\]
+\end{remark}
+
+% ============================================================
+\section{Probability of Liquidation}
+% ============================================================
+
+The same resolvent architecture yields the probability of liquidation. Define
+\[
+p_{\mathrm{surv}}(t,z;h_0):=\P_z(\tau(h_0)>t),
+\qquad
+p_{\mathrm{liq}}(t,z;h_0):=1-p_{\mathrm{surv}}(t,z;h_0).
+\]
+Let $\mathcal L^{(0)}$ denote the generator of $Z$ under the untitled measure, with exponent $\psi_Z^{(0)}$, and define
+\[
+\widehat U_{\mathrm{surv}}(q,z;h_0)
+:=
+\int_0^\infty e^{-qt}p_{\mathrm{surv}}(t,z;h_0)\,\diff t.
+\]
+
+The problem is
+\[
+(q-\mathcal L^{(0)})\widehat U_{\mathrm{surv}}(q,z;h_0)=1,
+\qquad z>-h_0,
+\]
+with
+\[
+\widehat U_{\mathrm{surv}}(q,z;h_0)=0,\qquad z\le -h_0.
+\]
+The domain is the half-line $(-h_0,\infty)$, the boundary is absorbing at $z=-h_0$, and there is no interface because
+the source is constant.
+
+\begin{proposition}[Survival resolvent and liquidation probability]\label{prop:survival}
+Let $\gamma_4^{(0)}(q),\gamma_5^{(0)}(q),\gamma_6^{(0)}(q)$ be the three roots of
+\[
+\psi_Z^{(0)}(\gamma)=q
+\]
+with negative real part. Then
+\[
+\boxed{
+\widehat U_{\mathrm{surv}}(q,z;h_0)
+=
+\frac{1}{q}
++
+C_1(q;h_0)e^{\gamma_4^{(0)}(q)(z+h_0)}
++
+C_2(q;h_0)e^{\gamma_5^{(0)}(q)(z+h_0)}
++
+C_3(q;h_0)e^{\gamma_6^{(0)}(q)(z+h_0)}.
+}
+\]
+The coefficients are determined by
+\[
+\widehat U_{\mathrm{surv}}(q,-h_0^+;h_0)=0,
+\qquad
+K_{1,-}^{(0)}[\widehat U_{\mathrm{surv}}](-h_0^+)=0,
+\qquad
+K_{2,-}^{(0)}[\widehat U_{\mathrm{surv}}](-h_0^+)=0.
+\]
+Equivalently,
+\[
+\mathbf M_{\mathrm{surv}}(q)\,\mathbf C(q;h_0)
+=
+-
+\begin{pmatrix}
+1/q\\
+1/q\\
+1/q
+\end{pmatrix},
+\]
+where
+\[
+\mathbf C(q;h_0):=
+\begin{pmatrix}
+C_1(q;h_0)\\
+C_2(q;h_0)\\
+C_3(q;h_0)
+\end{pmatrix},
+\]
+and
+\[
+\mathbf M_{\mathrm{surv}}(q)=
+\begin{pmatrix}
+1 & 1 & 1\\[6pt]
+\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_4^{(0)}(q)} &
+\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_5^{(0)}(q)} &
+\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_6^{(0)}(q)}\\[12pt]
+\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_4^{(0)}(q)} &
+\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_5^{(0)}(q)} &
+\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_6^{(0)}(q)}
+\end{pmatrix}.
+\]
+At the initial state $Z_0=0$,
+\[
+\widehat U_{\mathrm{surv}}(q,0;h_0)
+=
+\frac{1}{q}
++
+C_1(q;h_0)e^{\gamma_4^{(0)}(q)h_0}
++
+C_2(q;h_0)e^{\gamma_5^{(0)}(q)h_0}
++
+C_3(q;h_0)e^{\gamma_6^{(0)}(q)h_0}.
+\]
+Hence
+\[
+p_{\mathrm{surv}}(T,0;h_0)
+=
+\mathcal L^{-1}_{q\to T}\!\left[\widehat U_{\mathrm{surv}}(q,0;h_0)\right],
+\qquad
+p_{\mathrm{liq}}(T,0;h_0)=1-p_{\mathrm{surv}}(T,0;h_0).
+\]
+\end{proposition}
+
+% ============================================================
+\section{Bromwich Inversion and Numerical Stability}
+% ============================================================
+
+After the previous sections, the relevant Laplace-domain objects are
+\[
+\widehat U_{\mathrm{bar}}^{(k)}(q,z;h_0)
+\qquad\text{and}\qquad
+\widehat U_{\mathrm{surv}}(q,z;h_0).
+\]
+They are inverted in time via the Bromwich formula:
+\[
+U^{(k)}(t,z;h_0)
+=
+\frac{1}{2\pi i}
+\int_{\sigma-i\infty}^{\sigma+i\infty}
+e^{qt}\widehat U_{\mathrm{bar}}^{(k)}(q,z;h_0)\,\diff q,
+\]
+\[
+p_{\mathrm{surv}}(t,z;h_0)
+=
+\frac{1}{2\pi i}
+\int_{\sigma-i\infty}^{\sigma+i\infty}
+e^{qt}\widehat U_{\mathrm{surv}}(q,z;h_0)\,\diff q,
+\]
+where $\sigma>0$ is the Bromwich shift.
+
+The explicit formulas above are derived in the generic regime where the characteristic equation
+\[
+\psi_Z^{(k)}(\gamma)=q
+\]
+has six simple roots and there is no resonance at the forcing exponents:
+\[
+q\neq \psi_Z^{(k)}(j),\qquad j=0,\dots,k.
+\]
+Repeated roots occur at values satisfying
+\[
+\psi_Z^{(k)}(\gamma_\star)=q,
+\qquad
+(\psi_Z^{(k)})'(\gamma_\star)=0.
+\]
+These exceptional values are isolated in the generic regime.
+
+A practical Bromwich shift $\sigma$ should therefore be chosen sufficiently positive so that the inversion nodes
+\[
+q=\sigma+i\omega
+\]
+remain well inside the generic six-root regime and away from
+\begin{itemize}[leftmargin=2em]
+\item resonance values $q=\psi_Z^{(k)}(j)$,
+\item repeated-root values $q=\psi_Z^{(k)}(\gamma_\star)$ with $(\psi_Z^{(k)})'(\gamma_\star)=0$.
+\end{itemize}
+
+For each numerical node $q$, one should monitor
+\[
+\min_{j=0,\dots,k}|q-\psi_Z^{(k)}(j)|,
+\qquad
+\min_{a\neq b}|\gamma_a(q)-\gamma_b(q)|,
+\]
+and the condition numbers
+\[
+\kappa\!\left(\mathbf M_{\mathrm{kink}}^{(k)}(q;h_0)\right),
+\qquad
+\kappa\!\left(\mathbf M_{\mathrm{bar}}^{(k)}(q)\right).
+\]
+
+If repeated roots occur, the homogeneous basis must be enlarged to
+\[
+e^{\gamma z},\quad z e^{\gamma z},\quad \dots,\quad z^{m-1}e^{\gamma z}
+\]
+for a root of multiplicity $m$. If resonance occurs at a forcing exponent $j$, so that
+\[
+q=\psi_Z^{(k)}(j),
+\]
+the term
+\[
+\frac{c_{k,j}^{(z)}(h_0)}{q-\psi_Z^{(k)}(j)}e^{jz}
+\]
+must be replaced by a generalized particular ansatz of the form
+\[
+z^\nu e^{jz},
+\]
+with the minimal power $\nu$ restoring linear independence from the homogeneous solution space.
+
+% ============================================================
+\section{Consequence for Optimization}
+% ============================================================
+
+Because of \eqref{eq:w-from-h0}, every performance criterion can be written as a scalar function of $h_0$.
+In particular,
+\[
+\E[\Pi_T^k]
+=
+\Big(\frac{w_2(h_0)}{b}\Big)^k S_{2,0}^k e^{T\Psi(0,-ik)}\,m_k(T;h_0)
+=
+\frac{e^{T\Psi(0,-ik)}}{(e^{h_0}-b)^k}\,m_k(T;h_0),
+\]
+where
+\[
+m_k(T;h_0)=U^{(k)}(T,0;h_0).
+\]
+Likewise,
+\[
+p_{\mathrm{liq}}(T,0;h_0)=1-p_{\mathrm{surv}}(T,0;h_0).
+\]
+
+Thus the portfolio optimization reduces to a one-dimensional problem over
+\[
+h_0\in(\ln b,\infty),
+\]
+after which the optimal weights are recovered from \eqref{eq:w-from-h0}.
+
+% ============================================================
+\section{Bibliography}
+% ============================================================
+\bibliographystyle{abbrvnamed}
+\bibliography{finance}
+
+\end{document}

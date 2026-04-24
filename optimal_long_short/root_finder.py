@@ -160,8 +160,8 @@ if __name__ == "__main__":
     from optimal_long_short.model_params import KouParams
 
     params = KouParams(
-        mu1=0.05,  sigma1=0.20, lam1=1.0, p1=0.5, eta1_pos=10.0, eta1_neg=8.0,
-        mu2=0.03,  sigma2=0.15, lam2=0.8, p2=0.5, eta2_pos=12.0, eta2_neg=9.0,
+        mu1=0.05,  sigma1=0.20, lam1=1.0, p1=0.5, eta1_pos=0.10, eta1_neg=0.125,
+        mu2=0.03,  sigma2=0.15, lam2=0.8, p2=0.5, eta2_pos=1/12, eta2_neg=1/9,
         rho=0.3,
     )
 
