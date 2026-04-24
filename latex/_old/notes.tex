@@ -1,48 +1,37 @@
-%%
-%% $Id: article.tex,v 1.1 2008/09/20 10:19:28 natalie Exp $
-%% $Source: /Users/natalie/cvs/tex/templates/article.tex,v $
-%% $Date: 2008/09/20 10:19:28 $
-%% $Revision: 1.1 $
-%%
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
 
-%\documentclass[a4paper,11pt,BCOR1cm,DIV11,headinclude]{scrbook}
-% bei 12pt ist DIV 12 default, bei 11pt ist es DIV 10
-% Textbereiche 
-% DIV 10: 147*207.9mm, DIV 11: 152.73*216mm, DIV 12:157.50*222.75
-% DIV 13: 161.54*228.46mm, DIV 14: 165*233.36mm
-
-\def\deftitle{Notes on Dynamics for cryptocurrency derivatives}
-% \def\defauthor{N.\ Packham}
-% \def\defauthor{nat}
-\def\defauthor{}
-
-%% option: largefont
-\documentclass[square]{article} %
-%% options: vscreen, garamond, wnotes, savespace
-\usepackage[vscreen]{nat}
+% ==== PACKAGES ====
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
 \usepackage[longnamesfirst,sort&compress]{natbib}
-\usepackage{booktabs}
-
-\bibpunct{(}{)}{;}{a}{,}{,}
-\usepackage{amsfonts,amssymb,amsthm} %
-\usepackage{mathrsfs}
-\usepackage[tbtags]{amsmath} %
-\usepackage{bm}
-\usepackage{bbm}
-\usepackage{tabularx,ragged2e}
-\usepackage[table,xcdraw]{xcolor}
-\usepackage{subfig}
-\usepackage{enumitem}
-\usepackage{csquotes}
-
-
-\newcolumntype{C}{>{\Centering\arraybackslash}X}
-\newcolumntype{s}{>{\hsize=.2\hsize \Centering\arraybackslash}X}
-% \usepackage{fullpage}
-\usepackage{footnote}
-\makesavenoteenv{tabular}
-
+\usepackage{graphicx}
+\usepackage{algorithm, algorithmic}
+\usepackage{hyperref}
 \usepackage{cleveref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+% Citation punctuation style matching original
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+% ==== CUSTOM COMMANDS ====
+\newcommand{\E}{\mathbb{E}}
+
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\diff}{\mathrm{d}}
+\newcommand{\pard}[2]{\frac{\partial #1}{\partial #2}}
+
+% Theorem environments
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{remark}{Remark}[section]
+
+% Proof environment for appendix
 \newenvironment{delayedproof}[1]
  {\begin{proof}[\raisedtarget{#1}Proof of \Cref{#1}]}
  {\end{proof}}
@@ -51,605 +40,1441 @@
 }
 \newcommand{\proofref}[1]{\hyperlink{#1}{proof}}
 
+\title{First-Hitting Time Analysis for Log-Health Process with Constant Jump Intensities}
+\author{[Author Names]}
+\date{\today}
 
-\usepackage{graphicx,color}
-\graphicspath{{./pics/}}
-\definecolor{BrickRed}{rgb}{.625,.25,.25}
-\providecommand{\red}[1]{\textcolor{BrickRed}{#1}}
-\definecolor{markergreen}{rgb}{0.6, 1.0, 0}
-\definecolor{darkgreen}{rgb}{0, .5, 0}
-\definecolor{darkred}{rgb}{.7,0,0}
-\definecolor{darkorange}{rgb}{1,0.3,0}
-\definecolor{darkblue}{rgb}{0,29,245}
-%\definecolor{orange}{rgb}{239, 133, 54}
-%\definecolor{lightblue}{rgb}{59, 188, 175}
-
-\providecommand{\marker}[1]{\fcolorbox{markergreen}{markergreen}{{#1}}}
-\providecommand{\natp}[1]{\textcolor{darkred}{#1}}
-\providecommand{\mj}[1]{\textcolor{darkred}{#1}}
-\providecommand{\francis}[1]{\textcolor{darkgreen}{#1}}
-
-\theoremstyle{plain}
-\newtheorem{theorem}{Theorem}%[section]
-\newtheorem{proposition}[theorem]{Proposition}
-\newtheorem{corollary}[theorem]{Corollary} %%
-\newtheorem{lemma}[theorem]{Lemma} %%
-\theoremstyle{definition} %%
-\newtheorem{definition}{Definition}
-\newtheorem{remark}[theorem]{Remark}
-\newtheorem{remarks}{Remarks}
-\newtheorem{condition}[theorem]{Condition}
-\newtheorem{example}[theorem]{Example}
-\newtheorem{assumption}{Assumption}
-\setlength{\parindent}{0pt}
-
-\usepackage{amsmath}
-\input{definitions}
-\sloppy
 \begin{document}
-\setlength{\boxlength}{0.95\textwidth} %
-\title{\large{\bf\deftitle}} %
-\author{{\normalsize\bf\defauthor}}%
-\thispagestyle{empty}
-\addtocounter{page}{1}
 \maketitle
-\begin{abstract}
- To be filled. 
-\end{abstract}
-% \keywords{keywords here} %%
-% \jel{jel here} %%
-\vspace{.5cm}
-\def\contentsname{Contents}
-\tableofcontents
-%%
-\vspace{.5cm}
-\section{Ideas}
-\subsection{Uncovered interest parity in the absence of bond}
-This section is mostly taken/copied from section 6.1 of \cite{gudgeon2020defi} for idea generation. 
-Uncovered interest parity (UIP) normally appear in the context of foreign exchange between two countries: domestic and foreign. 
-An investor has the choice of whether to hold domestic or foreign assets. 
-If the condition of UIP holds, a risk-neutral investor should be indifferent between holding the domestic or foreign assets because the exchange rate is expected to adjust such that returns are equivalent. \\
 
-Example
-An investor starting with 1m GBP at $t=0$ could either:
+\begin{abstract}
+We develop an optimal allocation framework for long-short cryptocurrency positions on decentralized finance (DeFi) lending platforms by analyzing first-hitting time distributions for log-health processes under constant-intensity jump-diffusion dynamics. Moving beyond the complexity of Hawkes processes, we employ a spectrally negative Lévy process with constant-intensity compound Poisson jumps to model wrong-way risk in cryptocurrency markets. The approach provides semi-analytical solutions via Laplace transform methods and Gaver-Stehfest inversion, enabling practical computation of margin call probabilities. Our framework balances expected returns against liquidation risk through optimization of position weights subject to collateral constraints.
+
+\textbf{Keywords:} DeFi, long-short strategies, liquidation risk, Lévy processes, first passage times, cryptocurrency
+\end{abstract}
+
+% ====================================================================
+\section{Introduction}
+% ====================================================================
+
+Decentralized finance (DeFi) lending platforms such as AAVE and Compound have emerged as powerful tools for implementing sophisticated long-short cryptocurrency strategies. With combined total value locked exceeding \$10 billion, these protocols enable traders to simultaneously hold long positions in promising assets while borrowing and shorting others, all while earning interest on collateralized deposits. This creates unique opportunities for alpha generation that are unavailable through traditional centralized exchanges.
+
+The core challenge in DeFi long-short positioning lies in managing liquidation risk under extreme market volatility. Unlike traditional margin trading, DeFi platforms require significant overcollateralization (typically 120-150\%) and impose automatic liquidation when health factors fall below unity. Given the notorious volatility of cryptocurrency markets, where daily moves of 10-20\% are common and flash crashes can exceed 50\%, the probability and timing of liquidation events become critical factors in position sizing and risk management.
+
+Wrong-way risk represents the most significant threat to DeFi portfolios: adverse price movements in either the collateral asset (downward) or borrowed asset (upward) directly deteriorate the health factor, with large jumps potentially triggering immediate liquidation. Traditional portfolio theory, which assumes smooth price evolution and continuous rebalancing opportunities, fails to capture the discrete, path-dependent nature of liquidation risk in DeFi environments.
+
+The academic literature on first-hitting times for jump-diffusion processes suggests that Hawkes processes, with their ability to model clustered jumps and cross-excitation between assets, would be ideal for capturing wrong-way risk dynamics. However, our initial investigations revealed that Hawkes-based models, while theoretically appealing, present severe computational challenges. The resulting characteristic function analysis requires solving high-dimensional Riccati systems that are numerically unstable and computationally intensive, making them impractical for real-time risk management applications.
+
+This paper advocates for a more pragmatic approach: modeling the log-health process as a spectrally negative Lévy process with constant jump intensities. While this approach cannot capture the dynamic clustering effects of Hawkes processes, it offers substantial practical advantages:
+
+\begin{enumerate}
+    \item \textbf{Analytical tractability}: Explicit Laplace transform representations for first-hitting time distributions
+    \item \textbf{Numerical stability}: Robust inversion algorithms that converge reliably across parameter ranges
+    \item \textbf{Computational efficiency}: Fast evaluation suitable for real-time portfolio optimization
+    \item \textbf{Parameter parsimony}: Fewer parameters reduce calibration complexity and overfitting risk
+    \item \textbf{Practical implementation}: Semi-analytical solutions enable deployment in production trading systems
+\end{enumerate}
+
+Our framework demonstrates that effective liquidation risk management in DeFi applications need not require the most sophisticated stochastic models. The constant-intensity jump-diffusion approach captures the essential wrong-way risk characteristics while maintaining the computational tractability necessary for practical portfolio management. This represents a conscious trade-off between theoretical completeness and practical utility, prioritizing robust, implementable solutions over academic elegance.
+
+% ====================================================================
+\section{Portfolio Setup and Log-Health Process}
+% ====================================================================
+
+\subsection{Long-Short Position Construction}
+
+Consider a long-short position on a DeFi lending platform where a user deposits collateral asset $X$ and borrows asset $Y$. The position consists of:
 \begin{itemize}
-  \item receive an annual interest rate of $i_\text{GBP}=3\%$, resulting in $1.03$m GBP at $t=1$
-  \item or, immediately buy $1.23$ USD at an exchange rate $S_{\text{GBP}/\text{USD}}=0.813$, and receive an annual interest rate of $i_\text{USD}=5\%$, resulting in 1.2915m USD at $t=1$. 
-  Then, convert the USD with the exchange rate at $t=1$, say $S_{\text{GBP}/\text{USD}}=0.7974$, and get $1.03$m GBP.
+    \item \textbf{Long position}: $w_X$ units of asset $X(t)$ deposited as collateral
+    \item \textbf{Short position}: $w_Y$ units of asset $Y(t)$ borrowed for short selling
 \end{itemize}
 
-If UIP holds, despite the higher interest rate of the USD, the investor will be indifferent because the exchange rate between currencies offset the spread between interest rates. 
-Mathematically, UIP is stated as 
-\begin{align*}
-1+R^{(i)} = (1+R^{(j)})\frac{\mathbb{\sf E}S_{t+k}}{S_t},
-\end{align*}
-where $R^{(i/j)}$ is the interest rate payable on asset $i/j$ from time $t$ to $t+k$, and $S_t$ is the exchange rate ar time $t$. \\
+We implement a \textbf{net exposure constraint}:
+\begin{equation}
+w_X - w_Y = 1, \quad w_X > 0, \quad w_Y > 0 \label{eq:net_exposure}
+\end{equation}
 
-Now the question is both $R^{(i/j)}$ are not known in advance due to the lack of a liquid bond market that investors can secure the future payoff by holding a cryptocurrency. 
-However, the good news is that we have the observable historical short rate, $r_t^{(i)}$, and exchange rate $S_t^{(i/j)}$. 
-The UIP condition in this case have to be adjusted to incorporate the fact that the investor consider also the uncertainty of the domestic and foreign short rate, i.e.\footnote{The AAVE and Compound interest rate are compounded every second, which is close enough to model the short rate payoff in a continuous compounding scheme. }
+This ensures unit net exposure while allowing flexibility in allocation between long and short positions, based on the relative expected returns and risk characteristics.
 
-\begin{align*}
-  \mathbb{\sf E} \left(\exp{\int_0^T r^{(i)}_t \text{d}t}\right) = \mathbb{\sf E}\left(\exp\left(\int_0^T r^{(j)}_t\text{d}t\right)\frac{S_{T}}{S_t}\right).
-  \end{align*}
+\subsection{Health Factor and Liquidation Mechanics}
 
-The above UIP condition open quite some questions
-\begin{enumerate}
-  \item It seems necessary to model the joint dynamics of the foreign short rate and the exchange rate, such that the R.H.S. of the above equation can be evaluated.
-  \item Under which measure should we take the expectation of both sides? Any criteria of choosing the measure? No-arbitrage? 
-  \item When will the above equation hold? When will not?
-  \item If the condition does not hold, are there any arbitrage opportunities? 
-  \item What is the dynamics of $r^{(i/j)}$? For further development, we might want a parametrised stochastic model such that we can
-   (i) perform measure change, (ii) price bonds, swaps, or any other derivatives easily, (iii) capture the interest rate dynamics nicely.
-  \item Another idea: Can we use machine learning method to get a good enough estimate of the L.H.S. and R.H.S. separately, and make a statistical argument over the difference between L.H.S. and R.H.S.?
-  \begin{align*}
-    \hat{\mathbb{\sf E}} \left(\exp{\int_0^T r^{(i)}_t \text{d}t}\right) = \hat{\mathbb{\sf E}}\left(\exp\left(\int_0^T r^{(j)}_t\text{d}t\right)\frac{S_{t+k}}{S_t}\right) + \varepsilon_{t, k}.
-  \end{align*}
+The \textbf{log-health process} serves as the primary risk metric:
+\begin{equation}
+h(t) = \log\left( \frac{b_X w_X X(t)}{w_Y Y(t)} \right) \label{eq:log_health}
+\end{equation}
 
-\end{enumerate}
+where $b_X \in (0,1]$ is the collateral factor (haircut) applied to the long position. A margin call is triggered when $h(t)$ first hits zero, corresponding to the health factor $H(t) = e^{h(t)} \leq 1$.
 
-\subsection{A crypto interest rate model}
-This idea is motivated by a conversation in an interview with a team of quant working for a centralised crypto exchange (CEX).
- The pricing of crypto derivatives requires a "risk-free" rate for each underlying,
- e.g. a "risk-free" rate of holding BTC, another "risk-free" rate of holding ETH. \\
- 
-I put quotation marks for the term risk-free rate because there is no consensus to what is the risk-free rate in the crypto market. 
- In practice, there are four ways of getting a risk-free rate by viewing the risk-free rate as the opportunity cost of investing the 
- holdings to the derivative market instead of earning a risk-free rate in another market. 
- The four ways of getting a risk-free are referring to calibrating the risk-free rate to three different markets:
- \begin{enumerate}
-  \item DeFi lending protocols, e.g. AAVE and Compound,
-  \item DeFi staking protocols, e.g. ETH POS, AQRU,
-  \item Futures traded on CEX,
-  \item Perpetual futures traded on CEX.
- \end{enumerate} 
+The liquidation time is formulated as the first hitting time:
+\begin{equation}
+\tau_0 = \inf\{t \geq 0 : h(t) \leq 0\} \label{eq:liquidation_time}
+\end{equation}
 
-The first two markets are not exactly risk-free since trading on DeFi protocols expose oneself to platform risk.
- Although DeFi lending protocols enforce over-collateralisation, 
- lenders still expose themselves to gap risk since there is a chance that the collateral value jump through the value of the borrowings and there is no way to force the borrower to pay back.\\ 
+% ====================================================================
+\section{Log-Health Process and Laplace Exponent Analysis}
+% ====================================================================
 
-The third and forth markets suffer from the platform risk. 
- However, if a trader manage/hedge her exposure on CEX with other instruments traded on the same CEX, 
- then we can argue that the platform risk is somehow offset. 
- The perpetual futures market does not exempt carry trade traders from losses since funding rate can go negative. 
- It turns out, after considering the pros and cons of the markets, 
- the futures market traded on CEX is commonly used by the team of quant to get the risk-free rate to price their derivatives, which is also a common practice in the traditional market.  \\
+\subsection{Asset Price Dynamics}
 
-The key idea here is to have a CEX futures market centric view, i.e. considering the CEX futures market as risk-free,
- and to study the differences of the rate dynamics among the markets. 
- In order to do so, a common interest rate model for crypto is needed. 
- It will be a challenge to have a single interest rate model that fits the rate dynamics in all the markets.
- For example, the DeFi lending/staking rate is always positive, but the funding rate of perpetual futures can go negative.  
- A possible solution is to discount the DeFi lending/staking rates by the corresponding default intensity.
+The asset prices follow jump-diffusion dynamics with constant-intensity compound Poisson jumps:
+\begin{align}
+\frac{dX(t)}{X(t^-)} &= \mu_X dt + \sigma_X dB_X(t) + dJ_X(t) \label{eq:X_dynamics}\\
+\frac{dY(t)}{Y(t^-)} &= \mu_Y dt + \sigma_Y dB_Y(t) + dJ_Y(t) \label{eq:Y_dynamics}
+\end{align}
 
-\subsection{A model for perpetual futures}
-Suppose the price of the perpetual futures, $F_t$, is reverting to its underlying, $S_t$, with some Brownian noise involved, i.e.
-\begin{align*}
-\dd F_t = \kappa \left(\delta S_t - F_t \right)\dd t + \epsilon \dd W_t,
-\end{align*}
-where $\kappa>0$ is the mean reverting speed, $\delta \in \mathbb{R}$ is the spot-futures spread, and $\epsilon>0$ is the volatility.
-
-We derive the solution of the perpetual futures by applying Ito's lemma to $e^{\kappa t}F$:
-
-\begin{align*}
-\dd e^{\kappa t} F_t &= \left(\kappa e^{\kappa t}F_t+ \kappa \left(\delta S_t - F_t\right)e^{\kappa t}\right)\dd t + \epsilon e^{\kappa t}\dd W_t\\
-                      &= \kappa \delta S_t e^{\kappa t}\dd t + \epsilon e^{\kappa t}\dd W_t.
-\end{align*}
-
-The solution is obtained by integrating both sides from time $0$ to $T$,
-\begin{align*}
-  e^{\kappa T} F_T &= F_0 +  \kappa \delta \int_0^T S_t e^{\kappa t}\dd t + \int_0^T \epsilon e^{\kappa t}\dd W_t.
-  \end{align*}
-
-The expected value of $F_T$ under a risk-neutral measure $\mathbb{Q}$ is
-\begin{align*}
-  e^{\kappa T} \mathbb{\sf E}_\mathbb{Q} \left(F_T\right) &= F_0 +  \kappa \delta \int_0^T \mathbb{\sf E}_\mathbb{Q}\left(S_t\right) e^{\kappa t}\dd t\\
-                                                          &= F_0 +  \kappa \delta S_0 \int_0^T  e^{(r+\kappa) t}\dd t\\
-                                                          &= F_0 +  \frac{\kappa}{r+\kappa} \delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
-\end{align*}
-
-Suppose $e^{-rt} F_t$ is a martingale under $\mathbb{Q}$ (i.e. $\mathbb{\sf E}_\mathbb{Q} \left(F_T\right)= e^{rT}F_0$ {\color{red} This assumption disregards the funding cost of holding and shorting the perpetual futures}), 
-\begin{align*}
-e^{(r+\kappa)T}F_0 &= F_0 +  \frac{\kappa}{r+\kappa} \delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
-\left(e^{(r+\kappa)T}-1\right)F_0 &=  \frac{\kappa}{r+\kappa}\delta S_0 \left(e^{(r+\kappa) T} - 1\right)\\
-\delta &= \frac{r+\kappa}{\kappa}\frac{F_0}{S_0}
-\end{align*}
-
-In fact, we arrive with the same conclusion if we assume $\delta$ is time dependant (but still deterministic), i.e. $\delta(t): t \rightarrow \mathbb{R}^+$.
- To see that, we start with 
- \begin{align*}
-  e^{(r+\kappa) T} F_0 &= F_0 +  \kappa  S_0 \int_0^T \delta(t) e^{(r+\kappa) t}\dd t.
-\end{align*}
-
-Differentiating w.r.t. $T$ and evaluating at time $T$ yields,
-\begin{align*}
-  (r+\kappa) e^{(r+\kappa) T} F_0 &= \kappa S_0 \delta(T) e^{(r+\kappa) T}\\
-  \delta(T) &= \frac{r+\kappa}{\kappa}\frac{F_0}{S_0}
-\end{align*}
-
-Observations
-\begin{enumerate}
-\item The spread $\delta $ depends on $\kappa$ and $r$ (risk-free rate)
-\item If $r=0$, then $\delta  = F_0/S_0$
-\item If $\kappa \rightarrow \infty$, then $\delta  = F_0/S_0$.
-\item If $\kappa \rightarrow 0^+$, then $\delta  = F_0/S_0$, (Since $\dd F_t = \varepsilon \dd W_t$, the spread $\delta$ no longer has a meaning.)
-\end{enumerate}
-
-% check also https://arxiv.org/pdf/2310.11771
-
-\subsection{Connection between the volatility of spot and level of borrowing rate}
-This is motivated by the observation that stable coins have higher borrowing rate, and other coins have lower. \\
-
-Say $B^{(i/j)}(T) = \exp\int_0^T r^{(i/j)}_t \dd t$ are the lending accounts levels if one lend out $i/j$ coins, 
- the investor should be indifference in investing to $i$ or $j$ if the following condition holds.
- \begin{align*}
-  \mathbb{\sf E}\left(B^{(i)}(T)\right) 
-  &= \mathbb{\sf E}\left(B^{(j)}(T)S_T/S_0\right)\\
-  &= \mathbb{\sf Cov}\left(B^{(j)}(T),\ S_T/S_0\right) + \mathbb{\sf E}\left(B^{(j)}(T)\right)\mathbb{\sf E}\left(S_T/S_0\right)\\
-  &= \mathbb{\sf Corr}\left(B^{(j)}(T),\ S_T/S_0\right) \sigma\left(B^{(j)}(T)\right) \sigma\left(S_T/S_0\right) + \mathbb{\sf E}\left(B^{(j)}(T)\right)\mathbb{\sf E}\left(S_T/S_0\right).
-\end{align*}
-
-Observation: If $\sigma\left(S_T/S_0\right)$ went up, $\sigma\left(B^{(j)}(T)\right)$ must go down for the equation to hold (while keeping all other variables fixed).
-
-\subsection{Optimal DeFi lending portfolio}
-AAVE and Compound offers a range of cryptos to be lend out to earn interest. 
- Say you have some USDT and would like to invest on a portfolio of loans, what is the optimal portfolio weights?
-
-Let's look at the payoff of a simple portfolio of two loans first.
- Say the investor has $1$ USDT, she converts $1-p$ amount of USDT to, say, ETH, and invest both coins to the corresponding lending pool at time $0$. 
- At time $T$, she converts back the ETH principle and interest back to USDT. 
-\begin{align*}
-p\exp\left(\int_0^T r^{(\text{USDT})}_t \dd t\right) 1(\tau^{(\text{USDT})} > T) 
-+ (1-p)\exp\left(\int_0^T r^{(\text{ETH})}_t \dd t\right)\frac{S^{(\text{ETH})}_T}{S^{(\text{ETH})}_0}1(\tau^{(\text{ETH})} > T)\\
-= p I^{(\text{USDT})}(T)1(\tau^{(\text{USDT})} > T)  + (1-p)I^{(\text{ETH})}(T)\frac{S^{(\text{ETH})}_T}{S^{(\text{ETH})}_0}1(\tau^{(\text{ETH})} > T)
- \end{align*}
- Here,  $r^{(\text{coin})}_t$ is the lending rate of the coin at time $t$, $S^{(\text{ETH})}_t$ is the ETH price in USDT at time $t$, and 
- $\tau^{(coin)}$ is the default event time of the coin which cost all the principle and interest of the corresponding coin. 
-
-Assume the investor's utility is in a constant absolute risk aversion (CARA) form with parameter $\gamma$, 
- her utility of investing to the loan portfolio is 
- \begin{align*}
-  u(p) = -\gamma^{-1}\exp\left\{ -\gamma\left( p I^{(\text{USDT})}(T)1(\tau^{(\text{USDT})} > T)  + (1-p)I^{(\text{ETH})}(T)\frac{S^{(\text{ETH})}_T}{S^{(\text{ETH})}_0}1(\tau^{(\text{ETH})} > T)\right)\right\}.
- \end{align*}
-
- We are interested in maximising the investor's expected utility by searching for the optimal $p$, i.e.
- \begin{align*}
-  p^* = \argmax_{p \in [0, 1]} \mathbb{\sf E}\left\{u(p)\right\}.
- \end{align*}
-
-Upon defining the dynamics of $S$, $I$s, and $\tau$s, we can solve for $p^*$ by HJB equation, similar to the Merton's portfolio problem. 
-
-\subsection{Modelling the wealth process}
-For simplicity (which we must discuss if this makes sense), 
-suppose the dynamics of 
-$r^{(1)}_t$, $r^{(2)}_t$, and $S_t$ are as follows.
- \begin{align*}
-  \dd S_t &= \mu S_t \dd t + \sigma S_t \dd W_t \\ 
-  \dd r_t^{(1/2)} &= \kappa^{(1/2)}\left(\theta^{(1/2)}-r_t^{(1/2)}\right)\dd t + \sigma^{(1/2)}\dd W^{(1/2)}_t,
- \end{align*}
-where $\mu$ is the drift of the ETH price, $\sigma$ is ETH price's volatility,
-$\nu \geq 0$ is the elasticity, 
-$W_t$ and $W^{(1/2)}$s are independent brownian motions, 
-$\kappa^{(1/2)}$s and $\theta^{(1/2)}$ are the mean reversion rates and long term mean of lending rate of USDT and ETH. 
-
-Let $X_t$ denote the total wealth of the investor at time $t$, and let
+where:
 \begin{itemize}
-\item $p_t$ represent the proportion of wealth invested in the USDT lending pool at time $t$
-\item $1-p_t$ represent the proportion of wealth invested in the ETH lending pool at time $t$
- \end{itemize}
+    \item $B_X(t), B_Y(t)$ are Brownian motions with correlation $\rho$
+    \item $J_X(t)$ has constant intensity $\hat\lambda_X$ and i.i.d. jumps $U_X = -(\delta_X + E_X)$, $E_X \sim \mathrm{Exp}(\eta_X)$ representing negative jumps in the long asset
+    \item $J_Y(t)$ has constant intensity $\hat\lambda_Y$ and i.i.d. jumps $U_Y = +(\delta_Y + E_Y)$, $E_Y \sim \mathrm{Exp}(\eta_Y)$ representing positive jumps in the short asset
+\end{itemize}
 
-The change in wealth due to the accruing of interest in the USDT lending pool is
-\begin{align*}
-\dd \left[p_t X_t\right] &= p_t X_t r^{(1)}_t \dd t - p_t X_t \dd N^{(1)}_t\\
-&= p_t X_t \left(r^{(1)}_t\dd t - \dd N^{(1)}_t\right),
-\end{align*}
-where $N^{(1)}$ is the counting process for the default of USDT lending pool. 
-$\dd N^{(1)}_s = 1$ when there is a default happen at time $s$.\\
+This jump structure captures wrong-way risk: downward jumps in collateral and upward jumps in borrowed assets are both adverse to the portfolio.
 
+\subsection{Wealth Process Dynamics}
 
-The change in wealth due to the accruing of interest in the ETH lending pool is a bit tricky. 
-We get that step by step:
+The wealth process dynamics are:
+\begin{equation}
+\frac{dV(t)}{V(t^{-})} = w_X \frac{dX(t)}{X(t^-)}  - w_Y \frac{dY(t)}{Y(t^-)} 
+\end{equation}
+Using equations 4 and 5 and grouping the terms based on their types:
+\begin{equation}
+\frac{dV(t)}{V(t^{-})}= (w_X \mu_X - w_Y \mu_y) dt + w_X \sigma_X dB_X(t) - w_Y \sigma_Y dB_Y(t) + w_X dJ_X(t) - w_Y dJ_Y(t)
+\end{equation}
+The solution to the SDE will then be:
+\begin{equation}
+V(T) = V(0) e^{(\psi T + \sigma_W W(T))} \prod_{i=1}^{N_X (T)} (1 + w_X U_X^i) \prod_{j=1}^{N_Y (T)} (1 - w_Y U_Y^j)
+\end{equation}
+Where the drift adjustment term $\psi$ is equal to:
+\begin{equation}
+\psi = w_X \mu_X - w_Y \mu_Y - \frac{1}{2} ( {w^2_X} {\sigma_X}^2 + {w^2_Y} {\sigma_Y}^2 - 2w_X w_Y \rho \sigma_X \sigma_Y ) 
++ \lambda_X w_X \mathbb{E} [U_X] - \lambda_Y w_Y \mathbb{E} [U_Y]
+\end{equation}
+The first moment of the wealth process is:
+\begin{equation}
+\mathbb{E}[V(T)] = V(0) e^{\Theta T}
+\end{equation}
+With the growth rate $\Theta$:
+\begin{equation}
+\Theta = w_X \mu_X - w_Y \mu_Y + \lambda_X w_X \mathbb{E} [U_X] - \lambda_Y w_Y \mathbb{E} [U_Y]
+\end{equation}
+Now, the second moment of the wealth process is:
+\begin{equation}
+\text{Var}(V(T)) = \mathbb{E}[V(T)^2] - (\mathbb{E}[V(T)])^2 = V(0)^2 e^{2 \Theta T} (e^{\xi T} - 1)
+\end{equation}
+Where the excess variance rate $\xi$ represents:
+\begin{equation}
+\xi = w^2_X \sigma^2_X  + w^2_Y \sigma^2_Y - 2w_Xw_Y \rho \sigma_X \rho \sigma_Y +
+\lambda_X w^2_X \mathbb{E}[U^2_X] + \lambda_Y w^2_Y \mathbb{E}[U^2_Y]
+\end{equation}
+The second moment of the jumps is given by:
+\begin{equation}
+\mathbb{E}[U^2_X] = \frac{1}{\eta^2_X} + \left( \delta_X + \frac{1}{\eta_X} \right)
+\end{equation}
+\begin{equation}
+\mathbb{E}[U^2_Y] = \frac{1}{\eta^2_Y} + \left( \delta_Y + \frac{1}{\eta_Y} \right)
+\end{equation}
+
+\subsection{Log-Health Process Dynamics}
+
+\begin{proposition}[Log-Health Process with Inherited Jumps]
+\label{prop:log_health_dynamics}
+Given the asset price processes $X(t)$ and $Y(t)$ follow the dynamics in equations \eqref{eq:X_dynamics} and \eqref{eq:Y_dynamics}, and position weights satisfying the net exposure constraint $w_X - w_Y = 1$, the log-health process
+\begin{equation}
+h(t) = \log\left( \frac{b_X w_X X(t)}{w_Y Y(t)} \right)
+\end{equation}
+evolves as a spectrally negative Lévy process:
+\begin{equation}
+h(t) = h_0 + \mu_h t + \sigma_h B_h(t) + J_h^X(t) + J_h^Y(t) \label{eq:log_health_full}
+\end{equation}
+where $J_h^X(t)$ and $J_h^Y(t)$ are compound Poisson processes inherited from the asset jump processes, with:
+\begin{align}
+J_h^X(t) &= \sum_{i=1}^{N_X(t)} U_X^i, \quad U_X^i = -(\delta_X + E_X^i) \label{eq:jump_X_health}\\
+J_h^Y(t) &= \sum_{j=1}^{N_Y(t)} U_Y^j, \quad U_Y^j = +(\delta_Y + E_Y^j) \label{eq:jump_Y_health}
+\end{align}
+and Brownian motion and drift parameters:
+\begin{align}
+\mu_h &= \mu_X - \mu_Y - \frac{1}{2}(\sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y) \label{eq:drift_h}\\
+\sigma_h^2 &= \sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y \label{eq:vol_h}\\
+dB_h(t) &= \frac{\sigma_X dB_X(t) - \sigma_Y dB_Y(t)}{\sigma_h} \label{eq:brownian_h}
+\end{align}
+\end{proposition}
+
+\begin{proof}
+See \proofref{prop:log_health_dynamics} in Appendix \ref{sec:proofs}.
+\end{proof}
+
+\subsection{Laplace Exponent}
+
+\begin{proposition}[Laplace Exponent of Log-Health Process]
+\label{prop:laplace_exponent}
+For the log-health process $h(t) = h_0 + \mu_h t + \sigma_h B_h(t) + J_h^X(t) + J_h^Y(t)$ from Proposition \ref{prop:log_health_dynamics}, the Laplace exponent is:
+\begin{equation}
+\psi(\theta) = \frac{1}{2}\sigma_h^2 \theta^2 - \mu_h \theta + \hat\lambda_X \left( e^{-\theta \delta_X} \frac{\eta_X}{\eta_X+\theta} - 1 \right) + \hat\lambda_Y \left( e^{-\theta \delta_Y} \frac{\eta_Y}{\eta_Y+\theta} - 1 \right) \label{eq:laplace_exponent_sec3}
+\end{equation}
+where the jump terms arise from the shifted exponential distributions:
+\begin{align}
+U_X^i &= -(\delta_X + E_X^i), \quad E_X^i \sim \mathrm{Exp}(\eta_X)\\
+U_Y^j &= +(\delta_Y + E_Y^j), \quad E_Y^j \sim \mathrm{Exp}(\eta_Y)
+\end{align}
+
+Furthermore, $\psi(\theta)$ satisfies:
 \begin{enumerate}
-\item Say at time $t-$, the investor has $(1-p_t)X_{t-}$ USDT worth ETH in the lending pool
-\item This is equivalent of having $(1-p_t)X_{t-}\frac{1}{S_{t-}}$ ETH in the lending pool
-\item Since $r^{(2)}_t$ is a foreign rate (accuring ETH interest), the investor's ETH in the lending pool change due to interest rate is
-\begin{align*}
-  \dd \left[(1-p_t)X_{t-}\frac{1}{S_{t-}}\right] = (1-p_t)X_{t-}\frac{1}{S_{t-}} \left(r^{(2)}_t\dd t - \dd N^{(2)}_t\right),
-\end{align*}
-where $N^{(2)}$ is the counting process for the default of ETH lending pool.
-\item We are interested in the change of wealth in USDT. By Ito's product rule
-\begin{align*}
-  \dd \left[(1-p_t)X_{t-}\frac{1}{S_{t-}}S_t\right]
-  &= (1-p_t)X_t \left[
-  (r^{(2)}_t + \mu) \dd t + \sigma \dd W_t - \dd N_t^{(2)}
-  \right]
-\end{align*}
+    \item $\psi(0) = 0$ and $\psi(\theta)$ is convex in $\theta$
+    \item $\psi'(0) = -\mu_h - \hat\lambda_X(\delta_X + 1/\eta_X) - \hat\lambda_Y(\delta_Y + 1/\eta_Y)$
+    \item The sign of $\psi'(0)$ determines hitting behavior:
+    \begin{itemize}
+        \item If $\psi'(0) \geq 0$: almost sure hitting ($R = 0$)
+        \item If $\psi'(0) < 0$: defective hitting with eventual probability $e^{-Rh_0}$ where $R > 0$ solves $\psi(R) = 0$
+    \end{itemize}
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+See \proofref{prop:laplace_exponent} in Appendix \ref{sec:proofs}.
+\end{proof}
+
+\subsection{Root Function}
+
+The root function $\Phi(q)$ serves as the cornerstone of first-hitting time analysis for spectrally negative Lévy processes. For $q \geq 0$, it is defined as the largest root of $\psi(\theta) = q$:
+\begin{equation}
+\Phi(q) = \sup\{\theta \geq 0 : \psi(\theta) = q\} \label{eq:root_function_sec3}
+\end{equation}
+
+The function satisfies several key properties: $\Phi(0) = R$ corresponds to the adjustment coefficient that determines whether hitting behavior is defective or almost sure, $\Phi(q)$ is strictly increasing and smooth for $q \geq 0$, and $\Phi(q) \to \infty$ as $q \to \infty$ reflecting finite hitting times.
+
+The root function enables the computation of liquidation probabilities $\mathbb{P}(\tau_0 \leq T)$ through Laplace inversion of $e^{-h_0 \Phi(q)}/q$ and facilitates risk-adjusted position sizing through optimal $h_0$ selection that balances expected returns against liquidation costs driven by $\Phi(q)$.
+
+% ====================================================================
+\section{First-Hitting Time Analysis}
+% ====================================================================
+
+\subsection{First-Hitting Time Problem}
+
+The liquidation event occurs when the log-health process $h(t)$ first reaches zero, corresponding to a health factor $H(t) = e^{h(t)} \leq 1$. This transforms the liquidation risk problem into analyzing the first-hitting time:
+\begin{equation}
+\tau_0 = \inf\{t \geq 0 : h(t) \leq 0\}
+\end{equation}
+
+The distribution of $\tau_0$ determines the timing of liquidation events, which is fundamental for position sizing, risk management, and portfolio optimization in DeFi environments. Unlike traditional finance where positions can be continuously monitored and adjusted, DeFi liquidations occur automatically through smart contracts, making the precise timing distribution critical for risk assessment.
+
+\subsection{Almost Sure vs. Defective Hitting}
+
+The nature of first-hitting behavior fundamentally depends on whether liquidation is inevitable or merely possible, determined by the long-run behavior of the log-health process. When the log-health process has a negative drift that dominates stabilizing effects, liquidation becomes almost sure with $\mathbb{P}(\tau_0 < \infty) = 1$ for all initial health levels $h_0 > 0$. In this regime, the question is not whether liquidation will occur, but when.
+
+Conversely, when favorable drift components can dominate adverse jump effects, hitting becomes defective with $\mathbb{P}(\tau_0 < \infty) = e^{-R h_0} < 1$ for some adjustment coefficient $R > 0$. This regime allows for genuine long-term positions where liquidation is not inevitable. Here, risk management requires conditioning on eventual liquidation:
+\begin{equation}
+F_{\mathrm{cond}}(T,h_0) = \mathbb{P}(\tau_0 \leq T \mid \tau_0 < \infty) = e^{R h_0} F(T,h_0)
+\end{equation}
+
+The distinction between these regimes is crucial for DeFi strategy selection. Almost sure hitting regimes are unsuitable for long-term positions but may support high-frequency strategies. Defective hitting regimes enable traditional investment approaches where positions can potentially be held indefinitely.
+
+\subsection{Laplace Transform of First-Hitting Time}
+
+The mathematical analysis relies on Laplace transform methods. The fundamental result links the root function to liquidation timing:
+
+\begin{theorem}[First-Hitting Time Laplace Transform]
+\label{thm:fht_laplace_section3}
+For the first hitting time $\tau_0 = \inf\{t \geq 0 : h(t) \leq 0\}$ with $h_0 > 0$:
+\begin{equation}
+\mathbb{E}_{h_0}[e^{-q \tau_0} \mathbf{1}_{\{\tau_0 < \infty\}}] = e^{-h_0 \Phi(q)}
+\end{equation}
+\end{theorem}
+This enables the computation of liquidation probabilities through the following: 
+\begin{equation}
+\mathbb{P}(\tau_0 \leq T) = \mathcal{L}^{-1}\left[\frac {e^{-h_0 \Phi(q)}}{q}\right](T)    
+\end{equation} where $\mathcal{L}^{-1}$ denotes numerical Laplace inversion. For defective hitting cases, the conditional distribution uses:
+\begin{equation}
+\mathcal{L}\{F_{\mathrm{cond}}\}(q) = \frac{e^{-h_0 (\Phi(q+R) - R)}}{q}
+\end{equation}
+
+The computational procedures for numerical Laplace inversion are detailed in Appendix \ref{sec:numerical_methods}.
+
+
+% ====================================================================
+\section{Portfolio Sizing}
+% ====================================================================
+
+\subsection{Optimization Framework}
+
+We formulate position sizing as maximizing an objective balancing risk and return:
+\begin{equation}
+\max_{r} \quad \mathcal{U}(r) = \mathbb{E}[\text{return}] - \rho_1 \mathbb{V}[\text{return}] - \rho_2 \mathbb{P}(\tau_0 \leq T^*) \label{eq:objective_portfolio}
+\end{equation}
+
+where $r = w_X/(w_X + w_Y)$ is the allocation ratio, $T^*$ is the investment horizon, and $\rho_1, \rho_2 > 0$ are risk aversion parameters.
+
+The initial log-health is:
+\begin{equation}
+h_0 = \log b_X + \log r + \log(X_0/Y_0) \label{eq:initial_health_portfolio}
+\end{equation}
+
+\subsection{Constraints}
+
+The optimization is subject to:
+\begin{align}
+h_0 &\geq h_{\min} > 0 \quad \text{(minimum health factor)} \\
+0 < r &< 1 \quad \text{(position limits)}
+\end{align}
+
+% ====================================================================
+\section{Optimization Solution Method}
+% ====================================================================
+
+We employ gradient-based optimization with:
+\begin{enumerate}
+    \item Numerical gradients computed via finite differences
+    \item Projected gradient ascent ensuring constraint satisfaction  
+    \item Line search for optimal step sizes
+    \item Convergence based on gradient norm and objective improvement
 \end{enumerate}
 
-Therefore, the overall change in wealth is
-\begin{align*}
-\dd X_t = p_t X_t \left(r^{(1)}_t \dd t- \dd N^{(1)}_t\right)
-+ (1-p_t)X_t\left[
-(r^{(2)}_t+\mu)\dd t + \sigma \dd W_t - \dd N^{(2)}_t
-\right].
-\end{align*}
+% ====================================================================
+\section{Calibration Methodology}
+% ====================================================================
 
-Grouping terms, we have
-\begin{align*}
-  \dd X_t &= \left[
-  p_t X_t r^{(1)}_t + (1-p_t)X_t (r^{(2)}_t + \mu)
-  \right]\dd t \\
-  &+(1-p_t)X_t \sigma \dd W_t \\
-  &-p_t X_t \dd N^{(1)}\\
-  &-(1-p_t) X_t \dd N^{(2)}\\
-  &= X_t\left[
-  p_t  \left(
-    r^{(1)}_t - r^{(2)}_t - \mu
-    \right)
-    + r^{(2)}+\mu
-  \right]\dd t\\
-  &+(1-p_t)X_t \sigma \dd W_t \\
-  &-p_t X_t \dd N^{(1)}\\
-  &-(1-p_t) X_t \dd N^{(2)}
-  \end{align*}
+\subsection{Parameter Estimation}
 
-Next, we introduce the value function. 
-\begin{align*}
-V(t, x, r_1, r_2, s) = \sup_{p \in [0,1]}\mathbb{\sf E}_t\left[
-U\left(X_T\right) \big| X_0=x, r^{(1)}_0=r_1, r^{(2)}_0=r_2, S_0 = s
-\right],
-\end{align*}
-where $U(\cdot)$ is the utility function. \\
+For the constant-intensity model, we estimate:
+\begin{itemize}
+    \item \textbf{Drift parameters}: $\mu_X, \mu_Y$ from sample means of log-returns
+    \item \textbf{Diffusion parameters}: $\sigma_X, \sigma_Y, \rho$ from sample covariance
+    \item \textbf{Jump intensities}: $\hat\lambda_X, \hat\lambda_Y$ from jump counting
+    \item \textbf{Jump size parameters}: $\delta_X, \eta_X, \delta_Y, \eta_Y$ via maximum likelihood
+\end{itemize}
 
-The HJB equation to solve the optimization problem above is
-\begin{align*}
-0&=\partial_t V + \sup_{p\in[0,1]}
-\Big\{
-x\left[p \left(r_1 - r_2 - \mu \right)+r_2 + \mu \right]\partial_X V\\
-&+ \frac{1}{2} (1-p)^2x^2\sigma^2 \partial_X^2 V \\ 
-&+\lambda^{(1)}\left(V(x-px, r_1, r_2, s) - V\right)\\
-&+\lambda^{(2)}\left(V(x-(1-p)x, r_1, r_2, s) - V\right)
-\Big\}\\
-&=\partial_t V + H,
-\end{align*}
-where $H$ is the Hamiltonian. \\
+\subsection{Jump Detection}
 
-\subsubsection{Constant absolute risk aversion utility function}
-In this section, we focus on the constant absolute risk aversion (CARA) utility 
-\begin{align*}
-U(x) = -e^{-\gamma x},
-\end{align*}
-where $\gamma>0$ is a constant that respresents the degree of risk preferenece.\\
-
-The terminal condition of $V$ is
-\begin{align*}
-  V(T, x, r_1, r_2, s) = U(x) = -e^{-\gamma x}.
-\end{align*}
-
-
-By observing the terminal condition of $V$ and the HJB equation, we postulate the form of $V(t, x, r_1, r_2, s)$, 
-\begin{align*}
-V(t, x, r_1, r_2, s) = -e^{-\gamma x}f(t, r_1, r_2, s),
-\end{align*}
-where $f$ is a function depends on time, the lending rates, and the ETH price. \\
-
-The partial derivatives of $V$ are
-\begin{align*}
-\partial_t V &= -e^{-\gamma x}\partial_t f\\
-\partial_x V &= -\gamma V\\
-\partial^2_x V &= \gamma^2 V.
-\end{align*}
-
-The change in $V$ due to defaults are
-\begin{align*}
-V(t, x-px, r_1, r_2, s) - V &= V\left(e^{\gamma px}-1\right) \\
-V(t, x-(1-p)x, r_1, r_2, s) - V &= V \left(e^{-\gamma x (p-1)}-1\right) \\
-\end{align*}
-
-
-Plugging everything into $H$, we have
-\begin{align*}
-H &= \sup_{p\in[0,1]}
-\Big\{
-x\left[p \left(r_1 - r_2 - \mu \right)+r_2 + \mu \right](-\gamma)V\\
-&+ \frac{1}{2} (1-p)^2x^2\sigma^2 \gamma^2 V \\ 
-&+\lambda^{(1)} V\left(e^{\gamma px}-1\right) \\ 
-&+\lambda^{(2)} V\left(e^{-\gamma x (p-1)}-1\right)
-\Big\}.
-\end{align*}
-
-The first order condition is
-\begin{align*}
-  \partial_p H &= 
-  -x \left(r_1 - r_2 - \mu \right)\gamma V\\
-  &- (1-p^*)x^2\sigma^2 \gamma^2 V \\ 
-  &+\lambda^{(1)} V\gamma xe^{\gamma p^*x} \\ 
-  &+\lambda^{(2)} V\left(-\gamma x e^{-\gamma x (p^*-1)}\right) = 0.
-  \end{align*}
-
-Therefore, $p^*$ satisfies the following equation
-\begin{align*}
-  \lambda^{(1)} e^{\gamma p^*x}
-  - \lambda^{(2)} e^{-\gamma x (p^*-1)} = (r_1 - r_2 - \mu) + (1-p^*)x\sigma^2 \gamma.  
-\end{align*}
-
-
-\subsubsection{Constant relative risk aversion utility function}
-In this section, we focus on the constant relative risk aversion utility fuction (CRRA)
-\begin{align*}
-  U(x) = \frac{x^\gamma}{\gamma}, 
-\end{align*}
-where $\gamma > 0$ is a constant that represents the degree of risk preference. \\
-
-The terminal condition of $V$ is 
-\begin{align*}
-V(T, x, r_1, r_2, s) = U(x) = \frac{x^\gamma}{\gamma}.
-\end{align*}
-
-By observing the terminal condition of $V$ and the HJB equation, we postulate that $V$ has the form
-\begin{align*}
-V(t, x, r_1, r_2, s) = \frac{x^\gamma}{\gamma}f(t, r_1, r_2, s),
-\end{align*}
-where $f$ is a function that depends on time, the lendings rates, and the ETH price. \\
-
-The partial derivatives of $V$ are
-\begin{align*}
-\partial_t V &= \frac{x^\gamma}{\gamma}\partial_t f\\
-\partial_x V &= \frac{\gamma}{x}V\\
-\partial^2_xV &= \left(\frac{\gamma^2 - \gamma}{x^2}\right)V.
-\end{align*}
-
-The change in $V$ due to defaults are
-\begin{align*}
-V(x-px) - V(x)&=\left((1-p)^\gamma - 1\right) V\\
-V(x-(1-p)x) - V(x) &= (p^\gamma-1) V.
-\end{align*}
-
-Plugging everything into $H$, we have
-\begin{align*}
-H = \sup_{x\in[0,1]}
-\Big\{
-&\left(p(r_1 - r_2 - \mu) + r_2 + \mu\right)\gamma V\\
-&+\frac{1}{2}(1-p)^2\sigma^2 (\gamma^2-\gamma)V \\ 
-&+ \lambda^{(1)}\left[(1-p)^\gamma - 1 \right]V\\
-&+ \lambda^{(2)}(p^\gamma -1)V
-\Big\}
-\end{align*}
-
-The optimal $p^*$ satisfies the first order condition, i.e.
-\begin{align*}
-0=r_1-r_2 - \mu - (1-p^*)\sigma^2 (\gamma - 1) - \lambda^{(1)}(1-p^*)^{\gamma-1} + \lambda^{(2)}(p^*)^{\gamma-1}.
-\end{align*}
-
-
-
-
-
-\section{Literatures}
-\subsection{Uncovered Interest Parity and its variants}
-\cite{cappiello2007uncovered}
+We implement peak-over-threshold (POT) methods:
 \begin{enumerate}
-  \item This paper proposes an extension of UIP called the Uncovered Return Parity (URP)
-  \item The URP condition is 
-  \begin{align*}
-    \mathbb{\sf E}\left(R_{t+1}\frac{S_{t+1}}{S_t}m_{t+1}\Big|\mathcal{F}_t\right)=1,
-  \end{align*}
-  where $R_{t+1}$ is the gross return on a foreign asset denominated in a foreign currency, and $S_{t+1}$ is the spot exchange rate, defined as the number of units of domestic currency exchanged for one unit of foreign currency. 
-  \item The R.H.S. (=1) of the above equation stemmed from definition of stochastic discount factor, see Section 3.1 of \cite{back2010asset}. 
-  \item Then the authors assume that there exist a foreign risk-free bond (which we do not have that in the cryptomarket) and yield the following
-  \begin{align*}
-    \mathbb{\sf E}\left(\frac{S_{t+1}}{S_t}m_{t+1}\Big|\mathcal{F}_t\right) = \frac{1}{R_{f,t}}.
-  \end{align*}
-  \item The remaining paper is about estimation of URP. The authors estimate the SDF via GMM. 
+    \item Select thresholds to minimize skewness and excess kurtosis of residual returns
+    \item Count exceedances to estimate jump intensities
+    \item Fit shifted exponential distributions to jump sizes
 \end{enumerate}
 
-\subsection{Affine term structure models}
-\cite{anderson2010affine}
+\subsection{Model Validation}
+
+Validation includes:
+\begin{itemize}
+    \item Residual analysis of filtered diffusion components
+    \item Out-of-sample performance of liquidation probability forecasts
+    \item Comparison with simpler geometric Brownian motion models
+\end{itemize}
+
+% ====================================================================
+\section{Extensions and Limitations}
+% ====================================================================
+
+\subsection{Hawkes Process Comparison}
+
+While our constant-intensity approach sacrifices the ability to model jump clustering, it provides several advantages:
+\begin{itemize}
+    \item \textbf{Analytical tractability}: Explicit Laplace transforms vs. complex Riccati systems
+    \item \textbf{Numerical stability}: Robust inversion algorithms vs. 12-dimensional ODE solving
+    \item \textbf{Computational efficiency}: Fast evaluation suitable for real-time applications
+    \item \textbf{Parameter parsimony}: Fewer parameters reduce overfitting risk
+\end{itemize}
+
+The trade-off is loss of dynamic clustering effects where jump events increase the probability of subsequent jumps.
+
+\subsection{Future Extensions}
+
+Potential extensions include:
 \begin{enumerate}
-  \item The paper extends the affine class of term structure models to describe the joint dynamics of exchange rates and interest rates
+    \item \textbf{Regime-switching intensities}: Markov-modulated jump processes
+    \item \textbf{Stochastic volatility}: Time-varying diffusion parameters  
+    \item \textbf{Multi-asset portfolios}: Extension beyond pairwise long-short positions
+    \item \textbf{Dynamic hedging}: Optimal rebalancing under transaction costs
 \end{enumerate}
 
-\subsection{Interest rate derivatives in the crypto space}
-{\bf Inter-Protocol Offered Rate (IPOR)} \url{https://docs.ipor.io/}
+% ====================================================================
+\section{Use Cases-Applied Strategies}
+% ====================================================================
+In order to show the practical implications of our findings, we present three examples of long-short strategies and the empirical results.
+
+\begin{table}[h!]
+\centering
+\small
+\caption{Comparison of Four Crypto Strategies}
+\begin{tabular}{|l|p{2.5cm}|p{2.5cm}|p{2.5cm}|p{2.5cm}|}
+\hline
+\textbf{Feature / Parameter} & \textbf{Stablecoin LS Volatile} & \textbf{Momentum} & \textbf{Beta-Neutral LS} & \textbf{Leveraged Yield USDC} \\ \hline
+
+Collateral & Stablecoin & Long crypto & Long crypto & USDC \\ \hline
+
+Leverage & None & Alpha-scaled & Depends on allocation $r$ & Up to $\frac{1}{1-\phi}$ (looped borrowing) \\ \hline
+
+Target Return & Yield spread of long/short & Trending returns & $R_P = w_X \alpha_X - w_Y \alpha_Y$ & $r_{\mathrm{net}}^{(\infty)} = \frac{r_X - \varphi r_Y}{1-\varphi}$ \\ \hline
+
+Main Risks & Volatility, short squeezes & Trend reversals, shocks & Volatility, correlation breakdown, liquidation & BTC price moves, liquidation, fees/slippage \\ \hline
+
+Log-Health Process & $\log \left( \frac{b_X \, w_X \, X(t)}{w_Y \, Y(t)} \right)$ & $\log \left( \frac{b_X \, w_X\, X(t)}{w_Y \, Y(t)} \right)$ & $\log \left( \frac{b_X \, w_X\, X(t)}{w_Y \, Y(t)} \right)$ & $\log \frac{(b_X w_X X(t))}{D_t}$ \\ \hline
+
+Drift & $\kappa_h=\mu_X -\mu_Y$ & Can be simplified to $\mu_Y$ for risk-specific purposes & $\kappa_h=w_X \mu_X - w_Y \mu_Y$  & $r_X/(1-\varphi) - r_Y \varphi/(1-\varphi) - \mu_Y$ \\ \hline
+
+Volatility / Jump & $\sigma_X,\sigma_Y, \lambda_Y$ & $\sigma_X,\sigma_Y,\lambda_X,\lambda_Y$ & $\sigma_X,\sigma_Y,\lambda_X,\lambda_Y$ & $\sigma_Y,\lambda_Y,\delta_Y$ \\ \hline
+
+Terminal Wealth &  See \eqref{prop:Terminal Wealth Stablecoin}  & $W_T=W_0 + w_X R_X - w_Y R_Y$ & $W_T=W_0 + w_X R_X - w_Y R_Y$ & $W_T=H_t - D_t$ \\ \hline
+
+Optimization & Max expected return / utility & Max Sharpe / alpha & Max utility / Kelly $f^*(r)$ & Max $r_{\mathrm{net}}(\varphi)$ subject to drift>0 \\ \hline
+
+Calibration & Stablecoin spreads & Momentum factor history & Rolling $\mu_i,\sigma_i,\lambda_i,\delta_i$ & BTC returns, $r_X,r_Y$ on-chain \\ \hline
+\end{tabular}
+\label{tab:crypto_strategy_comparison}
+\end{table}
+Sidenote: $D_t$ represents outstanding debt.
+
+
+\subsection{Long Stablecoin–Short Volatile}
+
+For the first use case, we consider a long–short strategy in which a stablecoin is chosen for the long position while a volatile cryptocurrency is borrowed to establish a short position. The economic incentive is based on the following ideas: 
+\begin{itemize}
+    \item the stablecoin is a relatively safe investment that earns a deterministic supply rate $r_X$, and
+    \item the short side is expected to appreciate in value, should the borrowed asset depreciate.
+\end{itemize}
+
+The net annualized carry is equal to the spread between supply and borrow rates, scaled by position weights:
+\begin{equation}
+ R(w_X, w_Y) =  w_X r_X - w_Y r_Y,  
+\end{equation}
+where $r_X$ represents the supply APY corresponding to the long asset and $r_Y$ represents the borrow APY of the borrowed token.
+
+As mentioned earlier, the liquidation risk is determined by the log-health process. We assume $\log X(t)$ and $\log Y(t)$ to be L\'evy processes with Laplace exponents $\psi_X(\theta)$ and $\psi_Y(\theta)$. If $\log X$ and $\log Y$ are independent:
+\begin{equation}
+h(t) = \log\!\left( \frac{b_X w_X X(t)}{w_Y Y(t)} \right)
+\end{equation}
+the Laplace exponent of $h(t)$ is:
+\begin{equation}
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta).
+\end{equation}
+In the case of correlated L\'evy drivers with a joint characteristic exponent ${\bf{\Psi}}_{X,Y}(\theta_1,\theta_2)$, one obtains:
+\begin{equation}
+\psi_h(\theta) = {\bf{\Psi}}_{X,Y} (\theta, - \theta). 
+\end{equation}
+
+\paragraph{Terminal Wealth.}
+Under the spectrally negative assumption, the terminal wealth at time $T$ is:
+\begin{equation}
+\label{prop:Terminal Wealth Stablecoin}
+ W_T = W_0 + w_XR_X(T) - w_YR_Y(T) + w_X r_X T - w_Y r_Y T,
+\end{equation}
+where $R_X(T) = \frac{X_T}{X_0} - 1$ and $R_Y(T) = \frac{Y_T}{Y_0} - 1$.
+
+\paragraph{Expected Wealth and Variance of Wealth.}  
+\begin{equation}
+\mathbb{E}[W_T] = W_0 + w_X\!\big(e^{T \psi_X(1)}-1\big) - w_Y\!\big(e^{T \psi_Y(1)}-1\big) 
++ w_X r_X T - w_Y r_Y T.
+\end{equation}
+Let $A = w_X R_X(T) - w_Y R_Y(T)$. Then:
+\begin{equation}
+\text{Var}(W_T) = \text{Var}(A)
+= w_X^2 \text{Var}[R_X(T)] + w_Y^2 \text{Var}[R_Y(T)] - 
+2w_X w_Y  \text{Cov}[R_X(T), R_Y(T)].
+\end{equation}
+If the L\'evy log-processes are independent:
+\begin{equation}
+\text{Var}[R_X(T)] = e^{T \psi_X(2)} - e^{2T \psi_X(1)}, 
+\quad 
+\text{Var}[R_Y(T)] = e^{T \psi_Y(2)} - e^{2T \psi_Y(1)}.
+\end{equation}
+For correlated L\'evy drivers:
+\begin{equation}
+\text{Cov}[R_X(T),R_Y(T)] = e^{T {\bf \Psi}_{X,Y}(1,1)} - e^{T \psi_X(1)} e^{T \psi_Y(1)}.
+\end{equation}
+Given the nature of stablecoins, their price movements can be assumed to be almost null: ($\psi_X(1) \approx 0, \ \psi_X(2) \approx 0$):
+\begin{align}
+\mathbb{E}[W_T] &\approx W_0 - w_Y\big(e^{T \psi_Y(1)}-1\big) 
++ w_X r_X T - w_Y r_Y T, \\
+\text{Var}(W_T) &\approx w_Y^2 \big(e^{T \psi_Y(2)} - e^{2T \psi_Y(1)}\big).
+\end{align}
+
+\paragraph{Mean–Variance Optimization.}
+The utility function of the investor, parameterized by the allocation ratio $r$, is:
+\begin{equation}
+\max_{r} \quad \mathcal{U}(r) 
+= \mathbb{E}[W_T(r)] 
+- \rho_1 \, \mathbb{V}[W_T(r)] 
+- \rho_2 \, \mathbb{P}(\tau_0 \leq T^*),
+\end{equation}
+where $W_T(r)$ follows the wealth process described above and the initial log-health is:
+\begin{equation}
+h_0(r) = \log \left( \frac{b_X w_X X_0}{w_Y Y_0} \right) 
+= \log b_X + \log r + \log\!\left(\frac{X_0}{Y_0}\right).
+\end{equation}
+The trade-off between expected carry and probability of liquidation defines the region of optimal allocations.
+
+\paragraph{Kelly Criterion Implementation.}
+We use the Kelly criterion to determine optimal sizing, since our objective is to maximize the long-term growth rate of wealth. The core components ----win probability ($p$), loss probability ($q$), and net odds ($b$) ---- are derived from the jump-diffusion and liquidation framework.
+
+\subparagraph{Win/Loss Probabilities.}
+Define a binary outcome over time $T^*$:
+\begin{itemize}
+    \item \textbf{Loss (Liquidation):} Probability $q = \pi(T^*) = \mathbb{P}(\tau_0 \le T^*)$. Net loss $R_{\text{loss}} = -L w_X$.
+    \item \textbf{Win (No Liquidation):} Probability $p = 1-q$. Expected gain is the net return from the carry and the short leg.
+\end{itemize}
+
+\subparagraph{Net Odds.}
+\begin{align}
+q &= \pi(T^*) = \mathcal{L}^{-1}\!\left[\frac{e^{-h_0 \Phi(q)}}{q}\right](T^*), \\
+p &= 1-q, \\
+b &= \frac{\mathbb{E}[\text{Gain} \mid \tau_0 > T^*]}{\mathbb{E}[\text{Loss} \mid \tau_0 \le T^*]} 
+= \frac{w_X r_X T^* - w_Y r_Y T^* - w_Y(e^{T^* \psi_Y(1)}-1)}{L w_X}.
+\end{align}
+
+\paragraph{Kelly Optimization.}
+The optimal Kelly fraction is defined as:
+\begin{equation}
+f^*(r) = \frac{b(r)p(r) - q(r)}{b(r)},
+\end{equation}
+and the expected log-growth rate:
+\begin{equation}
+G(r) = q(r) \log\!\big(1 - f^*(r) L w_X\big) + p(r) \log\!\big(1 + f^*(r) b(r) L w_X\big).
+\end{equation}
+For practical reasons, a fractional Kelly approach can be used:
+\begin{equation}
+f_{\text{target}}(r) = k \times f^*(r), \quad k \in (0,1).
+\end{equation}
+
+\paragraph{Solution Procedure.}
+Numerical steps for both optimization frameworks:
 \begin{enumerate}
-  \item The IPOR company offers an interest rate benchmark (weighted average of DeFi interest rate) with the same name that 
-  summarizes the lending and borrowing interest rates of crypto loan platforms.
-  \item The company offers trading of fixed income derivatives, e.g. interest rate swap. 
-  The pricing and transaction are based on the IPOR rate and automated market maker. 
-  \item The main derivatives traded on IPOR is cancellable interest rate swaps.
-  \item IPOR uses Hull-White jump-diffusion model for rate simulation and Longstaff-Schwartz method for pricing (the cancellable part)
-  \item Criticisms
-  \begin{enumerate}
-    \item Complex product designs: cancellable swaps + Hull-White-jump-model + Longstaff-Schwartz 
-    \item Lack of market-involved pricing mechanism: the AMM takes the spread calculated only by the Hull-White model + Longstaff-Schwartz. 
-    \item Spread calculation often results in high spread that prohibits transactions. 
-    \item Max tenor is too short (90-day longest) 
-    \item See \url{https://scapital.medium.com/ipor-a-postmortem-for-the-interest-rate-swap-pioneer-5dc8492c2f7c}
-  \end{enumerate}
+    \item Compute $w_X(r)$, $w_Y(r)$, and the initial log-health $h_0(r)$.
+    \item Evaluate the probability of liquidation $q(r) = \pi(T^*)$ via numerical Laplace inversion; set $p(r) = 1 - q(r)$.
+    \item Compute expected wealth and variance for mean–variance optimization.
+    \item Calculate the net odds $b(r)$ and the Kelly fraction $f^*(r)$ for the Kelly problem.
+    \item Optimize over $r$, ensuring practicality: $h_0(r) \ge h_{\min}$ and $0 < r < 1$.
 \end{enumerate}
 
-\subsection{Time-changed and fractional interest rate models}
+\paragraph{Calibration and DeFi Market Data.}
+We calibrate the model using data from decentralized lending protocols and cryptocurrency markets obtained through Blockchain Research Center. Stablecoin supply rates $r_X$ typically range from 2--6\% per annum, while borrowing rates for volatile assets (e.g. ETH) range from 5--10\%.  
+L\'evy jump–diffusion parameters $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ are estimated using daily log returns. Stablecoins are considered to exhibit negligible diffusion and jump components ($\sigma_X \approx 0$, $\lambda_X \approx 0$), but volatile assets show significant jump intensities and fat tails.
 
-\cite{shokrollahi2021time}
-\begin{enumerate}
-  \item Beware that the work is not peer-reviewed. 
-  \item They propose a time-changed fractional short rate model 
-  \begin{align*}
-    \dd r(T_\alpha(t)) = \mu \dd T_\alpha(t) + \sigma \dd B^H(T_\alpha (t)),
-  \end{align*}
-  where $\mu$ and $\sigma$ are constants, $B^H$ is a fractional Brownian motion with Hurst parameter $H\in[0.5,\ 1)$. 
-  $T_\alpha(t)$ is the inverse 
-  $\alpha$-stable subordinator with $\alpha \in(0,1)$ defined as 
-  \begin{align*}
-    T_\alpha(t) = \inf\left\{\tau > 0 : U_\alpha(\tau)>t\right\},
-  \end{align*}
-  where $\left\{\right\}$ is a $\alpha$-stable Levy process with non-negative increments and Laplace transform
-  \begin{align*}
-    \mathbb{\sf E}\left(\exp(-u U_\alpha(t))\right)= \exp(-ru^\alpha).
-  \end{align*}
-  Here, $T_\alpha(t)$ is assumed to be independent of $B^H$. 
-  \item The motivation of modelling beyond Markov models is the ongoing financial empricial evidence. 
-  \item It is also sensible to argue that the short rates are driven by macroeconomic variables, like 
-  domestic gross products, supply and demand rates or volatilities exhibit long range dependence. 
-  \item The price of a zero-coupon bond is given by 
-  \begin{align*}
-    P(r,t,T) = \exp\left[-r f_2(T-t) + f_1(T-t)\right],
-  \end{align*}
-  where 
-  \begin{align*}
-f_1(T-t) &= \frac{H \sigma^2}{\Gamma(\alpha)^{2H}}\int^{T-t}_0 (T-v)^{2\alpha H -1}v^2 \dd v\\
-f_2(T-t) & = T-t. 
+\paragraph{Health Process Parameters.}
+The log-health process exponent is given by $\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta)$. The drift $\kappa_h = \mathbb{E}[h(t)]/t$ determines whether the regime is defective ($\kappa_h>0$) or almost-sure liquidation ($\kappa_h<0$).
+
+\paragraph{Numerical Evaluation.}
+For each parameter set, we compute:
+\begin{itemize}
+    \item $\mathbb{E}[W_T(r)]$ and $\mathbb{V}[W_T(r)]$ for mean–variance optimization,
+    \item $\mathbb{P}(\tau_0 \leq T^*)$ by Laplace inversion,
+    \item $f^*(r)$ and $G(r)$ for Kelly optimization.
+\end{itemize}
+Laplace inversions use the Gaver–Stehfest algorithm with $N=16$ terms (placeholder value).
+
+\paragraph{Parameter Values - Placeholder.}
+\begin{align*}
+r_X &= 0.04, \quad r_Y = 0.08,\quad\sigma_Y = 0.85,\\
+\lambda_Y &= 0.12,\quad \delta_Y = 0.25, \quad h_{\min} = 0.1,\\
+T^* &= 30 \text{ days.}
 \end{align*}
+
+\paragraph{Results.}
+Simulation results yield optimal allocation ratios $r^*$ under both optimization frameworks:
+\begin{enumerate}
+    \item Under mean–variance optimization, $r^*$ balances carry and volatility risk, with higher $\rho_1$ reducing leverage.
+    \item Under the Kelly criterion, $r^*$ maximizes geometric growth, explicitly accounting for liquidation probability and expected gain.
+    \item For defective-hitting regimes ($\kappa_h > 0$), feasible allocations exist with moderate leverage and low liquidation probability.
+    \item In almost-sure liquidation regimes ($\kappa_h < 0$), both frameworks converge to $r \to 1$, implying that leveraged shorting is unsustainable.
 \end{enumerate}
 
-\section{Backgrounds}
-\subsection{Short rate models}
-A quote from Section 10.1 of \cite{Shreve2004a} nicely summarise what is short rate traditionally:
-\begin{displayquote}
-  "The interest rate (sometimes called the short rate) is an {\color{red} idealization} corresponding to the shortest maturity yield or perhaps the overnight rate offered by the government, depending on the particular application."
-\end{displayquote}
+\paragraph{Comparative Analysis.}
+The Kelly framework provides a direct growth-optimal benchmark, while the mean–variance approach offers a risk-adjusted perspective more suitable for institutional investors. Fractional Kelly scaling aligns the two, yielding practical allocations that manage risk without sacrificing growth potential.
 
-\begin{remark}In the crypto world, instead of using liquidly traded bonds and fixed-income products to infer the short rate (mainly its dynamics) and price more complex products,
- the short rate itself is directly observable and impacts the growth rate of borrowing and lending accounts,
- i.e. the growth of crypto borrowing and lending accounts is a {\color{red} realization} of the crypto short rate.
- Beware that {\it all} borrowings in a lending pool, disregard of the identity of borrower and starting date of the borrowings (there is no maturity in crypto loans),
- are growing at the {\it{same}} crypto borrowing rate. \end{remark}
+\paragraph{Implementation.}
+All computations are performed in \texttt{Python}. Laplace inversions use \texttt{mpmath}, and projected gradient ascent ensures $h_0(r) \ge h_{\min}$ at each iteration. The code simulates jump–diffusion dynamics, computes $\pi(T^*)$, and outputs optimal $r^*$, expected wealth, variance, and liquidation probabilities for varying $(\rho_1, \rho_2)$ and Kelly fractions $k$.
 
-The simplest model for fixed income markets begin with a stochastic differential equation for the interest rate
+\subsection{Long--Short Momentum Strategy}
+
+The second strategy we consider is a momentum strategy: here momentum is defined as performance over a specific period of time. A long position is taken in an asset with positive recent returns (``momentum winner''), and a short position is taken in an asset with negative recent returns (``momentum loser''). 
+\\The idea underlying the strategy is fairly simple: the investor must buy tokens that are outperforming and short-sell those that are underperforming.
+Given the nature of cryptocurrency markets, the challenge lies in identifying the proper horizon for the momentum signal and the optimal time to exit the positions. 
+
+The net expected return is proportional to the difference in expected performance between the two assets, scaled by position weights:
+\begin{equation}
+R(w_X, w_Y) = w_X R_X - w_Y R_Y,
+\end{equation}
+where $R_X$ is the expected return of the long asset, and $R_Y$ the expected return of the short asset.
+
+\paragraph{Log-Health Process.}
+In this setting, the log-health process tracks the relative value of the long and short positions:
+\begin{equation}
+h(t) = \log\!\left(\frac{b_X w_X X(t)}{w_Y Y (t)}\right)
+\end{equation}
+where $X(t)$ and $Y(t)$ are the long and short asset price processes, $X_0, Y_0$ their initial prices, and $b_X$ represents the collateral factor.
+
+Assuming $\log X$ and $\log Y$ follow Lévy processes with Laplace exponents $\psi_X(\theta)$ and $\psi_Y(\theta)$, the Laplace exponent of $h(t)$ is:
+\begin{equation}
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta).
+\end{equation}
+In the case of correlated drivers with joint characteristic exponent ${\bf{\Psi}}_{X,Y}(\theta_1,\theta_2)$:
+\begin{equation}
+\psi_h(\theta) = {\bf{\Psi}}_{X,Y}(\theta,-\theta).
+\end{equation}
+
+\paragraph{Terminal Wealth.}
+The total wealth of the portfolio at time $T$ is:
+\begin{equation}
+W_T = W_0 + w_X R_X(t) - w_Y R_Y(t),
+\end{equation}
+where $R_X(t) = \frac{R_T}{X_0}-1$ and $R_Y(t) = \frac{Y_T}{Y_0}-1$ are the respective returns of the long and short legs.
+
+\paragraph{Expected Wealth and Variance of Wealth.}
+The first two moments of the wealth process are then:
+\begin{align}
+\mathbb{E}[W_T] &= W_0 + w_X \big(e^{T \psi_L(1)} - 1\big) - w_Y \big(e^{T \psi_S(1)} - 1\big), \\
+\text{Var}(W_T) &= w_X^2 \text{Var}[R_X(t)] + w_Y^2 \text{Var}[R_Y(t)] - 2 w_X w_Y \text{Cov}[R_X(t),R_Y(t)].
+\end{align}
+Using the moment-generating property of Lévy processes, each component satisfies
+\begin{align}
+\text{Var}[R_i(T)] &= e^{T \psi_i(2)} - e^{2T \psi_i(1)}, \qquad i \in \{X,Y\}.
+\end{align}
+
+Thus, the expected return reflects the relative drift between the two assets, while the variance arises from their individual volatilities and correlation.
+
+\paragraph{Optimization Problem.}
+The investor’s mean–variance objective becomes:
+\begin{equation}
+\max_{r} \quad 
+\mathcal{U}(r)
+= \mathbb{E}[W_T(r)]
+- \rho_1 \, \mathbb{V}[W_T(r)],
+\label{eq:objective_momentum_defi}
+\end{equation}
+with $r = \frac{w_X}{w_Y}$ the relative position ratio and $W_T(r)$ the terminal wealth at $T^*$. The initial log-health is
+\begin{equation}
+h_0(r) = \log\!\left( \frac{b_X w_X X_0}{w_Y Y_0} \right)
+= \log b_X + \log r + \log\!\left(\frac{X_0}{Y_0}\right),
+\end{equation}
+which determines the effective margin requirement.
+
+\paragraph{Solution.}
+As in the stablecoin strategy, closed-form solutions are generally unavailable, so we adopt a numerical approach:
+\begin{enumerate}
+    \item Compute $\mathbb{E}[W_T(r)]$ and $\mathbb{V}[W_T(r)]$ using the moment formulas above.
+    \item Approximate $\nabla \mathcal{U}(r)$ using finite differences.
+    \item Apply projected gradient ascent to update $r$, enforcing $r>0$.
+    \item Use backtracking line search and terminate when the gradient and objective improvements are below tolerance.
+\end{enumerate}
+
+\paragraph{Kelly Criterion Implementation.}
+We can also formulate the problem using the Kelly criterion, which maximizes the long-run geometric growth rate of wealth. 
+
+\subparagraph{Expected Growth Rate.}
+Under the assumption of independent Lévy increments, the log wealth growth over horizon $T^*$ is:
+\begin{equation}
+G(r) = \mathbb{E}\!\left[ \log\!\left(1 + f (w_X R_X(T^*) - w_Y R_Y(T^*)) \right) \right].
+\end{equation}
+Maximizing $G(r)$ with respect to the Kelly fraction $f$ yields the optimal allocation fraction:
+\begin{equation}
+f^*(r) = \frac{\mathbb{E}[A(r)]}{\mathbb{V}[A(r)]},
+\end{equation}
+where $A(r) = w_X R_X(T^*) - w_Y R_Y(T^*)$. 
+
+For practical implementation, we use a fractional Kelly approach to reduce sensitivity to estimation errors:
+\begin{equation}
+f_{\text{target}}(r) = k \times f^*(r),
+\end{equation}
+where $k \in (0,1]$ (e.g., $k = 0.5$ for Half Kelly).
+
+\paragraph{Calibration and Market Data.}
+The model is calibrated on daily data for tokens with pronounced cross-sectional momentum. Momentum winners (long leg) and losers (short leg) are selected based on extreme cumulative returns over a $k=30$ day formation period. The Lévy jump-diffusion parameters $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ for all assets are estimated through rolling windows of historical log-returns. Empirical evidence shows that momentum winners are characterized by a higher drift $\mu_X$ and comparable or slightly higher volatility $\sigma_X$ relative to losers. The jump parameters $(\lambda_i, \delta_i)$ effectively capture asymmetry and fat tails in crypto returns, reflecting the persistence and downside risk of trend reversals.
+
+\paragraph{Numerical Evaluation.}
+For each set of calibrated parameters, we compute $\mathcal{U}(r)$ and $f^*(r)$. Gradients are approximated numerically, and the optimal ratio $r^*$ is found using projected gradient ascent subject to feasibility constraints.
+
+\paragraph{Parameter Values (Placeholder).}
 \begin{align*}
-  \dd r_t = \beta(t, r_t)\dd t + \gamma(t, r_t)\dd W_t.
+\mu_X &= 0.10, &\sigma_X &= 0.80, &\lambda_X &= 0.10, &\delta_L &= 0.20,\\
+\mu_Y &= 0.05, &\sigma_Y &= 0.70, &\lambda_Y &= 0.20, &\delta_S &= 0.25,\\
+T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
 \end{align*}
 
-The zero-coupon bond pricing formula is
-\begin{align*}
-B(t,T) = \E_\mathbb{Q}\left[
-e^{-\int_t^T r_s \dd s}\big|\mathcal{F}_t
-\right],
-\end{align*}
-provided that $B(T,T)=1$. 
-
-Since $r_t$ is governed by a SDE, it is a Markov process and we must have
-\begin{align*}
-B(t,T) = f(t, r_t)
-\end{align*}
-
-By Feynman-Kac, we obtain the partial differential equation
-\begin{align*}
-\partial_t f(t,r) + \beta(t,r)\partial_r f(t,r)+ \frac{1}{2}\gamma^2(t,r)\partial_{rr}f(t,r) = r f(t,r),\  
-f(T, r)=1.
-\end{align*}
-
-{\bf Hull-White model}\\
-In the Hull-White model, the evolution of the interest rate is given by 
-\begin{align*}
-\dd r_t = \left(a(t)-b(t)r_t\right)\dd t \sigma(t) \dd W_t,
-\end{align*}
-where $a(t)$, $b(t)$, and $\sigma(t)$ are non-random positive functions of time.
-The PDE for the zero-coupon bond price becomes
-\begin{align*}
-  \partial_t f(t,r) + \left(a(t)-b(t)\right)\partial_r f(t,r)+ \frac{1}{2}\sigma^2(t)\partial_{rr}f(t,r) = r f(t,r),\  
-  f(T, r)=1.
-  \end{align*}
-By ansatz, the solution of the above PDE has a form 
-\begin{align*}
-f(t,r) = \exp\left(-r C(t,T)- A(t,T)\right).
-\end{align*}
-
-Let's work out the partial derivatives:
-\begin{align*}
-  \partial_t f &= \left(-r \partial_t C(t,T) - \partial_t A(t,T)\right) f\\
-  \partial_r f &= -C(t,T)f\\
-  \partial_{rr} f &= C^2(t,T)f.
-\end{align*}
-
-Substitute into the PDE gives
-\begin{align*}
-0=\Big[
-&\left(
--\partial_t C+ b(t)C-1
-\right)r\\
-&-\partial_t A - a(t)C+\frac{1}{2}\sigma^2(t)C
-\Big]f(t,r).
-\end{align*}
- 
-Since $f$ is nonzero and this equation must hold for all $r$, 
-\begin{align*}
-  -\partial_t C+ b(t)C-1 &=0\\
-  -\partial_t A - a(t)C+\frac{1}{2}\sigma^2(t)C &=0.
-\end{align*}
-
-Since $f(r,T)=1$, $C(T,T)=A(T,T)=0$. The solution of the above equations is 
-\begin{align*}
-  C(t,T) &= \int_t^T \exp\left(-\int_t^s b(v)\dd v\right)\dd s\\
-  A(t,T) &= \int_t^T \left(a(s) C(s,T)-\frac{1}{2}\sigma^2(s)C^2(s,T)\right)\dd s.
-\end{align*}
+\paragraph{Results.}
+Simulation produces optimal allocation ratios $r^*$ as functions of the Kelly fraction $k$ and asset asymmetries. Key findings (Placeholder):
+\begin{enumerate}
+    \item When the drift differential $(\mu_X - \mu_Y)$ is large, $r^*$ increases almost linearly with the momentum strength.
+    \item Higher jump intensity $\lambda_Y$ and volatility $\sigma_Y$ reduce $r^*$, as downside risk of the short leg dominates.
+    \item Fractional Kelly allocations ($k<1$) provide smoother wealth trajectories with reduced variance.
+\end{enumerate}
 
 
-\bibliographystyle{abbrvnamed} %
-\bibliography{finance} %
+\subsection{Beta-Neutral Long--Short Strategy}
+
+The third case we consider is a beta-neutral long-short strategy: this strategy aims to isolate idiosyncratic returns by neutralizing exposure to the overall cryptocurrency market. We take a long position in a high-alpha asset $\alpha_X$ and a short position in an asset with similar beta but lower alpha $\alpha_Y$, capturing the alpha spread 
+while aiming to mitigate systematic risk.  
+
+\paragraph{Portfolio Construction.}  
+Let $\beta_i$ denote the market beta of asset $i$. Construct long leg ${X}$ and short leg ${Y}$ with weights $w_{x}, w_{y}$. Beta-neutrality requires
+\[
+\beta_P = \sum_{i \in {X}} w_i \beta_i - \sum_{j \in Y} w_j \beta_j \approx 0,
+\]
+enforced via scaling between legs while maintaining positive collateralization.
+
+\paragraph{Expected Return and Variance.}  
+Ignoring liquidation events, the expected terminal wealth is
+\begin{equation}
+\mathbb{E}[W_T] = W_0 + w_X(e^{T\psi_X(1)}-1) - w_Y(e^{T\psi_Y(1)}-1),
+\end{equation}
+and the variance is
+\begin{equation}
+\text{Var}[W_T] = w_X^2 \text{Var}[R_X(t)] + w_Y^2 \text{Var}[R_Y(t)] - 2 w_X w_Y \text{Cov}[R_X(t),R_Y(t)],
+\end{equation}
+with $R_i(T) = \frac{P_i(T)}{P_i(0)} - 1$ and $\psi_i(\theta)$ the Laplace exponent of the Lévy process for asset $i$.
+
+\paragraph{Log-Health Process.}  
+Define
+\begin{equation}
+h(t) = \log\left(\frac{b_X w_X X(t)}{w_Y Y(t)}\right)
+\end{equation}
+with $X(t)$, $Y(t)$ the long and short price processes and $b_X$ is the collateral factor. The Laplace exponent of $h(t)$ is
+\begin{equation}
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta),
+\end{equation}
+or, in the presence of correlated drivers,
+\begin{equation}
+\psi_h(\theta) = {\bf{\Psi}}_{X,Y}(\theta,-\theta).
+\end{equation}
+
+\paragraph{Kelly Criterion Implementation.}  
+We define a binary outcome over horizon $T^*$:
+\begin{itemize}
+    \item \textbf{Loss Event:} liquidation occurs with probability $q = \pi(T^*) = \mathbb{P}(\tau_0 \le T^*)$. The net loss is $R_{\text{loss}} = -L w_X$.
+    \item \textbf{Win Event:} no liquidation, probability $p = 1-q$. The gain is the expected idiosyncratic return $R_{\text{gain}} = w_X \alpha_X T^* - w_Y \alpha_Y T^*$.
+\end{itemize}
+
+The net odds are
+\begin{equation}
+b = \frac{R_{\text{gain}}}{|R_{\text{loss}}|} = \frac{w_X \alpha_X T^* - w_Y \alpha_Y T^*}{L w_X}.
+\end{equation}
+
+The optimal Kelly fraction is
+\begin{equation}
+f^*(r) = \frac{b(r)p(r)-q(r)}{b(r)},
+\end{equation}
+and the expected logarithmic growth to maximize is
+\begin{equation}
+G(r) = q(r) \log(1 - f^*(r) L w_X) + p(r) \log(1 + f^*(r) b(r) L w_X).
+\end{equation}
+
+Once again, a fractional Kelly can be considered more practical $f_{\rm target}(r) = k f^*(r)$ (e.g., $k=0.5$).
+\paragraph{Solution.}  
+\begin{enumerate}
+    \item For a given allocation ratio $r$, compute $w_X(r), w_Y(r)$ and initial log-health $h_0(r)$.
+    \item Estimate $q(r) = \pi(T^*)$ via Laplace inversion.
+    \item Compute $p(r) = 1-q(r)$ and net odds $b(r)$.
+    \item Evaluate $f^*(r)$ and $G(r)$.
+    \item Maximize $G(r)$ numerically over feasible $r$ with $h_0(r) \ge h_{\min}$.
+\end{enumerate}
+
+\paragraph{Calibration and Data.}  
+Historical crypto returns are used to calibrate $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ for Lévy jump-diffusion processes. Long and short assets are chosen to enforce $\beta_P \approx 0$. Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
+
+\paragraph{Parameters Values (Placeholder)}
+\begin{align*}
+\mu_X &= 0.08, &\sigma_X &= 0.75, &\lambda_X &= 0.08, &\delta_L &= 0.20,\\
+\mu_Y &= 0.04, &\sigma_Y &= 0.70, &\lambda_Y &= 0.12, &\delta_S &= 0.22,\\
+T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
+\end{align*}
+
+\paragraph{Key Insights.}  
+\begin{itemize}
+    \item Beta-neutral portfolios have lower variance than directional positions for similar expected returns.
+    \item Positive drift in $h(t)$ ensures feasibility of larger allocations.
+    \item Heavy-tailed jumps or strong correlations restrict the feasible allocation ratio $r$ for maintaining beta neutrality and healthy collateral.
+\end{itemize}
+
+\subsection{Leveraged Yield Strategy: USDC Collateral, Borrow BTC, Swap to USDC, Deposit to AAVE}
+
+Consider an initial USDC collateral \(C_0>0\). Using the protocol's collateral factor \(\varphi \in (0,1)\), BTC is borrowed up to a USD-valued amount \(\varphi C_0\). The borrowed BTC is immediately swapped into USDC and deposited back into AAVE at a supply rate \(r_X\). Repeating the borrow–swap–deposit loop \(k\) times generates a geometric series of leveraged deposits. The primary risks are the BTC borrow interest \(r_Y\) and mark-to-market exposure to BTC price movements, which can trigger liquidation.
+
+\paragraph{Notation.}
+\begin{itemize}
+  \item \(C_0\) — initial USDC collateral.
+  \item \(S_t\) — spot price of BTC in USDC.
+  \item \(\varphi\) — protocol collateral factor.
+  \item \(r_X\) — AAVE supply APY for USDC.
+  \item \(r_Y\) — borrow interest rate for BTC (USD-equivalent).
+  \item \(k\) — number of leverage loops.
+  \item \(D_t\) — USD value of outstanding debt.
+  \item \(H_t\) — deposited USDC value.
+  \item \(h_t = \log H_t - \log D_t\) — log-health process.
+  \item \(L\) — liquidation threshold in log-health: liquidation occurs when \(h_t \le -\ell\).
+\end{itemize}
+
+\paragraph{Leverage Accounting.}
+After \(k\) loops, the total deposited USDC is
+\[
+H^{(k)} = C_0 \sum_{i=0}^{k} \varphi^{\,i} = C_0 \frac{1-\varphi^{\,k+1}}{1-\varphi},
+\]
+and the USD-valued debt is
+\[
+D^{(k)} = C_0 \sum_{i=1}^{k} \varphi^{\,i} = C_0\left(\frac{1-\varphi^{\,k+1}}{1-\varphi}-1\right).
+\]
+For \(k \to \infty\), these converge to
+\[
+H^{(\infty)} = \frac{C_0}{1-\varphi}, \qquad D^{(\infty)} = \frac{\varphi}{1-\varphi}\,C_0.
+\]
+
+\paragraph{Instantaneous Net Yield.}
+Ignoring BTC mark-to-market, fees, and slippage, the infinite-loop net yield is
+\[
+r_{\mathrm{net}}^{(\infty)}(\varphi) = \frac{r_X - \varphi\, r_Y}{1-\varphi}.
+\]
+
+\paragraph{Price Risk and Log-Health Process.}
+Let \(X_t\) denote the log-value process of USDC deposits and \(Y_t = \log S_t\) the BTC log-price, with Lévy exponents \(\psi_X(\theta)\) and \(\psi_Y(\theta)\). The log-health process exponent is
+\[
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta),
+\]
+reflecting that upward BTC moves reduce the USD-equivalent debt burden, and downward moves increase it.
+
+Liquidation occurs at the first hitting time
+\[
+\tau_{\mathrm{liq}} = \inf \{ t \ge 0 : h_t \le -\ell \}.
+\]
+The drift and jump intensity of \(Y_t\) determine survival probabilities to a given horizon and influence the feasibility of leverage \(\varphi\).
+
+\paragraph{First-Order Stability.}
+A positive drift of log-health implies
+\[
+\frac{r_X}{1-\varphi} - \frac{r_Y \varphi}{1-\varphi} - \mu_Y > 0,
+\]
+with \(\mu_Y = -\mathbb{E}[\dot Y_t]\) representing the effect of BTC price drift. Ignoring \(\mu_Y\) yields the heuristic constraint \(\varphi < r_X / r_Y\).
+
+\paragraph{Fees, Slippage, and Gas.}
+Realized performance is affected by swap fees, gas costs, variable borrow rates, and liquidation penalties. High leverage and repeated loops amplify these effects.
+
+\paragraph{Health Process Parameters.}
+The Lévy exponents \(\psi_X(\theta)\) and \(\psi_Y(\theta)\) define
+\[
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta),
+\]
+and the drift and tail behavior of \(\psi_h\) determine whether the system is almost-surely safe or defective. Positive drift and light left-tail jumps in BTC favor larger feasible \(\varphi\); negative drift and heavy left-tail jumps require smaller \(\varphi\) to avoid liquidation.
+
+\paragraph{Worked Example.}
+With \(r_X = 0.046\) and \(r_Y = 0.02\), the infinite-loop net yield is
+\[
+r_{\mathrm{net}}^{(\infty)}(\varphi) = \frac{0.046 - 0.02\varphi}{1-\varphi}.
+\]
+For \(\varphi = 0.5\),
+\[
+r_{\mathrm{net}}^{(\infty)}(0.5) = \frac{0.046-0.01}{0.5} = 0.072 = 7.2\%,
+\]
+ignoring BTC volatility, liquidation mechanics, slippage, and fees.
+
+% ====================================================================
+\section{Conclusion}
+% ====================================================================
+
+We have developed a practical framework for first-hitting time analysis in DeFi long-short positioning using constant-intensity jump-diffusion models. Although simpler than Hawkes processes, this approach provides robust semi-analytical solutions suitable for real-time risk management.
+
+Key contributions include:
+\begin{enumerate}
+    \item Spectrally negative Lévy process formulation for log-health dynamics
+    \item Semi-analytical computation via Laplace transforms and Gaver-Stehfest inversion
+    \item Practical optimization framework balancing returns and liquidation risk
+    \item Straightforward calibration methodology for constant-intensity parameters
+\end{enumerate}
+
+The framework demonstrates that sophisticated risk management in DeFi applications need not require computationally intensive models. The constant-intensity approach provides sufficient complexity to capture wrong-way risk while maintaining the analytical tractability necessary for practical implementation.
+
+% ====================================================================
+% APPENDIX
+% ====================================================================
+
+\appendix
+
+\section{Mathematical Proofs}
+\label{sec:proofs}
+
+\begin{delayedproof}{prop:log_health_dynamics}
+We prove this by applying Itô's lemma to the log-health function and carefully tracking jump contributions from both assets.
+
+\textbf{Step 1: Setup and Itô decomposition}
+
+Starting from $h(t) = \log(b_X w_X) + \log X(t) - \log(w_Y) - \log Y(t)$, define $f(x,y) = \log x - \log y$ so that $h(t) = \text{const} + f(X(t), Y(t))$.
+
+Applying Itô's lemma to $f(X(t), Y(t))$ with jump-diffusion processes:
+\begin{align}
+df(X(t), Y(t)) &= \frac{\partial f}{\partial x} dX(t) + \frac{\partial f}{\partial y} dY(t) + \frac{1}{2}\frac{\partial^2 f}{\partial x^2} d[X]_t^c + \frac{1}{2}\frac{\partial^2 f}{\partial y^2} d[Y]_t^c \nonumber\\
+&\quad + \frac{\partial^2 f}{\partial x \partial y} d[X,Y]_t^c + \sum_{\text{jumps}} \Delta f
+\end{align}
+
+\textbf{Step 2: Compute partial derivatives}
+
+For $f(x,y) = \log x - \log y$:
+\begin{align}
+\frac{\partial f}{\partial x} &= \frac{1}{x}, \quad \frac{\partial f}{\partial y} = -\frac{1}{y}\\
+\frac{\partial^2 f}{\partial x^2} &= -\frac{1}{x^2}, \quad \frac{\partial^2 f}{\partial y^2} = \frac{1}{y^2}, \quad \frac{\partial^2 f}{\partial x \partial y} = 0
+\end{align}
+
+\textbf{Step 3: Continuous part analysis}
+
+The continuous parts of $X(t)$ and $Y(t)$ satisfy:
+\begin{align}
+dX(t) &= X(t^-)[\mu_X dt + \sigma_X dB_X(t)] + X(t^-)\Delta J_X(t)\\
+dY(t) &= Y(t^-)[\mu_Y dt + \sigma_Y dB_Y(t)] + Y(t^-)\Delta J_Y(t)
+\end{align}
+
+For the continuous part (ignoring jumps temporarily):
+\begin{align}
+df^c(X(t), Y(t)) &= \frac{1}{X(t)}[\mu_X X(t) dt + \sigma_X X(t) dB_X(t)] - \frac{1}{Y(t)}[\mu_Y Y(t) dt + \sigma_Y Y(t) dB_Y(t)] \nonumber\\
+&\quad - \frac{1}{2X(t)^2} \sigma_X^2 X(t)^2 dt + \frac{1}{2Y(t)^2} \sigma_Y^2 Y(t)^2 dt
+\end{align}
+
+The correct continuous part, accounting for correlation $\rho$, is:
+\begin{align}
+df^c(X(t), Y(t)) &= [\mu_X - \mu_Y - \frac{1}{2}(\sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y)] dt \nonumber\\
+&\quad + \sigma_X dB_X(t) - \sigma_Y dB_Y(t)
+\end{align}
+
+\textbf{Step 4: Jump part analysis}
+
+When $X(t)$ jumps at time $T_i$ with size $\Delta J_X(T_i) = U_X^i = -(\delta_X + E_X^i)$:
+\begin{align}
+\Delta f|_{X\text{-jump}} &= \log(X(T_i^-)(1 + U_X^i)) - \log(X(T_i^-)) = \log(1 + U_X^i) = U_X^i
+\end{align}
+
+When $Y(t)$ jumps at time $T_j$ with $\Delta J_Y(T_j) = U_Y^j = +(\delta_Y + E_Y^j)$:
+\begin{align}
+\Delta f|_{Y\text{-jump}} &= -\log(1 + U_Y^j) = -U_Y^j
+\end{align}
+
+\textbf{Step 5: Combine results}
+
+The total jump contribution to $h(t)$ is:
+\begin{align}
+J_h^X(t) &= \sum_{i=1}^{N_X(t)} U_X^i = \sum_{i=1}^{N_X(t)} [-(\delta_X + E_X^i)]\\
+J_h^Y(t) &= \sum_{j=1}^{N_Y(t)} (-U_Y^j) = \sum_{j=1}^{N_Y(t)} [+(\delta_Y + E_Y^j)]
+\end{align}
+
+The diffusion coefficient becomes:
+\[
+\sigma_h^2 = \mathbb{V}[\sigma_X dB_X(t) - \sigma_Y dB_Y(t)] = \sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y
+\]
+
+Therefore, $h(t) = h_0 + \mu_h t + \sigma_h B_h(t) + J_h^X(t) + J_h^Y(t)$ where all parameters are as stated.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:laplace_exponent}
+We derive the Laplace exponent by computing the cumulant generating function for each component of $h(t)$.
+
+\textbf{Step 1: Decompose the log-health process}
+
+From Proposition \ref{prop:log_health_dynamics}:
+\[
+h(t) = h_0 + \mu_h t + \sigma_h B_h(t) + J_h^X(t) + J_h^Y(t)
+\]
+
+\textbf{Step 2: Brownian motion contribution}
+
+For $\sigma_h B_h(t)$, the contribution is:
+\[
+\psi_B(\theta) = \frac{1}{2}\sigma_h^2 \theta^2
+\]
+
+\textbf{Step 3: Drift contribution}
+
+The drift contributes $-\mu_h \theta$ (negative sign for spectrally negative processes).
+
+\textbf{Step 4: X-jump contribution}
+
+For $J_h^X(t)$ with intensity $\hat\lambda_X$ and jump sizes $U_X^i = -(\delta_X + E_X^i)$:
+\[
+\psi_X(\theta) = \hat\lambda_X (\mathbb{E}[e^{\theta U_X}] - 1)
+\]
+
+Computing $\mathbb{E}[e^{\theta U_X}]$ where $U_X = -(\delta_X + E_X)$:
+\begin{align}
+\mathbb{E}[e^{\theta U_X}] &= e^{-\theta \delta_X} \mathbb{E}[e^{-\theta E_X}] = e^{-\theta \delta_X} \frac{\eta_X}{\eta_X + \theta}
+\end{align}
+
+\textbf{Step 5: Y-jump contribution}
+
+For $J_h^Y(t)$, Y-jumps contribute negatively to health (they worsen it), so:
+\[
+\mathbb{E}[e^{\theta(-U_Y)}] = e^{-\theta \delta_Y} \frac{\eta_Y}{\eta_Y + \theta}
+\]
+
+\textbf{Step 6: Combine all contributions}
+
+\[
+\psi(\theta) = \frac{1}{2}\sigma_h^2 \theta^2 - \mu_h \theta + \hat\lambda_X \left( e^{-\theta \delta_X} \frac{\eta_X}{\eta_X+\theta} - 1 \right) + \hat\lambda_Y \left( e^{-\theta \delta_Y} \frac{\eta_Y}{\eta_Y+\theta} - 1 \right)
+\]
+
+The properties follow from direct computation: $\psi(0) = 0$, and 
+\[
+\psi'(0) = -\mu_h - \hat\lambda_X(\delta_X + 1/\eta_X) - \hat\lambda_Y(\delta_Y + 1/\eta_Y)
+\]
+\end{delayedproof}
+
+\section{Numerical Methods and Implementation}
+\label{sec:numerical_methods}
+
+This appendix details the computational procedures for evaluating first-hitting time distributions through Laplace transform inversion.
+
+\subsection{Gaver-Stehfest Inversion Algorithm}
+
+The Gaver-Stehfest algorithm provides a robust method for numerically inverting Laplace transforms. For the first-hitting time distribution:
+
+\begin{algorithm}
+\caption{First-Hitting Time CDF via Gaver-Stehfest Inversion}
+\label{alg:gaveR_Ytehfest_appendix}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Initial log-health $h_0 > 0$, evaluation time $T > 0$, Stehfest order $N$ (typically 10-14)
+\STATE Compute adjustment coefficient $R = \Phi(0)$ by solving $\psi(R) = 0$
+\STATE Precompute Stehfest weights $V_k$ for $k = 1, \ldots, N$:
+\[
+V_k = (-1)^{N/2+k} \sum_{j=\lfloor(k+1)/2\rfloor}^{\min(k,N/2)} \frac{j^{N/2} (2j)!}{(N/2-j)! j! (j-1)! (k-j)! (2j-k)!}
+\]
+\FOR{$k = 1$ to $N$}
+    \STATE Compute $q_k = k \ln 2 / T$
+    \STATE Solve $\psi(\theta) = q_k$ numerically to obtain $\Phi(q_k)$
+    \STATE Evaluate $\mathcal{L}\{F\}(q_k) = e^{-h_0 \Phi(q_k)} / q_k$
+\ENDFOR
+\STATE Compute the inversion:
+\[
+F(T,h_0) = \frac{\ln 2}{T} \sum_{k=1}^{N} V_k \mathcal{L}\{F\}(q_k)
+\]
+\STATE Clamp result to $[0,1]$
+\STATE \textbf{Output:} $F(T,h_0) = \mathbb{P}(\tau_0 \leq T)$
+\end{algorithmic}
+\end{algorithm}
+
+For the conditional distribution in defective cases, replace step 8 with:
+\[
+\mathcal{L}\{F_{\mathrm{cond}}\}(q_k) = \frac{e^{-h_0 (\Phi(q_k+R) - R)}}{q_k}
+\]
+
+\subsection{Root Finding for $\Phi(q)$}
+
+The root function $\Phi(q)$ requires solving $\psi(\theta) = q$ for each $q_k$ in the Stehfest algorithm. We employ Brent's method with search interval $[0, \theta_{\max}]$ where $\theta_{\max}$ is chosen to ensure $\psi(\theta_{\max}) > q_{\max}$.
+
+\textbf{Implementation details:}
+\begin{itemize}
+    \item Initialize with bracketing: $\theta_{\min} = 0$, $\theta_{\max} = 10 \max(\eta_X, \eta_Y)$
+    \item Verify $\psi(0) < q < \psi(\theta_{\max})$ before root finding
+    \item Use relative tolerance $10^{-12}$ for convergence
+    \item Cache $\psi(\theta)$ evaluations to avoid recomputation
+\end{itemize}
+
+\subsection{Numerical Stability Considerations}
+
+\begin{itemize}
+    \item \textbf{Stehfest order}: Use moderate orders (10-14) to balance accuracy and stability. Higher orders may amplify numerical errors.
+    \item \textbf{High precision}: Employ extended precision arithmetic for large $N$ or small $T$ to avoid catastrophic cancellation.
+    \item \textbf{Alternative inversion}: For very small $T$ or large $h_0$, consider Talbot or de Hoog methods which may be more stable.
+    \item \textbf{Parameter validation}: Ensure $\eta_X + \theta > 0$ and $\eta_Y + \theta > 0$ to avoid singularities.
+    \item \textbf{Clamping}: Final probabilities should be clamped to $[0,1]$ to handle numerical errors.
+    \item \textbf{Conditioning detection}: Automatically detect defective hitting by checking if $\psi'(0) < 0$.
+\end{itemize}
+
+\subsection{Computational Complexity}
+
+For each distribution evaluation:
+\begin{itemize}
+    \item $O(N)$ Laplace transform evaluations (typically $N = 10-14$)
+    \item Each evaluation requires solving $\psi(\theta) = q_k$ via root finding
+    \item Root finding: $O(\log \epsilon^{-1})$ iterations for tolerance $\epsilon$
+    \item Total complexity: $O(N \log \epsilon^{-1})$ per distribution evaluation
+\end{itemize}
+
+% ====================================================================
+% BIBLIOGRAPHY
+% ====================================================================
+
+%\bibliographystyle{abbrvnamed}
+%\bibliography{finance}
+
 \end{document}
 
-%%% Local Variables: 
-%%% mode: latex
-%%% TeX-master: t
-%%% End: 
+
+\subsection{Beta-Neutral Long--Short Strategy}
+
+The third case we consider is a beta-neutral long-short strategy: this strategy aims to isolate idiosyncratic returns by neutralizing exposure to the aggregate cryptocurrency market. The portfolio takes a long position in a high-alpha asset $\alpha_X$ and a short position in an asset with similar beta but lower alpha $\alpha_Y$, capturing the alpha spread while mitigating systematic risk.  
+
+\paragraph{Portfolio Construction.}  
+Let $\beta_i$ denote the market beta of asset $i$. Construct long leg $\mathcal{L}$ and short leg $\mathcal{S}$ with weights $w_{\mathcal{L}}, w_{\mathcal{S}}$. Beta-neutrality requires
+\[
+\beta_P = \sum_{i \in \mathcal{L}} w_i \beta_i - \sum_{j \in \mathcal{S}} w_j \beta_j \approx 0,
+\]
+enforced via scaling between legs while maintaining positive collateralization.
+
+\paragraph{Expected Return and Variance.}  
+Ignoring liquidation events, the expected terminal wealth is
+\begin{equation}
+\mathbb{E}[W_T] = W_0 + w_X(e^{T\psi_L(1)}-1) - w_Y(e^{T\psi_S(1)}-1),
+\end{equation}
+and the variance is
+\begin{equation}
+\text{Var}[W_T] = w_X^2 \text{Var}[R_X(t)] + w_Y^2 \text{Var}[R_Y(t)] - 2 w_X w_Y \text{Cov}[R_X(t),R_Y(t)],
+\end{equation}
+with $R_i(T) = \frac{P_i(T)}{P_i(0)} - 1$ and $\psi_i(\theta)$ the Laplace exponent of the Lévy process for asset $i$.
+
+\paragraph{Log-Health Process.}  
+Define
+\begin{equation}
+h(t) = \log\left(\frac{b_X w_X X_0}{w_Y Y_0}\right) + (\log X(t) - \log Y(t)),
+\end{equation}
+with $X(t)$, $Y(t)$ the long and short price processes and $b_X$ a collateral factor. The Laplace exponent of $h(t)$ is
+\begin{equation}
+\psi_h(\theta) = \psi_L(\theta) + \psi_S(-\theta),
+\end{equation}
+or, in the presence of correlated drivers,
+\begin{equation}
+\psi_h(\theta) = {\bf{\Psi}}_{L,S}(\theta,-\theta).
+\end{equation}
+
+\paragraph{Kelly Criterion Implementation.}  
+We define a binary outcome over horizon $T^*$:
+\begin{itemize}
+    \item \textbf{Loss Event:} liquidation occurs with probability $q = \pi(T^*) = \mathbb{P}(\tau_0 \le T^*)$. The net loss is $R_{\text{loss}} = -L w_X$.
+    \item \textbf{Win Event:} no liquidation, probability $p = 1-q$. The gain is the expected idiosyncratic return $R_{\text{gain}} = w_X \alpha_X T^* - w_Y \alpha_Y T^*$.
+\end{itemize}
+
+The net odds are
+\begin{equation}
+b = \frac{R_{\text{gain}}}{|R_{\text{loss}}|} = \frac{w_X \alpha_X T^* - w_Y \alpha_Y T^*}{L w_X}.
+\end{equation}
+
+The optimal Kelly fraction is
+\begin{equation}
+f^*(r) = \frac{b(r)p(r)-q(r)}{b(r)},
+\end{equation}
+and the expected logarithmic growth to maximize is
+\begin{equation}
+G(r) = q(r) \log(1 - f^*(r) L w_X) + p(r) \log(1 + f^*(r) b(r) L w_X).
+\end{equation}
+
+For practical implementation, a fractional Kelly $f_{\rm target}(r) = k f^*(r)$ (e.g., $k=0.5$) is recommended to reduce tail risk.  
+
+\paragraph{Solution.}  
+\begin{enumerate}
+    \item For a given allocation ratio $r$, compute $w_X(r), w_Y(r)$ and initial log-health $h_0(r)$.
+    \item Estimate $q(r) = \pi(T^*)$ via Laplace inversion.
+    \item Compute $p(r) = 1-q(r)$ and net odds $b(r)$.
+    \item Evaluate $f^*(r)$ and $G(r)$.
+    \item Maximize $G(r)$ numerically over feasible $r$ with $h_0(r) \ge h_{\min}$.
+\end{enumerate}
+
+\paragraph{Calibration and Data.}  
+Historical crypto returns are used to calibrate $(\mu_i, \sigma_i, \lambda_i, \delta_i)$ for Lévy jump-diffusion processes. Long and short assets are chosen to enforce $\beta_P \approx 0$. Strong idiosyncratic alpha differences yield positive drift in $h(t)$ and reduced liquidation probability.
+
+\paragraph{Baseline Parameters.}
+\begin{align*}
+\mu_X &= 0.08, &\sigma_X &= 0.75, &\lambda_X &= 0.08, &\delta_L &= 0.20,\\
+\mu_Y &= 0.04, &\sigma_Y &= 0.70, &\lambda_Y &= 0.12, &\delta_S &= 0.22,\\
+T^* &= 30 \text{ days}, &h_{\min} &= 0.1.
+\end{align*}
+
+\paragraph{Key Insights.}  
+\begin{itemize}
+    \item Beta-neutral portfolios have lower variance than directional positions for similar expected returns.
+    \item Positive drift in $h(t)$ ensures feasibility of larger allocations.
+    \item Heavy-tailed jumps or strong correlations restrict the feasible allocation ratio $r$ for maintaining beta neutrality and healthy collateral.
+\end{itemize}
+
+\subsection{Leveraged Yield Strategy: USDC Collateral, Borrow BTC, Swap to USDC, Deposit to AAVE}
+
+Consider an initial USDC collateral \(C_0>0\). Using the protocol's collateral factor \(\varphi \in (0,1)\), BTC is borrowed up to a USD-valued amount \(\varphi C_0\). The borrowed BTC is immediately swapped into USDC and deposited back into AAVE at a supply rate \(r_X\). Repeating the borrow–swap–deposit loop \(k\) times generates a geometric series of leveraged deposits. The primary risks are the BTC borrow interest \(r_Y\) and mark-to-market exposure to BTC price movements, which can trigger liquidation.
+
+\paragraph{Notation.}
+\begin{itemize}
+  \item \(C_0\) — initial USDC collateral.
+  \item \(S_t\) — spot price of BTC in USDC.
+  \item \(\varphi\) — protocol collateral factor.
+  \item \(r_X\) — AAVE supply APY for USDC.
+  \item \(r_Y\) — borrow interest rate for BTC (USD-equivalent).
+  \item \(k\) — number of leverage loops.
+  \item \(D_t\) — USD value of outstanding debt.
+  \item \(H_t\) — deposited USDC value.
+  \item \(h_t = \log H_t - \log D_t\) — log-health process.
+  \item \(L\) — liquidation threshold in log-health: liquidation occurs when \(h_t \le -\ell\).
+\end{itemize}
+
+\paragraph{Leverage Accounting.}
+After \(k\) loops, the total deposited USDC is
+\[
+H^{(k)} = C_0 \sum_{i=0}^{k} \varphi^{\,i} = C_0 \frac{1-\varphi^{\,k+1}}{1-\varphi},
+\]
+and the USD-valued debt is
+\[
+D^{(k)} = C_0 \sum_{i=1}^{k} \varphi^{\,i} = C_0\left(\frac{1-\varphi^{\,k+1}}{1-\varphi}-1\right).
+\]
+For \(k \to \infty\), these converge to
+\[
+H^{(\infty)} = \frac{C_0}{1-\varphi}, \qquad D^{(\infty)} = \frac{\varphi}{1-\varphi}\,C_0.
+\]
+
+\paragraph{Instantaneous Net Yield.}
+Ignoring BTC mark-to-market, fees, and slippage, the infinite-loop net yield is
+\[
+r_{\mathrm{net}}^{(\infty)}(\varphi) = \frac{r_X - \varphi\, r_Y}{1-\varphi}.
+\]
+
+\paragraph{Price Risk and Log-Health Process.}
+Let \(X_t\) denote the log-value process of USDC deposits and \(Y_t = \log S_t\) the BTC log-price, with Lévy exponents \(\psi_X(\theta)\) and \(\psi_Y(\theta)\). The log-health process exponent is
+\[
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta),
+\]
+reflecting that upward BTC moves reduce the USD-equivalent debt burden, and downward moves increase it.
+
+Liquidation occurs at the first hitting time
+\[
+\tau_{\mathrm{liq}} = \inf \{ t \ge 0 : h_t \le -\ell \}.
+\]
+The drift and jump intensity of \(Y_t\) determine survival probabilities to a given horizon and influence the feasibility of leverage \(\varphi\).
+
+\paragraph{First-Order Stability.}
+A positive drift of log-health implies
+\[
+\frac{r_X}{1-\varphi} - \frac{r_Y \varphi}{1-\varphi} - \mu_Y > 0,
+\]
+with \(\mu_Y = -\mathbb{E}[\dot Y_t]\) representing the effect of BTC price drift. Ignoring \(\mu_Y\) yields the heuristic constraint \(\varphi < r_X / r_Y\).
+
+\paragraph{Fees, Slippage, and Gas.}
+Realized performance is affected by swap fees, gas costs, variable borrow rates, and liquidation penalties. High leverage and repeated loops amplify these effects.
+
+\paragraph{Health Process Parameters.}
+The Lévy exponents \(\psi_X(\theta)\) and \(\psi_Y(\theta)\) define
+\[
+\psi_h(\theta) = \psi_X(\theta) + \psi_Y(-\theta),
+\]
+and the drift and tail behavior of \(\psi_h\) determine whether the system is almost-surely safe or defective. Positive drift and light left-tail jumps in BTC favor larger feasible \(\varphi\); negative drift and heavy left-tail jumps require smaller \(\varphi\) to avoid liquidation.
+
+\paragraph{Worked Example.}
+With \(r_X = 0.046\) and \(r_Y = 0.02\), the infinite-loop net yield is
+\[
+r_{\mathrm{net}}^{(\infty)}(\varphi) = \frac{0.046 - 0.02\varphi}{1-\varphi}.
+\]
+For \(\varphi = 0.5\),
+\[
+r_{\mathrm{net}}^{(\infty)}(0.5) = \frac{0.046-0.01}{0.5} = 0.072 = 7.2\%,
+\]
+ignoring BTC volatility, liquidation mechanics, slippage, and fees.
+
+% ====================================================================
+\section{Conclusion}
+% ====================================================================
+
+We have developed a practical framework for first-hitting time analysis in DeFi long-short positioning using constant-intensity jump-diffusion models. Although simpler than Hawkes processes, this approach provides robust semi-analytical solutions suitable for real-time risk management.
+
+Key contributions include:
+\begin{enumerate}
+    \item Spectrally negative Lévy process formulation for log-health dynamics
+    \item Semi-analytical computation via Laplace transforms and Gaver-Stehfest inversion
+    \item Practical optimization framework balancing returns and liquidation risk
+    \item Straightforward calibration methodology for constant-intensity parameters
+\end{enumerate}
+
+The framework demonstrates that sophisticated risk management in DeFi applications need not require computationally intensive models. The constant-intensity approach provides sufficient complexity to capture wrong-way risk while maintaining the analytical tractability necessary for practical implementation.
+
+% ====================================================================
+% APPENDIX
+% ====================================================================
+
+\appendix
+
+\section{Mathematical Proofs}
+\label{sec:proofs}
+
+\begin{delayedproof}{prop:log_health_dynamics}
+We prove this by applying Itô's lemma to the log-health function and carefully tracking jump contributions from both assets.
+
+\textbf{Step 1: Setup and Itô decomposition}
+
+Starting from $h(t) = \log(b_X w_X) + \log X(t) - \log(w_Y) - \log Y(t)$, define $f(x,y) = \log x - \log y$ so that $h(t) = \text{const} + f(X(t), Y(t))$.
+
+Applying Itô's lemma to $f(X(t), Y(t))$ with jump-diffusion processes:
+\begin{align}
+df(X(t), Y(t)) &= \frac{\partial f}{\partial x} dX(t) + \frac{\partial f}{\partial y} dY(t) + \frac{1}{2}\frac{\partial^2 f}{\partial x^2} d[X]_t^c + \frac{1}{2}\frac{\partial^2 f}{\partial y^2} d[Y]_t^c \nonumber\\
+&\quad + \frac{\partial^2 f}{\partial x \partial y} d[X,Y]_t^c + \sum_{\text{jumps}} \Delta f
+\end{align}
+
+\textbf{Step 2: Compute partial derivatives}
+
+For $f(x,y) = \log x - \log y$:
+\begin{align}
+\frac{\partial f}{\partial x} &= \frac{1}{x}, \quad \frac{\partial f}{\partial y} = -\frac{1}{y}\\
+\frac{\partial^2 f}{\partial x^2} &= -\frac{1}{x^2}, \quad \frac{\partial^2 f}{\partial y^2} = \frac{1}{y^2}, \quad \frac{\partial^2 f}{\partial x \partial y} = 0
+\end{align}
+
+\textbf{Step 3: Continuous part analysis}
+
+The continuous parts of $X(t)$ and $Y(t)$ satisfy:
+\begin{align}
+dX(t) &= X(t^-)[\mu_X dt + \sigma_X dB_X(t)] + X(t^-)\Delta J_X(t)\\
+dY(t) &= Y(t^-)[\mu_Y dt + \sigma_Y dB_Y(t)] + Y(t^-)\Delta J_Y(t)
+\end{align}
+
+For the continuous part (ignoring jumps temporarily):
+\begin{align}
+df^c(X(t), Y(t)) &= \frac{1}{X(t)}[\mu_X X(t) dt + \sigma_X X(t) dB_X(t)] - \frac{1}{Y(t)}[\mu_Y Y(t) dt + \sigma_Y Y(t) dB_Y(t)] \nonumber\\
+&\quad - \frac{1}{2X(t)^2} \sigma_X^2 X(t)^2 dt + \frac{1}{2Y(t)^2} \sigma_Y^2 Y(t)^2 dt
+\end{align}
+
+The correct continuous part, accounting for correlation $\rho$, is:
+\begin{align}
+df^c(X(t), Y(t)) &= [\mu_X - \mu_Y - \frac{1}{2}(\sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y)] dt \nonumber\\
+&\quad + \sigma_X dB_X(t) - \sigma_Y dB_Y(t)
+\end{align}
+
+\textbf{Step 4: Jump part analysis}
+
+When $X(t)$ jumps at time $T_i$ with size $\Delta J_X(T_i) = U_X^i = -(\delta_X + E_X^i)$:
+\begin{align}
+\Delta f|_{X\text{-jump}} &= \log(X(T_i^-)(1 + U_X^i)) - \log(X(T_i^-)) = \log(1 + U_X^i) = U_X^i
+\end{align}
+
+When $Y(t)$ jumps at time $T_j$ with $\Delta J_Y(T_j) = U_Y^j = +(\delta_Y + E_Y^j)$:
+\begin{align}
+\Delta f|_{Y\text{-jump}} &= -\log(1 + U_Y^j) = -U_Y^j
+\end{align}
+
+\textbf{Step 5: Combine results}
+
+The total jump contribution to $h(t)$ is:
+\begin{align}
+J_h^X(t) &= \sum_{i=1}^{N_X(t)} U_X^i = \sum_{i=1}^{N_X(t)} [-(\delta_X + E_X^i)]\\
+J_h^Y(t) &= \sum_{j=1}^{N_Y(t)} (-U_Y^j) = \sum_{j=1}^{N_Y(t)} [+(\delta_Y + E_Y^j)]
+\end{align}
+
+The diffusion coefficient becomes:
+\[
+\sigma_h^2 = \mathbb{V}[\sigma_X dB_X(t) - \sigma_Y dB_Y(t)] = \sigma_X^2 + \sigma_Y^2 - 2\rho\sigma_X\sigma_Y
+\]
+
+Therefore, $h(t) = h_0 + \mu_h t + \sigma_h B_h(t) + J_h^X(t) + J_h^Y(t)$ where all parameters are as stated.
+\end{delayedproof}
+
+\begin{delayedproof}{prop:laplace_exponent}
+We derive the Laplace exponent by computing the cumulant generating function for each component of $h(t)$.
+
+\textbf{Step 1: Decompose the log-health process}
+
+From Proposition \ref{prop:log_health_dynamics}:
+\[
+h(t) = h_0 + \mu_h t + \sigma_h B_h(t) + J_h^X(t) + J_h^Y(t)
+\]
+
+\textbf{Step 2: Brownian motion contribution}
+
+For $\sigma_h B_h(t)$, the contribution is:
+\[
+\psi_B(\theta) = \frac{1}{2}\sigma_h^2 \theta^2
+\]
+
+\textbf{Step 3: Drift contribution}
+
+The drift contributes $-\mu_h \theta$ (negative sign for spectrally negative processes).
+
+\textbf{Step 4: X-jump contribution}
+
+For $J_h^X(t)$ with intensity $\hat\lambda_X$ and jump sizes $U_X^i = -(\delta_X + E_X^i)$:
+\[
+\psi_X(\theta) = \hat\lambda_X (\mathbb{E}[e^{\theta U_X}] - 1)
+\]
+
+Computing $\mathbb{E}[e^{\theta U_X}]$ where $U_X = -(\delta_X + E_X)$:
+\begin{align}
+\mathbb{E}[e^{\theta U_X}] &= e^{-\theta \delta_X} \mathbb{E}[e^{-\theta E_X}] = e^{-\theta \delta_X} \frac{\eta_X}{\eta_X + \theta}
+\end{align}
+
+\textbf{Step 5: Y-jump contribution}
+
+For $J_h^Y(t)$, Y-jumps contribute negatively to health (they worsen it), so:
+\[
+\mathbb{E}[e^{\theta(-U_Y)}] = e^{-\theta \delta_Y} \frac{\eta_Y}{\eta_Y + \theta}
+\]
+
+\textbf{Step 6: Combine all contributions}
+
+\[
+\psi(\theta) = \frac{1}{2}\sigma_h^2 \theta^2 - \mu_h \theta + \hat\lambda_X \left( e^{-\theta \delta_X} \frac{\eta_X}{\eta_X+\theta} - 1 \right) + \hat\lambda_Y \left( e^{-\theta \delta_Y} \frac{\eta_Y}{\eta_Y+\theta} - 1 \right)
+\]
+
+The properties follow from direct computation: $\psi(0) = 0$, and 
+\[
+\psi'(0) = -\mu_h - \hat\lambda_X(\delta_X + 1/\eta_X) - \hat\lambda_Y(\delta_Y + 1/\eta_Y)
+\]
+\end{delayedproof}
+
+\section{Numerical Methods and Implementation}
+\label{sec:numerical_methods}
+
+This appendix details the computational procedures for evaluating first-hitting time distributions through Laplace transform inversion.
+
+\subsection{Gaver-Stehfest Inversion Algorithm}
+
+The Gaver-Stehfest algorithm provides a robust method for numerically inverting Laplace transforms. For the first-hitting time distribution:
+
+\begin{algorithm}
+\caption{First-Hitting Time CDF via Gaver-Stehfest Inversion}
+\label{alg:gaveR_Ytehfest_appendix}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Initial log-health $h_0 > 0$, evaluation time $T > 0$, Stehfest order $N$ (typically 10-14)
+\STATE Compute adjustment coefficient $R = \Phi(0)$ by solving $\psi(R) = 0$
+\STATE Precompute Stehfest weights $V_k$ for $k = 1, \ldots, N$:
+\[
+V_k = (-1)^{N/2+k} \sum_{j=\lfloor(k+1)/2\rfloor}^{\min(k,N/2)} \frac{j^{N/2} (2j)!}{(N/2-j)! j! (j-1)! (k-j)! (2j-k)!}
+\]
+\FOR{$k = 1$ to $N$}
+    \STATE Compute $q_k = k \ln 2 / T$
+    \STATE Solve $\psi(\theta) = q_k$ numerically to obtain $\Phi(q_k)$
+    \STATE Evaluate $\mathcal{L}\{F\}(q_k) = e^{-h_0 \Phi(q_k)} / q_k$
+\ENDFOR
+\STATE Compute the inversion:
+\[
+F(T,h_0) = \frac{\ln 2}{T} \sum_{k=1}^{N} V_k \mathcal{L}\{F\}(q_k)
+\]
+\STATE Clamp result to $[0,1]$
+\STATE \textbf{Output:} $F(T,h_0) = \mathbb{P}(\tau_0 \leq T)$
+\end{algorithmic}
+\end{algorithm}
+
+For the conditional distribution in defective cases, replace step 8 with:
+\[
+\mathcal{L}\{F_{\mathrm{cond}}\}(q_k) = \frac{e^{-h_0 (\Phi(q_k+R) - R)}}{q_k}
+\]
+
+\subsection{Root Finding for $\Phi(q)$}
+
+The root function $\Phi(q)$ requires solving $\psi(\theta) = q$ for each $q_k$ in the Stehfest algorithm. We employ Brent's method with search interval $[0, \theta_{\max}]$ where $\theta_{\max}$ is chosen to ensure $\psi(\theta_{\max}) > q_{\max}$.
+
+\textbf{Implementation details:}
+\begin{itemize}
+    \item Initialize with bracketing: $\theta_{\min} = 0$, $\theta_{\max} = 10 \max(\eta_X, \eta_Y)$
+    \item Verify $\psi(0) < q < \psi(\theta_{\max})$ before root finding
+    \item Use relative tolerance $10^{-12}$ for convergence
+    \item Cache $\psi(\theta)$ evaluations to avoid recomputation
+\end{itemize}
+
+\subsection{Numerical Stability Considerations}
+
+\begin{itemize}
+    \item \textbf{Stehfest order}: Use moderate orders (10-14) to balance accuracy and stability. Higher orders may amplify numerical errors.
+    \item \textbf{High precision}: Employ extended precision arithmetic for large $N$ or small $T$ to avoid catastrophic cancellation.
+    \item \textbf{Alternative inversion}: For very small $T$ or large $h_0$, consider Talbot or de Hoog methods which may be more stable.
+    \item \textbf{Parameter validation}: Ensure $\eta_X + \theta > 0$ and $\eta_Y + \theta > 0$ to avoid singularities.
+    \item \textbf{Clamping}: Final probabilities should be clamped to $[0,1]$ to handle numerical errors.
+    \item \textbf{Conditioning detection}: Automatically detect defective hitting by checking if $\psi'(0) < 0$.
+\end{itemize}
+
+\subsection{Computational Complexity}
+
+For each distribution evaluation:
+\begin{itemize}
+    \item $O(N)$ Laplace transform evaluations (typically $N = 10-14$)
+    \item Each evaluation requires solving $\psi(\theta) = q_k$ via root finding
+    \item Root finding: $O(\log \epsilon^{-1})$ iterations for tolerance $\epsilon$
+    \item Total complexity: $O(N \log \epsilon^{-1})$ per distribution evaluation
+\end{itemize}
+
+% ====================================================================
+% BIBLIOGRAPHY
+% ====================================================================
+
+%\bibliographystyle{abbrvnamed}
+%\bibliography{finance}
+
+\end{document}

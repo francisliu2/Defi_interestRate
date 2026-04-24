@@ -7,11 +7,13 @@
 \contentsline {section}{\numberline {4}The portfolio problem}{4}{section.4}%
 \contentsline {subsection}{\numberline {4.1}Crypto portfolio on a lending platform}{4}{subsection.4.1}%
 \contentsline {subsection}{\numberline {4.2}Objective function}{6}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}Optimisation scheme}{7}{subsection.4.3}%
-\contentsline {subsection}{\numberline {4.4}Poor investors' objective function}{7}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.3}Risk budgeting approach}{7}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Optimisation scheme}{8}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Poor investors' objective function}{8}{subsection.4.5}%
+\contentsline {subsection}{\numberline {4.6}Wealth process dynamics}{8}{subsection.4.6}%
 \contentsline {section}{\numberline {5}Joint dynamics of crypto prices}{8}{section.5}%
-\contentsline {section}{\numberline {6}Learning scheme of liquidation loss}{8}{section.6}%
-\contentsline {section}{\numberline {7}Empirical results}{8}{section.7}%
-\contentsline {subsection}{\numberline {7.1}Data}{8}{subsection.7.1}%
-\contentsline {subsection}{\numberline {7.2}Backtesting procedure}{8}{subsection.7.2}%
-\contentsline {section}{\numberline {8}Discussion}{8}{section.8}%
+\contentsline {section}{\numberline {6}Learning scheme of liquidation loss}{9}{section.6}%
+\contentsline {section}{\numberline {7}Empirical results}{9}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Data}{9}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Backtesting procedure}{9}{subsection.7.2}%
+\contentsline {section}{\numberline {8}Discussion}{9}{section.8}%

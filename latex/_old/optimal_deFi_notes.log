@@ -1,12 +1,4 @@
-<<<<<<< HEAD:latex/optimal_deFi_notes.log
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.5.24)  8 JUL 2025 10:56
-=======
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2021.4.1)  9 JUN 2025 17:12
-=======
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.5.24)  2 JUL 2025 22:43
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
->>>>>>> 3b89ab4573f39317e6a1bc74b0a7b3b2e208dd3c:latex/_old/optimal_deFi_notes.log
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.5.24)  30 JUL 2025 14:49
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -658,34 +650,19 @@ Package xcolor Warning: Incompatible color definition on input line 111.
 Package xcolor Warning: Incompatible color definition on input line 111.
 
 
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 125.
-
-[2
-
-{/usr/local/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-Underfull \hbox (badness 10000) in paragraph at lines 128--130
-
- []
-
-
-=======
-Underfull \hbox (badness 10000) in paragraph at lines 128--130
-
- []
-
-
 
 
 Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line 130.
+(pdfscreen)                output will have only background color on input line 124.
 
 [2
 
 {/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
+Underfull \hbox (badness 10000) in paragraph at lines 128--130
+
+ []
+
+
 Underfull \hbox (badness 10000) in paragraph at lines 131--133
 
  []
@@ -721,35 +698,27 @@ Underfull \hbox (badness 10000) in paragraph at lines 171--176
  []
 
 
+
+
+Package pdfscreen Warning: No overlay specified
+(pdfscreen)                output will have only background color on input line 176.
+
+[3{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
 Underfull \hbox (badness 10000) in paragraph at lines 177--179
 
  []
 
 
+Package xcolor Warning: Incompatible color definition on input line 190.
 
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line 180.
-
-[3{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
 
 Package xcolor Warning: Incompatible color definition on input line 190.
 
 
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
 Package xcolor Warning: Incompatible color definition on input line 212.
 
 
 Package xcolor Warning: Incompatible color definition on input line 212.
-=======
-Package xcolor Warning: Incompatible color definition on input line 190.
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
-
-
-Package xcolor Warning: Incompatible color definition on input line 214.
-
-
-Package xcolor Warning: Incompatible color definition on input line 214.
 
 
 Package xcolor Warning: Incompatible color definition on input line 216.
@@ -758,66 +727,31 @@ Package xcolor Warning: Incompatible color definition on input line 216.
 Package xcolor Warning: Incompatible color definition on input line 216.
 
 
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
 Package xcolor Warning: Incompatible color definition on input line 218.
 
 
 Package xcolor Warning: Incompatible color definition on input line 218.
 
 
-Package xcolor Warning: Incompatible color definition on input line 222.
+Package xcolor Warning: Incompatible color definition on input line 220.
 
 
-Package xcolor Warning: Incompatible color definition on input line 222.
+Package xcolor Warning: Incompatible color definition on input line 220.
 
 
-Package xcolor Warning: Incompatible color definition on input line 223.
+Package xcolor Warning: Incompatible color definition on input line 224.
 
 
-Package xcolor Warning: Incompatible color definition on input line 223.
-=======
-Package xcolor Warning: Incompatible color definition on input line 198.
+Package xcolor Warning: Incompatible color definition on input line 224.
 
 
-Package xcolor Warning: Incompatible color definition on input line 198.
+Package xcolor Warning: Incompatible color definition on input line 225.
 
 
-Package xcolor Warning: Incompatible color definition on input line 202.
+Package xcolor Warning: Incompatible color definition on input line 225.
 
 
-Package xcolor Warning: Incompatible color definition on input line 202.
-
-
-Package xcolor Warning: Incompatible color definition on input line 203.
-
-
-Package xcolor Warning: Incompatible color definition on input line 203.
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 204--207
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 212--215
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
-
-
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-Underfull \hbox (badness 10000) in paragraph at lines 224--227
-=======
-
-Underfull \hbox (badness 10000) in paragraph at lines 220--222
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
-
- []
-
-
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-Underfull \hbox (badness 10000) in paragraph at lines 232--235
-=======
-Underfull \hbox (badness 10000) in paragraph at lines 227--229
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
+Underfull \hbox (badness 10000) in paragraph at lines 226--229
 
  []
 
@@ -825,41 +759,30 @@ Underfull \hbox (badness 10000) in paragraph at lines 227--229
 
 
 Package pdfscreen Warning: No overlay specified
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-(pdfscreen)                output will have only background color on input line
- 235.
+(pdfscreen)                output will have only background color on input line 229.
 
 [4]
-Underfull \hbox (badness 10000) in paragraph at lines 240--242
+Underfull \hbox (badness 10000) in paragraph at lines 234--237
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 247--249
-=======
-(pdfscreen)                output will have only background color on input line 231.
-
-[4]
-Underfull \hbox (badness 10000) in paragraph at lines 233--236
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
+Underfull \hbox (badness 10000) in paragraph at lines 242--244
 
  []
 
 
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-Underfull \hbox (badness 10000) in paragraph at lines 253--256
-=======
-Underfull \hbox (badness 10000) in paragraph at lines 250--252
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
+Underfull \hbox (badness 10000) in paragraph at lines 249--251
 
  []
 
 
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-Underfull \hbox (badness 10000) in paragraph at lines 260--262
-=======
-Underfull \hbox (badness 10000) in paragraph at lines 256--264
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
+Underfull \hbox (badness 10000) in paragraph at lines 255--258
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 262--264
 
  []
 
@@ -868,304 +791,155 @@ Underfull \hbox (badness 10000) in paragraph at lines 272--274
 
  []
 
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
 
-Underfull \hbox (badness 10000) in paragraph at lines 276--284
-=======
-Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on input line 296.
-
-Package xcolor Warning: Incompatible color definition on input line 318.
-
-
-Package xcolor Warning: Incompatible color definition on input line 318.
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
+Underfull \hbox (badness 10000) in paragraph at lines 278--286
 
  []
 
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
 
-Underfull \hbox (badness 10000) in paragraph at lines 292--294
-
- []
 
 
 Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 298.
+(pdfscreen)                output will have only background color on input line 294.
 
 [5]
-Underfull \hbox (badness 10000) in paragraph at lines 298--300
-=======
-
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line 326.
-
-[5]
-Underfull \hbox (badness 10000) in paragraph at lines 341--343
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
+Underfull \hbox (badness 10000) in paragraph at lines 294--296
 
  []
 
-Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
-put line 316.
 
-Package xcolor Warning: Incompatible color definition on input line 338.
-
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-
-Package xcolor Warning: Incompatible color definition on input line 338.
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 361--363
-=======
-Underfull \hbox (badness 10000) in paragraph at lines 344--348
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
+Underfull \hbox (badness 10000) in paragraph at lines 300--302
 
  []
+
+Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on input line 318.
+
+Package xcolor Warning: Incompatible color definition on input line 340.
+
+
+Package xcolor Warning: Incompatible color definition on input line 340.
 
 
 
 
 Package pdfscreen Warning: No overlay specified
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-(pdfscreen)                output will have only background color on input line
- 363.
-=======
-(pdfscreen)                output will have only background color on input line 358.
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
+(pdfscreen)                output will have only background color on input line 356.
 
 [6]
-Underfull \hbox (badness 10000) in paragraph at lines 364--368
+Underfull \hbox (badness 10000) in paragraph at lines 363--365
 
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
  []
 
 
-Package xcolor Warning: Incompatible color definition on input line 383.
+Underfull \hbox (badness 10000) in paragraph at lines 366--370
+
+ []
 
 
-Package xcolor Warning: Incompatible color definition on input line 383.
+Package xcolor Warning: Incompatible color definition on input line 385.
 
 
-Package xcolor Warning: Incompatible color definition on input line 461.
+Package xcolor Warning: Incompatible color definition on input line 385.
 
 
-Package xcolor Warning: Incompatible color definition on input line 461.
+Package xcolor Warning: Incompatible color definition on input line 422.
 
 
-Package xcolor Warning: Incompatible color definition on input line 469.
+Package xcolor Warning: Incompatible color definition on input line 422.
 
 
-Package xcolor Warning: Incompatible color definition on input line 469.
+Package xcolor Warning: Incompatible color definition on input line 500.
 
 
-Package xcolor Warning: Incompatible color definition on input line 472.
+Package xcolor Warning: Incompatible color definition on input line 500.
 
 
-Package xcolor Warning: Incompatible color definition on input line 472.
-
-
-Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line
- 475.
-=======
-Package xcolor Warning: Incompatible color definition on input line 363.
-
-
-Package xcolor Warning: Incompatible color definition on input line 363.
-
-
-Package xcolor Warning: Incompatible color definition on input line 441.
-
-
-Package xcolor Warning: Incompatible color definition on input line 441.
-
-
-Package xcolor Warning: Incompatible color definition on input line 449.
-
-
-Package xcolor Warning: Incompatible color definition on input line 449.
-
-
-Package xcolor Warning: Incompatible color definition on input line 465.
-
-
-Package xcolor Warning: Incompatible color definition on input line 465.
-
-
-Package xcolor Warning: Incompatible color definition on input line 468.
-
-
-<<<<<<< HEAD:latex/optimal_deFi_notes.log
-Package xcolor Warning: Incompatible color definition on input line 468.
-
-
-=======
-Package xcolor Warning: Incompatible color definition on input line 455.
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
-
-[7]
-
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-Package xcolor Warning: Incompatible color definition on input line 475.
-
-
-Package xcolor Warning: Incompatible color definition on input line 475.
-
-
-Package xcolor Warning: Incompatible color definition on input line 476.
-
-
-Package xcolor Warning: Incompatible color definition on input line 476.
-
-
-Package xcolor Warning: Incompatible color definition on input line 477.
-
-
-Package xcolor Warning: Incompatible color definition on input line 477.
-
-
-Package xcolor Warning: Incompatible color definition on input line 479.
-=======
-Package xcolor Warning: Incompatible color definition on input line 456.
->>>>>>> 3b89ab4573f39317e6a1bc74b0a7b3b2e208dd3c:latex/_old/optimal_deFi_notes.log
 
 
 Package pdfscreen Warning: No overlay specified
-(pdfscreen)                output will have only background color on input line 471.
+(pdfscreen)                output will have only background color on input line 505.
 
 [7]
 
-Package xcolor Warning: Incompatible color definition on input line 471.
+Package xcolor Warning: Incompatible color definition on input line 508.
 
 
-Package xcolor Warning: Incompatible color definition on input line 471.
+Package xcolor Warning: Incompatible color definition on input line 508.
 
 
-Package xcolor Warning: Incompatible color definition on input line 472.
+Package xcolor Warning: Incompatible color definition on input line 534.
 
 
-Package xcolor Warning: Incompatible color definition on input line 472.
+Package xcolor Warning: Incompatible color definition on input line 534.
 
 
-Package xcolor Warning: Incompatible color definition on input line 473.
+Package xcolor Warning: Incompatible color definition on input line 537.
 
 
-Package xcolor Warning: Incompatible color definition on input line 473.
+Package xcolor Warning: Incompatible color definition on input line 537.
 
 
-Package xcolor Warning: Incompatible color definition on input line 475.
 
 
-Package xcolor Warning: Incompatible color definition on input line 475.
+Package pdfscreen Warning: No overlay specified
+(pdfscreen)                output will have only background color on input line 540.
+
+[8]
+
+Package xcolor Warning: Incompatible color definition on input line 540.
+
+
+Package xcolor Warning: Incompatible color definition on input line 540.
+
+
+Package xcolor Warning: Incompatible color definition on input line 541.
+
+
+Package xcolor Warning: Incompatible color definition on input line 541.
+
+
+Package xcolor Warning: Incompatible color definition on input line 542.
+
+
+Package xcolor Warning: Incompatible color definition on input line 542.
+
+
+Package xcolor Warning: Incompatible color definition on input line 544.
+
+
+Package xcolor Warning: Incompatible color definition on input line 544.
 
 (./optimal_deFi_notes.bbl
 
 Package xcolor Warning: Incompatible color definition on input line 1.
 
-
-Package natbib Warning: Empty `thebibliography' environment on input line 3.
-
 )
 
 
 Package pdfscreen Warning: No overlay specified
-<<<<<<< HEAD:latex/optimal_deFi_notes.log
-(pdfscreen)                output will have only background color on input line 479.
-=======
-(pdfscreen)                output will have only background color on input line 463.
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
+(pdfscreen)                output will have only background color on input line 548.
 
-
-Package xcolor Warning: Incompatible color definition on input line 479.
-
-No file optimal_deFi_notes.bbl.
-
-
-Package pdfscreen Warning: No overlay specified
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
-(pdfscreen)                output will have only background color on input line
- 483.
-=======
-(pdfscreen)                output will have only background color on input line 463.
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
->>>>>>> 3b89ab4573f39317e6a1bc74b0a7b3b2e208dd3c:latex/_old/optimal_deFi_notes.log
-
-[8] (./optimal_deFi_notes.aux)
+[9] (./optimal_deFi_notes.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
 Package rerunfilecheck Info: File `optimal_deFi_notes.out' has not changed.
-<<<<<<< HEAD:latex/optimal_deFi_notes.log
-(rerunfilecheck)             Checksum: FA3A39B2ACCEFCAB727EF53BFE9FEA77;2961.
+(rerunfilecheck)             Checksum: 2354C8C13314602F0824962CA821D34D;3272.
  ) 
 Here is how much of TeX's memory you used:
- 16675 strings out of 473190
- 273708 string characters out of 5715800
- 730595 words of memory out of 5000000
- 39586 multiletter control sequences out of 15000+600000
-=======
-(rerunfilecheck)             Checksum: BF818357104FD8C520A78D790BA03533;2914.
- ) 
-Here is how much of TeX's memory you used:
-<<<<<<< HEAD:latex/_old/optimal_deFi_notes.log
- 15640 strings out of 479014
- 244198 string characters out of 5859149
- 616077 words of memory out of 5000000
- 32775 multiletter control sequences out of 15000+600000
- 418042 words of font info for 83 fonts, out of 8000000 for 9000
- 1141 hyphenation exceptions out of 8191
- 103i,27n,105p,1103b,752s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc
-}</usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb>
-</usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><
-/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx7.pfb></u
-sr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></us
-r/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmex7.pfb><
-/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></
-usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></us
-r/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/
-local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/lo
-cal/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/loca
-l/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/t
-exlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texl
-ive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive
-/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/
-2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/20
-20/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2020
-/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2020/
-texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2020/t
-exmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on optimal_deFi_notes.pdf (7 pages, 231458 bytes).
-PDF statistics:
- 276 PDF objects out of 1000 (max. 8388607)
- 245 compressed objects within 3 object streams
- 75 named destinations out of 1000 (max. 500000)
- 137 words of extra memory for PDF output out of 10000 (max. 10000000)
-=======
- 16671 strings out of 473190
- 273661 string characters out of 5715800
- 729595 words of memory out of 5000000
- 39583 multiletter control sequences out of 15000+600000
->>>>>>> 3b89ab4573f39317e6a1bc74b0a7b3b2e208dd3c:latex/_old/optimal_deFi_notes.log
+ 16687 strings out of 473190
+ 273894 string characters out of 5715800
+ 735595 words of memory out of 5000000
+ 39593 multiletter control sequences out of 15000+600000
  573449 words of font info for 92 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  107i,27n,110p,1139b,746s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmex7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on optimal_deFi_notes.pdf (7 pages, 248507 bytes).
+Output written on optimal_deFi_notes.pdf (8 pages, 257442 bytes).
 PDF statistics:
-<<<<<<< HEAD:latex/optimal_deFi_notes.log
- 296 PDF objects out of 1000 (max. 8388607)
- 246 compressed objects within 3 object streams
- 76 named destinations out of 1000 (max. 500000)
- 137 words of extra memory for PDF output out of 10000 (max. 10000000)
-=======
- 291 PDF objects out of 1000 (max. 8388607)
- 241 compressed objects within 3 object streams
- 75 named destinations out of 1000 (max. 500000)
- 129 words of extra memory for PDF output out of 10000 (max. 10000000)
->>>>>>> f98708bd0a424f548f3b7fa4c0486d10b5158cc9:latex/optimal_deFi_notes.log
->>>>>>> 3b89ab4573f39317e6a1bc74b0a7b3b2e208dd3c:latex/_old/optimal_deFi_notes.log
+ 315 PDF objects out of 1000 (max. 8388607)
+ 264 compressed objects within 3 object streams
+ 81 named destinations out of 1000 (max. 500000)
+ 153 words of extra memory for PDF output out of 10000 (max. 10000000)
 
