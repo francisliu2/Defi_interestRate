@@ -1056,4 +1056,134 @@ with the minimal power $\nu$ restoring linear independence from the homogeneous 
 \bibliographystyle{abbrvnamed}
 \bibliography{finance}
 
+% ============================================================
+\appendix
+\section{Generalised Beta of the Second Kind Approximation to the Payoff Distribution}\label{app:gb2}
+% ============================================================
+
+The semi-analytic machinery of Sections~\ref{sec:resolvent}--\ref{sec:liquidation} delivers the first
+four killed moments $M_k(h_0)$, $k=1,2,3,4$, and the survival probability $p_{\mathrm{surv}}(h_0)$.
+This appendix shows how to fit a four-parameter \emph{Generalised Beta of the Second Kind} (GB2)
+distribution to these outputs.
+
+\paragraph{Structure of the conditional law.}
+On $\{\tau>T\}$ the payoff satisfies
+\[
+Y := \Pi_T\mid\{\tau>T\}
+=
+\frac{w_2}{b}\,S_{2,0}\,e^{X_{2,T}}\,(e^{h_0+Z_T}-b).
+\]
+Since $Z_T>-h_0$ on $\{\tau>T\}$, we have $e^{h_0+Z_T}>1>b$, so the factor $(e^{h_0+Z_T}-b)>0$.
+However, because $e^{X_{2,T}}$ can be arbitrarily close to zero, $\inf Y=0$, and the support is
+$Y\in(0,\infty)$ with no natural positive shift. The full payoff law is
+\begin{equation}\label{eq:law-decomp}
+\Pi_T \;\overset{d}{=}\; p_{\mathrm{liq}}\,\delta_0 + p_{\mathrm{surv}}\,Y,
+\end{equation}
+where $p_{\mathrm{liq}}=1-p_{\mathrm{surv}}$.
+
+\paragraph{Conditional survival moments.}
+Since $\Pi_T^k = Y^k\,\one_{\{\tau>T\}}$,
+\begin{equation}\label{eq:cond-moments}
+\mu_k^+ := \E[Y^k] = \frac{M_k(h_0)}{p_{\mathrm{surv}}(h_0)},
+\qquad M_k(h_0) = \frac{e^{T\Psi(0,-ik)}}{(e^{h_0}-b)^k}\,m_k(T;h_0),
+\end{equation}
+from Proposition~\ref{prop:first-two-moments}, for $k=1,2,3,4$.
+
+\paragraph{GB2 distribution.}
+We model $Y\sim\mathrm{GB2}(a,\beta,p,q)$ with density
+\begin{equation}\label{eq:gb2-density}
+f_Y(y)
+=
+\frac{a\,y^{ap-1}}{\beta^{ap}\,B(p,q)\,\bigl(1+(y/\beta)^a\bigr)^{p+q}},
+\qquad y>0,
+\end{equation}
+where $a>0$ is a tail/shape parameter, $\beta>0$ is a scale parameter,
+$p>0$ and $q>0$ are left- and right-shape parameters, and $B(p,q)=\Gamma(p)\Gamma(q)/\Gamma(p+q)$
+is the beta function.
+
+\paragraph{GB2 moments.}
+For $k < aq$, the $k$-th raw moment is
+\begin{equation}\label{eq:gb2-moments}
+\E[Y^k]
+=
+\beta^k\,\frac{B\!\left(p+k/a,\;q-k/a\right)}{B(p,q)}
+=
+\beta^k\,\frac{\Gamma(p+k/a)\,\Gamma(q-k/a)}{\Gamma(p)\,\Gamma(q)}.
+\end{equation}
+The first four moments exist if and only if $q>4/a$.
+
+\paragraph{Calibration.}
+We fit $(a,\beta,p,q)$ by matching the four conditional moments $\mu_1^+,\ldots,\mu_4^+$.
+
+\medskip\noindent
+\textit{Step 1: shape parameters from scale-free ratios.}
+Define
+\begin{equation}\label{eq:Rk}
+R_k := \frac{\mu_k^+}{(\mu_1^+)^k}
+=
+\frac{B(p+k/a,\;q-k/a)/B(p,q)}{\bigl[B(p+1/a,\;q-1/a)/B(p,q)\bigr]^k},
+\qquad k=2,3,4.
+\end{equation}
+The ratios $R_k$ depend only on $(a,p,q)$, not on $\beta$. Solve
+\begin{equation}\label{eq:shape-system}
+R_k(a,p,q) = \hat R_k,\qquad k=2,3,4,
+\end{equation}
+where $\hat R_k = \mu_k^+/(\mu_1^+)^k$ are the targets, subject to $a>0$, $p>0$, $q>4/a$.
+For numerical stability, evaluate \eqref{eq:Rk} in log-space:
+\begin{equation}\label{eq:log-moment}
+\log\E[Y^k]
+=
+k\log\beta
++\log\Gamma\!\left(p+\tfrac{k}{a}\right)
++\log\Gamma\!\left(q-\tfrac{k}{a}\right)
+-\log\Gamma(p)
+-\log\Gamma(q).
+\end{equation}
+
+\medskip\noindent
+\textit{Step 2: scale from the first moment.}
+Given $(a,p,q)$ from Step 1, recover
+\begin{equation}\label{eq:beta-recover}
+\beta
+=
+\mu_1^+\,\frac{B(p,q)}{B\!\left(p+1/a,\;q-1/a\right)}.
+\end{equation}
+
+\paragraph{Full distribution and quantiles.}
+The CDF of $\Pi_T$ is
+\[
+F_{\Pi}(y) =
+\begin{cases}
+0 & y < 0, \\
+p_{\mathrm{liq}} & y = 0, \\
+p_{\mathrm{liq}} + p_{\mathrm{surv}}\,F_Y(y) & y > 0,
+\end{cases}
+\]
+where $F_Y$ is the GB2 CDF. For a confidence level $u\in(0,1)$, the Value-at-Risk is
+\[
+\mathrm{VaR}(u) =
+\begin{cases}
+0 & u \le p_{\mathrm{liq}}, \\[4pt]
+F_Y^{-1}\!\!\left(\dfrac{u - p_{\mathrm{liq}}}{p_{\mathrm{surv}}}\right) & u > p_{\mathrm{liq}},
+\end{cases}
+\]
+where $F_Y^{-1}$ is the GB2 quantile function.
+
+\paragraph{Consistency check.}
+After fitting, verify that
+\[
+\beta^k\,\frac{\Gamma(p+k/a)\,\Gamma(q-k/a)}{\Gamma(p)\,\Gamma(q)}
+=
+\mu_k^+,
+\qquad k=1,2,3,4.
+\]
+
+\paragraph{Rationale for GB2.}
+The GB2 family nests several common distributions (Burr XII, log-logistic, Pareto,
+Weibull, log-normal in a limit) and has four free parameters, enabling the simultaneous
+matching of four conditional moments. It accommodates the power-law tails that arise in
+Kou jump-diffusion models, which the Generalized Gamma family — having thinner stretched-exponential
+tails — cannot capture. The condition $q>4/a$ provides an explicit testable constraint on
+whether the fourth moment of the conditional payoff is finite.
+
 \end{document}
