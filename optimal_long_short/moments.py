@@ -227,3 +227,23 @@ class ConditionalMoments:
         """Var(Pi_T | tau > T) = E[Pi_T^2 | tau>T] - (E[Pi_T | tau>T])^2."""
         mu = self.conditional_mean()
         return self.conditional_second_moment() - mu ** 2
+
+    def conditional_moment(self, k: int) -> float:
+        """
+        E[Pi_T^k | tau > T] for any k >= 1.
+
+        Uses the Laplace-resolvent for k=1,2 (and k=3,4 where the resolvent
+        remains valid).  The k=4 degenerate case (r1_neg == r2_neg) is handled
+        automatically by HomogeneousSolution via the 2x2 barrier system.
+
+        Parameters
+        ----------
+        k : int
+            Moment order.  Requires k * eta2_pos < 1 for the tilt to be
+            well-defined, and q > k/a for the GB2 moment to exist.
+
+        Returns
+        -------
+        float
+        """
+        return self.killed_moment(k) / self.p_surv()

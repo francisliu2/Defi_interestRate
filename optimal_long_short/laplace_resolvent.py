@@ -144,25 +144,34 @@ class ParticularSolution:
         ]
 
 
+_DEGEN_TOL = 1e-8   # threshold for declaring r1_neg == r2_neg
+
+
 @dataclass
 class HomogeneousSolution:
     """
     Homogeneous solution to (q - L^(k)) U = 0 on the survival domain z > -h0,
     admissible at +infinity (Lemma 4.3 in the paper).
 
-    The three admissible modes are the negative-real-part roots gamma_4, gamma_5,
-    gamma_6 of the characteristic equation psi_Z^(k)(gamma) = q, centered at the
-    barrier z = -h0:
+    Generic case (r1_neg != r2_neg)
+    --------------------------------
+    Three admissible modes gamma_4, gamma_5, gamma_6 (negative-real-part roots
+    of psi_Z^(k)(gamma) = q).  Coefficients determined by the 3x3 barrier system.
 
-        U_hom(q, z; h0) = sum_{m=1}^{3} B_m * exp(gamma_{m+3} * (z + h0)).
+    Degenerate case (r1_neg == r2_neg = r)
+    ----------------------------------------
+    When the two downward phase rates coincide, the denominator in
+    _build_polynomial gains a repeated factor (r + s)^2.  This introduces a
+    spurious root at s = -r into the degree-6 polynomial; it is NOT a genuine
+    root of psi_Z^(k)(gamma) = q (psi has a pole at s = -r).  Consequently:
 
-    The coefficients B = (B1, B2, B3) are determined by the three barrier
-    conditions from killing (Proposition 4.4):
+      - Only 2 genuine negative roots exist (gamma_4, gamma_5).
+      - Rows 1 and 2 of the 3x3 barrier matrix are identical, making it singular.
 
-        M_bar * B = -b^(k),
-
-    where M_bar is the 3x3 barrier matrix built from the negative roots and the
-    downward phase rates, and b^(k) is the forcing vector from ParticularSolution.
+    In this case we:
+      1. Identify and discard the spurious root (the negative root nearest -r).
+      2. Build a 2x2 barrier system using only the continuity condition and the
+         single (merged) downward-jump condition.
 
     Parameters
     ----------
@@ -182,61 +191,72 @@ class HomogeneousSolution:
     def _roots(self, q: complex) -> SixRoots:
         return CharacteristicRootFinder(self.dynamics).find(q)
 
+    @property
+    def _degenerate(self) -> bool:
+        """True when r1_neg and r2_neg coincide (barrier matrix would be singular)."""
+        dyn = self.dynamics
+        return abs(dyn.r1_neg - dyn.r2_neg) < _DEGEN_TOL
+
+    def _genuine_negative_roots(self, q: complex) -> tuple:
+        """
+        Return the genuine negative roots of psi_Z^(k)(gamma) = q.
+
+        Generic case : all 3 negative roots from CharacteristicRootFinder.
+        Degenerate   : remove the spurious root (closest to -r1_neg) and return
+                       the remaining 2.
+        """
+        neg = list(self._roots(q).negative)
+        if not self._degenerate:
+            return tuple(neg)
+        r = self.dynamics.r1_neg
+        spurious_idx = int(np.argmin([abs(gamma + r) for gamma in neg]))
+        return tuple(neg[i] for i in range(len(neg)) if i != spurious_idx)
+
     def barrier_matrix(self, q: complex) -> np.ndarray:
         """
-        Build the 3x3 barrier matrix M_bar(q):
+        Build the n x n barrier matrix M_bar(q), where n = 3 (generic) or 2
+        (degenerate).
 
+        Generic (n=3):
             M_bar[0, m] = 1
-            M_bar[1, m] = r1_neg / (r1_neg + gamma_{m+3})
-            M_bar[2, m] = r2_neg / (r2_neg + gamma_{m+3})
+            M_bar[1, m] = r1_neg / (r1_neg + gamma_m)
+            M_bar[2, m] = r2_neg / (r2_neg + gamma_m)
 
-        for m = 0, 1, 2 (columns correspond to gamma_4, gamma_5, gamma_6).
+        Degenerate (n=2, r1_neg == r2_neg == r):
+            M_bar[0, m] = 1
+            M_bar[1, m] = r / (r + gamma_m)
         """
-        neg_roots = self._roots(q).negative   # (gamma_4, gamma_5, gamma_6)
+        genuine_neg = self._genuine_negative_roots(q)
+        n = len(genuine_neg)
         dyn = self.dynamics
-        M = np.zeros((3, 3), dtype=complex)
-        for m, gamma in enumerate(neg_roots):
+        M = np.zeros((n, n), dtype=complex)
+        for m, gamma in enumerate(genuine_neg):
             M[0, m] = 1.0
             M[1, m] = dyn.r1_neg / (dyn.r1_neg + gamma)
-            M[2, m] = dyn.r2_neg / (dyn.r2_neg + gamma)
+            if n == 3:
+                M[2, m] = dyn.r2_neg / (dyn.r2_neg + gamma)
         return M
 
     def coefficients(self, q: complex) -> np.ndarray:
         """
-        Solve M_bar * B = -b^(k) and return B = (B1, B2, B3).
+        Solve M_bar * B = -b^(k) and return B.
 
-        Parameters
-        ----------
-        q : complex
-            Laplace parameter.
-
-        Returns
-        -------
-        np.ndarray of shape (3,), dtype complex
+        Returns shape (3,) in the generic case, shape (2,) in the degenerate case.
         """
+        genuine_neg = self._genuine_negative_roots(q)
+        n = len(genuine_neg)
         M = self.barrier_matrix(q)
-        b = np.array(self.particular.forcing_vector(q), dtype=complex)
-        return np.linalg.solve(M, -b)
+        bvec = np.array(self.particular.forcing_vector(q)[:n], dtype=complex)
+        return np.linalg.solve(M, -bvec)
 
     def evaluate(self, q: complex, z: float) -> complex:
         """
-        Evaluate U_hom(q, z; h0) = sum_{m=1}^{3} B_m * exp(gamma_{m+3} * (z + h0)).
-
-        Parameters
-        ----------
-        q : complex
-            Laplace parameter.
-        z : float
-            Spatial argument. Must satisfy z > -h0.
-
-        Returns
-        -------
-        complex
+        Evaluate U_hom(q, z; h0) = sum_m B_m * exp(gamma_m * (z + h0)).
         """
         B = self.coefficients(q)
-        neg_roots = self._roots(q).negative
+        genuine_neg = self._genuine_negative_roots(q)
         result = 0.0 + 0j
-        for Bm, gamma in zip(B, neg_roots):
+        for Bm, gamma in zip(B, genuine_neg):
             result += Bm * np.exp(gamma * (z + self.h0))
         return result
 
