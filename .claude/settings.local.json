@@ -17,7 +17,12 @@
       "Bash(git checkout:*)",
       "Bash(mkdir -p /Users/francis/Defi_interestRate/development)",
       "Bash(git mv:*)",
-      "Bash(brew --version)"
+      "Bash(brew --version)",
+      "Bash(pip3 show *)",
+      "Bash(kpsewhich abbrvnamed.bst)",
+      "Read(//usr/local/texlive/2026/texmf-dist/bibtex/bst/natbib/**)",
+      "Read(//usr/local/texlive/**)",
+      "Bash(bibtex optimal_long_short)"
     ],
     "deny": []
   }

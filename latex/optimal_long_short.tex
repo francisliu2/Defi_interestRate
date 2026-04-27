@@ -54,13 +54,13 @@ meaningful component of on-chain market activity, yet their risk profile remains
 under-studied.
 
 The defining feature of DeFi lending is automatic liquidation. Each platform computes a real-time
-\emph{health factor} — a ratio of the collateral value to the outstanding liability — and liquidates the
-position the instant this ratio falls below a contractual threshold. Unlike traditional margin accounts,
-where a broker may issue a call and allow time for top-up, smart-contract liquidation is instantaneous
-and irrevocable. A practitioner must therefore choose the initial portfolio weights carefully: a more
-aggressive position amplifies expected returns on surviving paths but raises the probability of forced
-exit. The central question this paper addresses is how to set those weights optimally given the
-underlying asset dynamics.
+\emph{health factor} — a ratio of collateral value to outstanding liability, scaled by the borrowing
+power of the collateral — and liquidates the position the instant this ratio falls below one. Unlike
+traditional margin accounts, where a broker may issue a call and allow time for top-up, smart-contract
+liquidation is instantaneous and irrevocable. A practitioner must therefore choose the initial coin
+holdings carefully: a more aggressive position amplifies expected returns on surviving paths but raises
+the probability of forced exit. The central question this paper addresses is how to set those holdings
+optimally given the underlying asset dynamics.
 
 Wrong-way risk is the dominant concern. An adverse move in either leg — a fall in the collateral asset
 or a rise in the borrowed asset — simultaneously erodes the numerator and inflates the denominator of
@@ -76,59 +76,60 @@ remaining analytically tractable. In particular, exponential jump sizes are eige
 generator, which allows the Laplace-domain resolvent equation to be solved in closed form.
 
 \paragraph{Measure change.}
-Computing the killed moments $\E[\Pi_T^k\,\one_{\{\tau>T\}}]$ directly would require tracking the joint
-distribution of the bivariate process $(X_1,X_2)$ up to the killing time, a substantially harder
-object. A change of measure eliminates this complexity. Multiplying the path measure by
-$e^{kX_{2,T}}/\E[e^{kX_{2,T}}]$ absorbs the $k$-th power of $S_2$ into the new numeraire, so that
-under the $k$-tilted measure $\P^{(k)}$ the payoff factor $e^{kX_{2,T}}$ disappears from the
-expectation and the remaining integrand depends only on the one-dimensional log-ratio
-$Z_t = X_{1,t} - X_{2,t}$. The bivariate killing problem thus reduces to a \emph{univariate} first-exit
-problem for $Z$ under $\P^{(k)}$, which is again a L\'{e}vy process. This reduction is purely
-a matter of analytical tractability: no information about the joint dynamics is discarded, since the
-tilted exponent $\psi_Z^{(k)}$ encodes the full marginal law of $Z$ under $\P^{(k)}$.
+Computing the moments of the payoff conditional on survival requires tracking the joint evolution of
+both asset prices up to the random liquidation time — a substantially harder object than a
+one-dimensional counterpart. A change of measure eliminates this complexity. By exponentially tilting
+the path measure by a power of the short-leg price, that power is absorbed into the new numeraire, so
+that the expectation under the tilted measure depends only on the log-ratio of the two prices. The
+bivariate killing problem thus reduces to a \emph{univariate} first-exit problem for the log-ratio
+process, which remains a L\'{e}vy process under the tilted measure. This reduction is purely a matter
+of analytical tractability: no information about the joint dynamics is discarded, since the
+characteristic exponent of the tilted log-ratio encodes its full marginal law.
 
 \paragraph{Laplace transform and the resolvent equation.}
-With the problem reduced to one dimension, the killed expectation $U(t,z) =
-\E_z^{(k)}[g_k(Z_t)\,\one_{\{\tau>t\}}]$ satisfies a PIDE in $(t,z)$. Following
-\citet{Sepp2004}, applying the Laplace transform in $t$ converts this time-evolution PIDE into a
-stationary \emph{ordinary} integro-differential equation (OIDE) in $z$ alone, with the Laplace
-parameter $q$ playing the role of a discount rate and the initial condition $g_k(z)$ appearing as the
-forcing. The Kou structure then reduces the OIDE to an effective ODE: because exponential functions
-are eigenfunctions of the Kou generator, every term in the integro-differential operator acts
+With the problem reduced to one dimension, the killed expectation satisfies a partial
+integro-differential equation (PIDE) in time and the log-ratio state. Following \citet{Sepp2004},
+applying the Laplace transform in time converts this evolution equation into a stationary
+\emph{ordinary} integro-differential equation (OIDE) in the log-ratio alone, with the Laplace
+parameter playing the role of a discount rate and the payoff function appearing as the source term.
+The Kou structure then reduces the OIDE to an effective ODE: because exponential functions are
+eigenfunctions of the Kou generator, every term in the integro-differential operator acts
 algebraically on an exponential ansatz, and the resolvent equation becomes a finite-dimensional
-algebraic system. Boundary conditions at the barrier $z = -h_0$ supply three equations for the three
+algebraic system. Boundary conditions at the liquidation barrier supply three equations for the three
 admissible decaying modes, closing the system. Time-domain quantities are finally recovered by
-numerical Bromwich inversion.
+numerical Laplace inversion.
 
-The key object is the \emph{initial log-health} $h_0 := \log(b\,w_1 S_{1,0} / w_2 S_{2,0})$, which
-encodes the initial distance of the position from the liquidation boundary. Under the unit-book-value
-normalisation $w_1 S_{1,0} - w_2 S_{2,0} = 1$, the two portfolio weights are determined entirely by
-$h_0$, reducing the optimisation to a scalar problem. The optimal $h_0^\star$ maximises a penalised
-conditional mean--variance criterion:
-\[
-\Phi(h_0) = \E[\Pi_T \mid \tau > T]
-           - \tfrac{\alpha}{2}\,\mathrm{Var}(\Pi_T \mid \tau > T)
-           - \delta\,p_{\mathrm{liq}}(T,0;h_0),
-\]
-balancing risk-adjusted return on paths that survive against the cost of liquidation.
+The key object is the \emph{initial log health factor}, the logarithm of the
+borrowing-power-adjusted ratio of initial collateral value to initial liability. It encodes the
+initial distance of the position from the liquidation boundary: a larger value means the position
+starts further from forced exit. Once the net book value is normalised to one unit of account at
+inception, both coin holdings are determined entirely by this single scalar, reducing the
+optimisation to a scalar search. The optimal value maximises a penalised conditional mean--variance
+criterion: the conditional expected payoff on surviving paths, minus a risk-aversion-weighted penalty
+on its conditional variance, minus a penalty on the probability of liquidation. This balances
+risk-adjusted return against the cost of forced exit.
 
 The paper makes the following contributions. First, we show that the portfolio optimisation reduces
-to a one-dimensional problem over $h_0 \in (\ln b, \infty)$, with all performance quantities expressible
-as explicit functions of $h_0$ (Section~\ref{sec:setup}). Second, we derive a semi-analytical
-Laplace--resolvent for the killed moments $m_k(T;h_0)$ for all integer $k\ge 1$ satisfying
-$k\eta_{2,+}<1$, under the $k$-tilted measure (Section~\ref{sec:resolvent}): because the payoff kink
-lies strictly below the barrier when $b\in(0,1)$, the forcing is a polynomial on the entire survival
-domain and the resolvent reduces to a $3\times 3$ linear system with no interface conditions,
-regardless of $k$. Third, we derive the survival probability by the same method with $k=0$
+to a one-dimensional scalar problem parameterised by the initial log health factor, with all
+performance quantities expressible as explicit functions of that single parameter
+(Section~\ref{sec:setup}). Second, we derive a semi-analytical Laplace--resolvent for killed moments
+of all admissible orders under the exponentially tilted measure (Section~\ref{sec:resolvent}):
+because the payoff kink lies strictly below the liquidation barrier whenever the borrowing power is
+strictly less than one, the source term is a polynomial on the entire survival domain and the
+resolvent reduces to a three-by-three linear system with no interface conditions, regardless of
+moment order. Third, we derive the survival probability by the same resolvent method at zero tilt
 (Section~\ref{sec:resolvent}, Subsection~\ref{sec:liquidation}).
 
 The remainder of the paper is organised as follows. Section~\ref{sec:setup} introduces the position,
-health factor, payoff, and the one-dimensional reduction to a scalar optimisation over $h_0$.
-Section~\ref{sec:model} specifies the asset dynamics under the Kou model; Section~\ref{sec:tilted} introduces the tilted-measure machinery.
-Section~\ref{sec:moments} shows how a change of measure decouples the short-leg factor from the barrier
-problem, reducing each moment to a one-dimensional killed expectation, and states the objective in terms
-of those moments. Section~\ref{sec:resolvent}
-derive the respective resolvents. Section~\ref{sec:numerical} presents numerical results, comparing the Laplace--resolvent method against Monte Carlo simulation across a range of $h_0$ values and verifying the analytical no-shorting limit.
+health factor, payoff, and the one-dimensional reduction to a scalar optimisation.
+Section~\ref{sec:model} specifies the asset dynamics under the Kou model;
+Section~\ref{sec:tilted} introduces the tilted-measure machinery.
+Section~\ref{sec:moments} shows how the change of measure decouples the short-leg factor from the
+barrier problem, reducing each moment to a one-dimensional killed expectation, and states the
+objective in terms of those moments. Section~\ref{sec:resolvent} derives the respective resolvents.
+Section~\ref{sec:numerical} presents numerical results, comparing the Laplace--resolvent method
+against Monte Carlo simulation across a range of initial log health factor values and verifying the
+analytical no-shorting limit.
 
 % ============================================================
 \section{Problem Setup}\label{sec:setup}
@@ -138,44 +139,45 @@ We consider a leveraged long--short portfolio in which an investor holds a long 
 and a short position in asset $S_2$, financed so that the net initial value of the book equals one unit of
 account. The strategy is subject to a risk-management rule that forces liquidation if the long leg falls
 sufficiently relative to the short leg, reflecting margin requirements or stop-loss constraints common in
-practice. The objective is to choose the initial portfolio weights so as to optimise a performance criterion
+practice. The objective is to choose the initial coin holdings so as to optimise a performance criterion
 defined on the terminal payoff, conditional on surviving the liquidation threshold.
 
+\subsection{Terminal payoff of the long-short portfolio}
 Let $(\Omega,\F,(\F_t)_{t\ge 0},\P)$ be a filtered probability space.
 Two strictly positive asset prices $S_1,S_2$ evolve as
 \[
 S_{i,t}=S_{i,0}e^{X_{i,t}},\qquad X_{i,0}=0,\quad i=1,2,
 \]
 where $X_1,X_2$ are log-price processes to be specified in Section~\ref{sec:model}.
-The investor takes a long position of size $w_1>0$ in $S_1$ and a short position of size $w_2>0$ in $S_2$.
+The investor holds $n_1>0$ units of asset $S_1$ (long leg) and $n_2>0$ units of asset $S_2$ (short leg).
 
-\paragraph{Health ratio and liquidation.}
-Fix a margin parameter $b\in(0,1)$. The \emph{health ratio} measures the current cushion of the long leg
-relative to the liability of the short leg:
+Fix $b\in(0,1)$, the \emph{borrowing power} (or \emph{liquidation threshold} in AAVE's terminology) of
+the collateral asset $S_1$: it is the maximum fraction of the collateral value that the protocol requires
+to be maintained against the outstanding liability at all times.
+The \emph{health factor} is
 \[
-H_t := \frac{b\,w_1S_{1,t}}{w_2S_{2,t}},
+H_t := \frac{b\,n_1S_{1,t}}{n_2S_{2,t}},
 \qquad
-h_t:=\log H_t.
+h_t:=\log H_t,
 \]
-Liquidation is triggered at the first time the long leg can no longer cover the fraction $b$ of the short
-liability:
+where $h_t$ is the \emph{log health factor}.
+Liquidation is triggered the instant the collateral can no longer cover the liability at rate $b$:
 \[
 \tau:=\inf\{t\ge 0:\; H_t<1\}.
 \]
-When $H_t\ge 1$ the position is solvent; when $H_t<1$ it is wound down. The parameter $b$ governs how
-conservatively the threshold is set: a larger $b$ triggers liquidation earlier and reduces the risk of a
-disorderly unwind.
+When $H_t\ge 1$ the position is solvent; when $H_t<1$ the smart contract liquidates it instantaneously
+and irrevocably. A larger $b$ sets the liquidation boundary more conservatively, triggering early exit
+on adverse price moves and limiting the protocol's risk of bad debt.
 
-\paragraph{Log-ratio dynamics.}
 Since
 \[
 h_t
 =
-\log\!\Big(\frac{b\,w_1S_{1,0}}{w_2S_{2,0}}\Big)+(X_{1,t}-X_{2,t}),
+\log\!\Big(\frac{b\,n_1S_{1,0}}{n_2S_{2,0}}\Big)+(X_{1,t}-X_{2,t}),
 \]
-define the initial log-health and the log-ratio process by
+define the initial log health factor and the log-ratio process by
 \[
-h_0:=\log\!\Big(\frac{b\,w_1S_{1,0}}{w_2S_{2,0}}\Big),
+h_0:=\log\!\Big(\frac{b\,n_1S_{1,0}}{n_2S_{2,0}}\Big),
 \qquad
 Z_t:=X_{1,t}-X_{2,t},
 \]
@@ -186,10 +188,9 @@ so that $h_t=h_0+Z_t$ and the liquidation time is equivalently
 The one-dimensional process $Z$ thus inherits all the relevant risk: the position survives if and only if
 $Z$ stays above the level $-h_0$.
 
-\paragraph{Terminal payoff.}
 The gross profit at horizon $T$, contingent on survival, is
 \[
-\Pi_T:=(w_1S_{1,T}-w_2S_{2,T})^+\,\one_{\{\tau>T\}}.
+\Pi_T:=(n_1S_{1,T}-n_2S_{2,T})^+\,\one_{\{\tau>T\}}.
 \]
 The positive part reflects that the investor closes the position only if it is in profit at $T$; the
 indicator $\one_{\{\tau>T\}}$ reflects that the position must have survived to maturity. Using the definition of $H_T$, one obtains the following factorization.
@@ -198,48 +199,46 @@ indicator $\one_{\{\tau>T\}}$ reflects that the position must have survived to m
 \begin{equation}\label{eq:payoff-factor}
 \Pi_T
 =
-\frac{w_2}{b}\,S_{2,0}e^{X_{2,T}}\,(e^{h_0+Z_T}-b)^+\,\one_{\{\tau>T\}}.
+\frac{n_2}{b}\,S_{2,0}e^{X_{2,T}}\,(e^{h_0+Z_T}-b)^+\,\one_{\{\tau>T\}}.
 \end{equation}
 \end{lemma}
 This separates the payoff into a numeraire factor driven by $S_2$, and a barrier-killed option on the
 log-ratio $Z$ with moneyness controlled by $h_0$.
 
-\subsection{One-Dimensional Reduction and Optimisation}\label{sec:1d}
+\subsection{Optimization setup}\label{sec:1d}
 
-The two weights $(w_1,w_2)$ represent two degrees of freedom. A normalization reduces this to a single
+The two coin holdings $(n_1,n_2)$ represent two degrees of freedom. A normalisation reduces this to a single
 scalar, and the structure of the payoff then identifies $h_0$ as the natural optimisation variable.
 
-\paragraph{Normalization.}
 We impose the unit-initial-value constraint
 \[
-w_1S_{1,0}-w_2S_{2,0}=1,
+n_1S_{1,0}-n_2S_{2,0}=1,
 \]
-which fixes the net book value at inception. Setting $x:=w_2S_{2,0}$, one has $w_1S_{1,0}=1+x$ and
+which fixes the net book value at inception. Setting $x:=n_2S_{2,0}$, one has $n_1S_{1,0}=1+x$ and
 $e^{h_0}=b(1+x)/x$. Solving for $x$,
 \[
 x=\frac{b}{e^{h_0}-b},
 \]
-which yields the weight map
-\begin{equation}\label{eq:w-from-h0}
-w_2(h_0)=\frac{b}{S_{2,0}(e^{h_0}-b)},
+which yields the holding map
+\begin{equation}\label{eq:n-from-h0}
+n_2(h_0)=\frac{b}{S_{2,0}(e^{h_0}-b)},
 \qquad
-w_1(h_0)=\frac{e^{h_0}}{S_{1,0}(e^{h_0}-b)}.
+n_1(h_0)=\frac{e^{h_0}}{S_{1,0}(e^{h_0}-b)}.
 \end{equation}
-Positivity of both weights requires $e^{h_0}>b$, i.e.
+Positivity of both holdings requires $e^{h_0}>b$, i.e.
 \[
 h_0>\ln b.
 \]
 
 \paragraph{Optimisation over $h_0$.}
 Since every quantity of interest — the expected payoff, its variance, and the liquidation probability — is
-determined by $h_0$ through \eqref{eq:w-from-h0} and the killed process $(Z,\tau)$, the two-weight
-portfolio problem reduces to a one-dimensional optimisation:
+determined by $h_0$ through \eqref{eq:n-from-h0} and the killed process $(Z,\tau)$, the portfolio problem reduces to a one-dimensional optimisation:
 \[
 \max_{h_0\,\in\,(\ln b,\,\infty)}\;\Phi\!\left(h_0\right),
 \]
 where $\Phi$ is a scalar performance criterion, for example the Sharpe ratio, expected return subject to a
-liquidation probability constraint, or a mean--variance objective. The optimal weights are then recovered
-by substituting $h_0^\star$ back into \eqref{eq:w-from-h0}.
+liquidation probability constraint, or a mean--variance objective. The optimal holdings are then recovered
+by substituting $h_0^\star$ back into \eqref{eq:n-from-h0}.
 
 The specific criterion studied in this paper is a penalised conditional mean--variance objective. Let
 $\E[\,\cdot\mid\tau>T]$ denote expectation conditional on non-liquidation. The objective is
@@ -266,7 +265,7 @@ Section~\ref{sec:resolvent}.
 % ============================================================
 \section{Asset Dynamics}\label{sec:model}
 % ============================================================
-
+\subsection{Bivariate Kou model}
 We assume under $\P$ that each log-price satisfies the SDE
 \begin{equation}\label{eq:log-price-sde}
 \diff X_{i,t}
@@ -362,9 +361,21 @@ $\chi_i$ & $i=1,2$ & Price-jump compensator $M_i(1)-1=\E[e^{J_i}-1]$; enters $\m
 $\mu_i^{\mathrm{eff}}$ & $i=1,2$ & Actual drift coefficient in the log-price SDE \eqref{eq:log-price-sde} & \\
 $\Psi(u,v)$ & --- & Joint characteristic exponent; $e^{T\Psi(0,-ik)}=\E_\P[e^{kX_{2,T}}]$ appears in the moment formula & \\
 \hline
+$S_{i,0}$ & $i=1,2$ & Initial price of asset $i$ & $S_{i,0}>0$ \\
+$b$ & --- & Borrowing power of the collateral (AAVE liquidation threshold) & $b\in(0,1)$ \\
+$T$ & --- & Investment horizon & $T>0$ \\
+$n_i$ & $i=1,2$ & Number of coins held: $n_1>0$ long in $S_1$, $n_2>0$ short in $S_2$ & $n_i>0$ \\
+\hline
+$H_t$ & --- & Health factor: $b\,n_1 S_{1,t}/(n_2 S_{2,t})$; position liquidated the first time $H_t<1$ & \\
+$h_t$ & --- & Log health factor: $h_t=\log H_t=h_0+Z_t$ & \\
+$h_0$ & --- & Initial log health factor; the optimisation variable; determines $n_i$ via \eqref{eq:n-from-h0} & $h_0>\log b$ \\
+$\tau$ & --- & Liquidation time: $\tau=\inf\{t\ge 0: H_t<1\}$ & \\
+$\Pi_T$ & --- & Terminal payoff: $(n_1 S_{1,T}-n_2 S_{2,T})^+\,\one_{\{\tau>T\}}$ & \\
+\hline
 \end{tabular}
-\caption{Model parameters and derived quantities. The upper block contains freely chosen inputs;
-the lower block contains derived quantities used throughout the analysis.}
+\caption{Model parameters and derived quantities. The first block contains freely chosen Kou model
+inputs; the second block contains derived model quantities; the third block contains portfolio and
+contract inputs; the fourth block contains derived portfolio quantities.}
 \label{tab:params}
 \end{table}
 
@@ -494,12 +505,12 @@ From \eqref{eq:payoff-factor},
 \[
 \Pi_T^k
 =
-\Big(\frac{w_2}{b}\Big)^k S_{2,0}^k e^{kX_{2,T}}\,g_k(Z_T;h_0)\,\one_{\{\tau>T\}}.
+\Big(\frac{n_2}{b}\Big)^k S_{2,0}^k e^{kX_{2,T}}\,g_k(Z_T;h_0)\,\one_{\{\tau>T\}}.
 \]
 \begin{equation}\label{eq:moment-reduction}
 \E_{\P}[\Pi_T^k]
 =
-\Big(\frac{w_2}{b}\Big)^k S_{2,0}^k\,e^{T\Psi(0,-ik)}\;
+\Big(\frac{n_2}{b}\Big)^k S_{2,0}^k\,e^{T\Psi(0,-ik)}\;
 \E_{\P^{(k)}}\!\Big[g_k(Z_T;h_0)\,\one_{\{\tau>T\}}\Big].
 \end{equation}
 
@@ -557,10 +568,10 @@ and the portfolio optimization reduces to the one-dimensional problem
 \[
 \max_{h_0\in(\ln b,\infty)}\Phi(h_0),
 \]
-after which the optimal weights are recovered from \eqref{eq:w-from-h0}.
+after which the optimal coin holdings are recovered from \eqref{eq:n-from-h0}.
 
 \begin{remark}[No-shorting limit]\label{rem:no-shorting}
-As $h_0\to\infty$ the weight map gives $w_2 S_{2,0}\to 0$ and $w_1 S_{1,0}\to 1$, so liquidation
+As $h_0\to\infty$ the holding map gives $n_2 S_{2,0}\to 0$ and $n_1 S_{1,0}\to 1$, so liquidation
 becomes impossible and the portfolio converges to a unit long position in asset~$1$. For every $k\ge 1$,
 \[
 \lim_{h_0\to\infty}\E[\Pi_T^k]=\E[e^{kX_{1,T}}]=e^{T\Psi(-ik,0)},
@@ -724,8 +735,17 @@ The general solution on $z>-h_0$ is then
 \widehat{U}(q,z;h_0) = \widehat{U}_{\mathrm{part}}(q,z;h_0) + \widehat{U}_{\mathrm{hom}}(q,z;h_0).
 \]
 
-\begin{lemma}[Invertibility of $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$]\label{lem:Mbar-inv}
-Define the $3\times 3$ barrier matrix
+\begin{proposition}[Barrier resolvent]\label{prop:Ubar}
+Under Assumption~\ref{ass:six-root} and the nondegeneracy condition
+\begin{equation}\label{eq:nondeg-bar}
+r_{1,-}^{(k)}\neq r_{2,-}^{(k)},
+\end{equation}
+the boundary conditions at $z=-h_0^+$ uniquely determine
+$\mathbf{B}^{(k)}(q;h_0):=(B_1^{(k)},B_2^{(k)},B_3^{(k)})^\top$ via the linear system
+\[
+\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\,\mathbf{B}^{(k)}(q;h_0)=-\mathbf{b}^{(k)}(q;h_0),
+\]
+where the $3\times 3$ barrier matrix is
 \[
 \mathbf{M}_{\mathrm{bar}}^{(k)}(q)=
 \begin{pmatrix}
@@ -736,62 +756,9 @@ Define the $3\times 3$ barrier matrix
 \dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_4(q)} &
 \dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_5(q)} &
 \dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_6(q)}
-\end{pmatrix}.
+\end{pmatrix}
 \]
-Under Assumption~\ref{ass:six-root} and the nondegeneracy condition
-\begin{equation}\label{eq:nondeg-bar}
-r_{1,-}^{(k)}\neq r_{2,-}^{(k)},
-\end{equation}
-the matrix $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is invertible.
-Its determinant is
-\begin{equation}\label{eq:det-Mbar}
-\det\!\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\bigr)
-=
-\frac{r_{1,-}^{(k)}\,r_{2,-}^{(k)}\,
-      \bigl(r_{2,-}^{(k)}-r_{1,-}^{(k)}\bigr)\,
-      \prod_{4\le m<m'\le 6}\!\bigl(\gamma_{m'}(q)-\gamma_m(q)\bigr)}
-     {\prod_{m=4}^{6}\bigl(r_{1,-}^{(k)}+\gamma_m(q)\bigr)\bigl(r_{2,-}^{(k)}+\gamma_m(q)\bigr)}.
-\end{equation}
-\end{lemma}
-\begin{proof}
-Subtracting row~1 from rows~2 and~3 replaces entry $(i,m)$ for $i=2,3$ by
-$-\gamma_{m+3}(q)/(r_{i-1,-}^{(k)}+\gamma_{m+3}(q))$.
-Pulling out $-1$ from each of these two rows (net sign $(-1)^2=1$) and then factoring
-$\gamma_{m+3}(q)$ from each column gives
-\[
-\det\!\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}\bigr)
-=
-\gamma_4\gamma_5\gamma_6\;
-\det\!\left(\frac{1}{x_i+\gamma_{j+3}(q)}\right)_{\!1\le i,j\le 3},
-\]
-where $x_1:=0$, $x_2:=r_{1,-}^{(k)}$, $x_3:=r_{2,-}^{(k)}$.
-The right-hand factor is a Cauchy determinant; the Cauchy formula yields
-\[
-\det\!\left(\frac{1}{x_i+\gamma_{j+3}}\right)
-=
-\frac{\prod_{1\le i<i'\le 3}(x_{i'}-x_i)\cdot
-      \prod_{4\le m<m'\le 6}(\gamma_{m'}-\gamma_m)}
-     {\prod_{i=1}^3\prod_{m=4}^6(x_i+\gamma_m)}.
-\]
-Since $x_1=0$, the factor $\prod_{m=4}^6(x_1+\gamma_m)=\gamma_4\gamma_5\gamma_6$
-cancels with the prefactor, giving~\eqref{eq:det-Mbar}.
-Each factor in~\eqref{eq:det-Mbar} is nonzero:
-$r_{1,-}^{(k)}>0$ since $\eta_{1,-}>0$;
-$r_{2,-}^{(k)}>0$ since $k\eta_{2,+}<1$;
-$(r_{2,-}^{(k)}-r_{1,-}^{(k)})\neq 0$ by~\eqref{eq:nondeg-bar};
-the $\gamma_m$ are pairwise distinct by Assumption~\ref{ass:six-root}(ii);
-and $r_{j,-}^{(k)}+\gamma_m\neq 0$ because $-r_{j,-}^{(k)}$ is a pole of $\psi_Z^{(k)}$,
-so $\psi_Z^{(k)}(-r_{j,-}^{(k)})=\infty\neq q$, hence $\gamma_m\neq -r_{j,-}^{(k)}$.
-\end{proof}
-
-\begin{proposition}[Barrier resolvent]\label{prop:Ubar}
-Under Assumption~\ref{ass:six-root} and condition~\eqref{eq:nondeg-bar},
-the coefficients
-$\mathbf{B}^{(k)}(q;h_0):=(B_1^{(k)},B_2^{(k)},B_3^{(k)})^\top$ are uniquely determined by
-\[
-\mathbf{B}^{(k)}(q;h_0) = -\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\bigr)^{-1}\mathbf{b}^{(k)}(q;h_0),
-\]
-where $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is as in Lemma~\ref{lem:Mbar-inv} and the forcing vector is
+and the forcing vector is
 \[
 \mathbf{b}^{(k)}(q;h_0)
 =
@@ -806,6 +773,10 @@ K_{2,-}^{(k)}\!\left[\widehat{U}_{\mathrm{part}}(q,\cdot\,;h_0)\right](-h_0)
 \displaystyle\sum_{j=0}^{k}\frac{c_{k,j}(h_0)}{q-\psi_Z^{(k)}(j)}\,\frac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+j}\,e^{-jh_0}\\[10pt]
 \displaystyle\sum_{j=0}^{k}\frac{c_{k,j}(h_0)}{q-\psi_Z^{(k)}(j)}\,\frac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+j}\,e^{-jh_0}
 \end{pmatrix}.
+\]
+By Lemma~\ref{lem:Mbar-inv} below, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is invertible, giving
+\[
+\mathbf{B}^{(k)}(q;h_0) = -\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\bigr)^{-1}\mathbf{b}^{(k)}(q;h_0).
 \]
 \end{proposition}
 \begin{proof}
@@ -855,10 +826,44 @@ yields the explicit entries of $\mathbf{b}^{(k)}$ stated above.
 \textit{Step 5: matrix form and solution.}
 Collecting the three conditions into a single system gives
 $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\,\mathbf{B}^{(k)}=-\mathbf{b}^{(k)}$.
-By Lemma~\ref{lem:Mbar-inv}, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is invertible, so
+By Lemma~\ref{lem:Mbar-inv} below, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is invertible, so
 \[
 \mathbf{B}^{(k)}(q;h_0)=-\big(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\big)^{-1}\mathbf{b}^{(k)}(q;h_0).\qedhere
 \]
+\end{proof}
+
+\begin{lemma}[Invertibility of $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$]\label{lem:Mbar-inv}
+Under Assumption~\ref{ass:six-root} and condition~\eqref{eq:nondeg-bar},
+the barrier matrix $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ of Proposition~\ref{prop:Ubar} is invertible.
+\end{lemma}
+\begin{proof}
+Subtracting row~1 from rows~2 and~3 replaces entry $(i,m)$ for $i=2,3$ by
+$-\gamma_{m+3}(q)/(r_{i-1,-}^{(k)}+\gamma_{m+3}(q))$.
+Pulling out $-1$ from each of these two rows (net sign $(-1)^2=1$) and then factoring
+$\gamma_{m+3}(q)$ from each column gives
+\[
+\det\!\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}\bigr)
+=
+\gamma_4\gamma_5\gamma_6\;
+\det\!\left(\frac{1}{x_i+\gamma_{j+3}(q)}\right)_{\!1\le i,j\le 3},
+\]
+where $x_1:=0$, $x_2:=r_{1,-}^{(k)}$, $x_3:=r_{2,-}^{(k)}$.
+The right-hand factor is a Cauchy determinant; the Cauchy formula yields
+\[
+\det\!\left(\frac{1}{x_i+\gamma_{j+3}}\right)
+=
+\frac{\prod_{1\le i<i'\le 3}(x_{i'}-x_i)\cdot
+      \prod_{4\le m<m'\le 6}(\gamma_{m'}-\gamma_m)}
+     {\prod_{i=1}^3\prod_{m=4}^6(x_i+\gamma_m)}.
+\]
+Since $x_1=0$, the factor $\prod_{m=4}^6(x_1+\gamma_m)=\gamma_4\gamma_5\gamma_6$
+cancels with the prefactor, yielding a ratio whose every factor is nonzero:
+$r_{1,-}^{(k)}>0$ since $\eta_{1,-}>0$;
+$r_{2,-}^{(k)}>0$ since $k\eta_{2,+}<1$;
+$(r_{2,-}^{(k)}-r_{1,-}^{(k)})\neq 0$ by~\eqref{eq:nondeg-bar};
+the $\gamma_m$ are pairwise distinct by Assumption~\ref{ass:six-root}(ii);
+and $r_{j,-}^{(k)}+\gamma_m\neq 0$ because $-r_{j,-}^{(k)}$ is a pole of $\psi_Z^{(k)}$,
+so $\psi_Z^{(k)}(-r_{j,-}^{(k)})=\infty\neq q$, hence $\gamma_m\neq -r_{j,-}^{(k)}$.
 \end{proof}
 
 \paragraph{Laplace-domain moment.}
@@ -902,48 +907,13 @@ with
 The domain is the half-line $(-h_0,\infty)$, the boundary is absorbing at $z=-h_0$, and there is no interface because
 the source is constant.
 
-\begin{lemma}[Invertibility of $\mathbf{M}_{\mathrm{surv}}(q)$]\label{lem:Msurv-inv}
-Define the $3\times 3$ survival matrix
-\[
-\mathbf{M}_{\mathrm{surv}}(q)=
-\begin{pmatrix}
-1 & 1 & 1\\[6pt]
-\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_4^{(0)}(q)} &
-\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_5^{(0)}(q)} &
-\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_6^{(0)}(q)}\\[12pt]
-\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_4^{(0)}(q)} &
-\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_5^{(0)}(q)} &
-\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_6^{(0)}(q)}
-\end{pmatrix},
-\]
-where $\gamma_4^{(0)}(q),\gamma_5^{(0)}(q),\gamma_6^{(0)}(q)$ are the roots of $\psi_Z^{(0)}(\gamma)=q$
-with negative real part.
+\begin{proposition}[Survival resolvent and liquidation probability]\label{prop:survival}
 Under Assumption~\ref{ass:six-root} and the nondegeneracy condition
 \begin{equation}\label{eq:nondeg-surv}
 r_{1,-}^{(0)}\neq r_{2,-}^{(0)},
 \quad\text{i.e.,}\quad
 \eta_{1,-}\neq\eta_{2,+},
 \end{equation}
-the matrix $\mathbf{M}_{\mathrm{surv}}(q)$ is invertible, with determinant
-\begin{equation}\label{eq:det-Msurv}
-\det\!\bigl(\mathbf{M}_{\mathrm{surv}}(q)\bigr)
-=
-\frac{r_{1,-}^{(0)}\,r_{2,-}^{(0)}\,
-      \bigl(r_{2,-}^{(0)}-r_{1,-}^{(0)}\bigr)\,
-      \prod_{4\le m<m'\le 6}\!\bigl(\gamma_{m'}^{(0)}(q)-\gamma_m^{(0)}(q)\bigr)}
-     {\prod_{m=4}^{6}\bigl(r_{1,-}^{(0)}+\gamma_m^{(0)}(q)\bigr)\bigl(r_{2,-}^{(0)}+\gamma_m^{(0)}(q)\bigr)}.
-\end{equation}
-\end{lemma}
-\begin{proof}
-The argument is identical to that of Lemma~\ref{lem:Mbar-inv} with $k=0$.
-The phase rates are $r_{1,-}^{(0)}=1/\eta_{1,-}$ and $r_{2,-}^{(0)}=1/\eta_{2,+}$,
-so condition~\eqref{eq:nondeg-surv} is equivalent to $\eta_{1,-}\neq\eta_{2,+}$.
-Each denominator factor is nonzero because $-r_{j,-}^{(0)}$ is a pole of $\psi_Z^{(0)}$,
-hence cannot equal any root $\gamma_m^{(0)}(q)$ of $\psi_Z^{(0)}(\cdot)=q$ for finite $q$.
-\end{proof}
-
-\begin{proposition}[Survival resolvent and liquidation probability]\label{prop:survival}
-Under Assumption~\ref{ass:six-root} and condition~\eqref{eq:nondeg-surv},
 let $\gamma_4^{(0)}(q),\gamma_5^{(0)}(q),\gamma_6^{(0)}(q)$ be the three roots of
 $\psi_Z^{(0)}(\gamma)=q$ with negative real part. Then
 \[
@@ -957,14 +927,29 @@ C_2(q;h_0)e^{\gamma_5^{(0)}(q)(z+h_0)}
 +
 C_3(q;h_0)e^{\gamma_6^{(0)}(q)(z+h_0)},
 \]
-where the coefficients $\mathbf{C}(q;h_0):=(C_1,C_2,C_3)^\top$ are uniquely determined by
+where the coefficients $\mathbf{C}(q;h_0):=(C_1,C_2,C_3)^\top$ satisfy the linear system
 \[
-\mathbf{C}(q;h_0)
+\mathbf{M}_{\mathrm{surv}}(q)\,\mathbf{C}(q;h_0)
 =
--\bigl(\mathbf{M}_{\mathrm{surv}}(q)\bigr)^{-1}
-\begin{pmatrix}1/q\\1/q\\1/q\end{pmatrix},
+-\begin{pmatrix}1/q\\1/q\\1/q\end{pmatrix},
 \]
-with $\mathbf{M}_{\mathrm{surv}}(q)$ as in Lemma~\ref{lem:Msurv-inv}.
+with the $3\times 3$ survival matrix
+\[
+\mathbf{M}_{\mathrm{surv}}(q)=
+\begin{pmatrix}
+1 & 1 & 1\\[6pt]
+\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_4^{(0)}(q)} &
+\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_5^{(0)}(q)} &
+\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_6^{(0)}(q)}\\[12pt]
+\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_4^{(0)}(q)} &
+\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_5^{(0)}(q)} &
+\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_6^{(0)}(q)}
+\end{pmatrix}.
+\]
+By Lemma~\ref{lem:Msurv-inv} below, $\mathbf{M}_{\mathrm{surv}}(q)$ is invertible, giving
+\[
+\mathbf{C}(q;h_0) = -\bigl(\mathbf{M}_{\mathrm{surv}}(q)\bigr)^{-1}\begin{pmatrix}1/q\\1/q\\1/q\end{pmatrix}.
+\]
 At the initial state $Z_0=0$,
 \[
 \widehat U_{\mathrm{surv}}(q,0;h_0)
@@ -1030,11 +1015,23 @@ condition and applying~\eqref{eq:phase-on-exp} to the homogeneous terms yields
 \]
 where the right-hand side entries are
 $K_{j,-}^{(0)}[1/q](-h_0^+)=1/q$ (since $K_{j,-}^{(0)}$ integrates to one against the exponential density).
-By Lemma~\ref{lem:Msurv-inv}, $\mathbf{M}_{\mathrm{surv}}(q)$ is invertible, so the coefficients $\mathbf{C}$ are uniquely determined.
+By Lemma~\ref{lem:Msurv-inv} below, $\mathbf{M}_{\mathrm{surv}}(q)$ is invertible, so the coefficients $\mathbf{C}$ are uniquely determined.
 
 \textit{Step 6: inversion and liquidation probability.}
 Evaluating at $Z_0=0$ and inverting via the Bromwich formula gives $p_{\mathrm{surv}}(T,0;h_0)$. The
 liquidation probability follows from the complement.
+\end{proof}
+
+\begin{lemma}[Invertibility of $\mathbf{M}_{\mathrm{surv}}(q)$]\label{lem:Msurv-inv}
+Under Assumption~\ref{ass:six-root} and condition~\eqref{eq:nondeg-surv},
+the survival matrix $\mathbf{M}_{\mathrm{surv}}(q)$ of Proposition~\ref{prop:survival} is invertible.
+\end{lemma}
+\begin{proof}
+The argument is identical to that of Lemma~\ref{lem:Mbar-inv} with $k=0$.
+The phase rates are $r_{1,-}^{(0)}=1/\eta_{1,-}$ and $r_{2,-}^{(0)}=1/\eta_{2,+}$,
+so condition~\eqref{eq:nondeg-surv} is equivalent to $\eta_{1,-}\neq\eta_{2,+}$.
+Each denominator factor is nonzero because $-r_{j,-}^{(0)}$ is a pole of $\psi_Z^{(0)}$,
+hence cannot equal any root $\gamma_m^{(0)}(q)$ of $\psi_Z^{(0)}(\cdot)=q$ for finite $q$.
 \end{proof}
 
 % ============================================================
@@ -1159,7 +1156,7 @@ The Laplace method achieves a ${\approx}55\times$ speed-up.}
 \end{table}
 
 \paragraph{No-shorting limit.}
-As $h_0\to\infty$ the short weight $w_2\to 0$ and the portfolio converges to a unit long
+As $h_0\to\infty$ the short holding $n_2\to 0$ and the portfolio converges to a unit long
 position in asset $1$ (Remark~\ref{rem:no-shorting}).
 All conditional statistics converge to those of $e^{X_{1,T}}$ under $\P$, which are
 available in closed form from the characteristic exponent \eqref{eq:Psi}:
@@ -1212,7 +1209,7 @@ On $\{\tau>T\}$ the payoff satisfies
 \[
 Y := \Pi_T\mid\{\tau>T\}
 =
-\frac{w_2}{b}\,S_{2,0}\,e^{X_{2,T}}\,(e^{h_0+Z_T}-b).
+\frac{n_2}{b}\,S_{2,0}\,e^{X_{2,T}}\,(e^{h_0+Z_T}-b).
 \]
 Since $Z_T>-h_0$ on $\{\tau>T\}$, we have $e^{h_0+Z_T}>1>b$, so the factor $(e^{h_0+Z_T}-b)>0$.
 However, because $e^{X_{2,T}}$ can be arbitrarily close to zero, $\inf Y=0$, and the support is
