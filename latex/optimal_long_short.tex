@@ -39,6 +39,24 @@
 \begin{document}
 \maketitle
 
+\begin{abstract}
+We study the optimal sizing of a leveraged long--short position formed through a
+decentralized finance (DeFi) lending protocol. A trader deposits a cryptocurrency as
+collateral, borrows a second asset, and sells the borrowed asset short; the position is
+liquidated automatically and irrevocably the instant the collateral-to-liability health
+factor falls below the protocol threshold. We model the bivariate log-price process under
+the Kou double-exponential jump--diffusion framework, which captures the fat tails and
+asymmetric return distributions characteristic of cryptocurrency markets while remaining
+analytically tractable. An exponential change of measure absorbs the short-leg factor and
+reduces each conditional payoff moment to a one-dimensional first-passage problem for the
+log-ratio process under a tilted measure. The resulting Laplace-domain resolvent equation
+reduces to a finite linear system, yielding semi-analytic expressions for the expected
+payoff and survival probability. Time-domain quantities are recovered by numerical Laplace
+inversion via the Talbot contour algorithm. Using these expressions, we characterize how
+the optimal initial health factor balances the higher expected return on surviving paths
+against the increased liquidation probability of a more aggressive position.
+\end{abstract}
+
 \tableofcontents
 
 % ============================================================
