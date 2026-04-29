@@ -1,19 +1,95 @@
-\documentclass{article}
-\usepackage[margin=1in]{geometry}
+\documentclass[11pt]{article}
 
-% ==== PACKAGES ====
-\usepackage{amsmath, amssymb, amsthm}
-\usepackage{mathtools}
-\usepackage[longnamesfirst,sort&compress]{natbib}
-\usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage{cleveref}
-\usepackage{booktabs}
-\usepackage{multirow}
-\usepackage{enumitem}
+% ==== PAGE GEOMETRY (matches QF journal: 160mm x 230mm type area) ====
+\usepackage[
+  textwidth=160mm, textheight=230mm,
+  top=32mm, headheight=5pt, headsep=19pt, footskip=32pt
+]{geometry}
 
-% Citation punctuation style
-\bibpunct{(}{)}{;}{a}{,}{,}
+% ==== FONTS (Times Roman, matching QF style) ====
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+
+% ==== MATH ====
+\usepackage{amsmath,amssymb,amsthm}
+
+% ==== BIBLIOGRAPHY ====
+\usepackage[round,authoryear]{natbib}
+
+% ==== TABLES & FIGURES ====
+\usepackage{graphicx,booktabs,rotating,multirow,tabularx}
+
+% ==== LISTS ====
+\usepackage{enumerate}
+
+% ==== SECTION HEADINGS (QF style: bold, 11/13pt) ====
+\usepackage{titlesec}
+\titleformat{\section}
+  {\fontsize{11}{13}\selectfont\bfseries\raggedright}{\thesection.}{0.5em}{}
+\titleformat{\subsection}
+  {\fontsize{11}{13}\selectfont\bfseries\itshape\raggedright}{\thesubsection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{26pt plus 4pt minus 2pt}{13pt}
+\titlespacing*{\subsection}{0pt}{24pt plus 3pt minus 2pt}{7pt}
+
+% ==== TYPOGRAPHY ====
+\setlength{\parindent}{10pt}
+\setlength{\parskip}{0pt}
+
+% ==== TITLE (18/22pt bold uppercase, centred, like QF) ====
+\makeatletter
+\renewcommand{\maketitle}{%
+  \clearpage\null
+  \vspace*{42pt}%
+  \begin{center}
+    {\fontsize{18}{22}\selectfont\bfseries\MakeUppercase{\@title}\par}%
+    \ifx\@author\@empty\else
+      \vskip 21pt
+      {\fontsize{13}{15}\selectfont\@author\par}%
+    \fi
+  \end{center}
+  \vskip 18pt
+}
+\makeatother
+
+% ==== ABSTRACT (9/11pt, indented 2pc both sides) ====
+\renewenvironment{abstract}{%
+  \fontsize{9}{11}\selectfont
+  \setlength{\leftskip}{2pc}%
+  \setlength{\rightskip}{2pc}%
+  \noindent\ignorespaces
+}{%
+  \par\addvspace{32pt}%
+}
+
+% ==== KEYWORDS (9/11pt, indented, italic label) ====
+\newenvironment{keywords}{%
+  \par\addvspace{11pt}%
+  \fontsize{9}{11}\selectfont
+  \setlength{\leftskip}{2pc}%
+  \setlength{\rightskip}{2pc plus 1fill}%
+  \noindent{\itshape Keywords\/}: \ignorespaces
+}{%
+  \par\addvspace{26pt plus 4pt}%
+}
+
+% ==== JEL CLASSIFICATION (same style as keywords) ====
+\newenvironment{classcode}{%
+  \par\addvspace{-9pt}%
+  \fontsize{9}{11}\selectfont
+  \setlength{\leftskip}{2pc}%
+  \setlength{\rightskip}{2pc plus 1fill}%
+  \noindent{\itshape JEL Classification\/}: \ignorespaces
+}{%
+  \par\addvspace{26pt plus 4pt}%
+}
+
+% ==== APPENDICES (renames sections to "Appendix A: ...") ====
+\newcommand{\appendices}{%
+  \appendix
+  \titleformat{\section}
+    {\fontsize{11}{13}\selectfont\bfseries\raggedright}
+    {Appendix \thesection:}{0.5em}{}%
+}
 
 % ==== CUSTOM COMMANDS ====
 \newcommand{\E}{\mathbb{E}}
@@ -25,18 +101,22 @@
 \newcommand{\Rea}{\operatorname{Re}}
 
 % ==== THEOREM ENVIRONMENTS ====
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[section]
-\newtheorem{remark}{Remark}[section]
-\newtheorem{proposition}{Proposition}[section]
-\newtheorem{lemma}{Lemma}[section]
 \newtheorem{assumption}{Assumption}[section]
 
-\title{Laplace--Resolvent Semi-Analytics for a Ratio Barrier Payoff under Kou Dynamics}
-\author{}
-\date{\today}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
 
 \begin{document}
+
+\title{Laplace--Resolvent Semi-Analytics for a Ratio Barrier Payoff under Kou Dynamics}
+
 \maketitle
 
 \begin{abstract}
@@ -52,122 +132,65 @@ reduces each conditional payoff moment to a one-dimensional first-passage proble
 log-ratio process under a tilted measure. The resulting Laplace-domain resolvent equation
 reduces to a finite linear system, yielding semi-analytic expressions for the expected
 payoff and survival probability. Time-domain quantities are recovered by numerical Laplace
-inversion via the Talbot contour algorithm. Using these expressions, we characterize how
+inversion via the Talbot contour algorithm. Unlike Monte Carlo simulation, the semi-analytic
+expressions are noise-free and evaluate in milliseconds regardless of how few paths survive,
+enabling smooth optimization over the health factor. Using these expressions, we characterize how
 the optimal initial health factor balances the higher expected return on surviving paths
 against the increased liquidation probability of a more aggressive position.
 \end{abstract}
 
-\tableofcontents
+\begin{keywords}
+DeFi lending; leveraged long--short; health factor; Kou double-exponential jump diffusion; first-passage problem; Laplace resolvent; optimal portfolio sizing
+\end{keywords}
+
+\begin{classcode}
+G11; G12; C65
+\end{classcode}
 
 % ============================================================
 \section{Introduction}
 % ============================================================
 
-Decentralized finance (DeFi) lending protocols such as AAVE and Compound have opened a new class of
-capital-efficient trading strategies: a user deposits a cryptocurrency as collateral, borrows a second
-asset against it, and simultaneously sells the borrowed asset short. The result is a leveraged long--short
-position whose performance depends on the relative price dynamics of the two assets. With combined total
-value locked across major DeFi platforms exceeding \$10 billion, these strategies have become a
-meaningful component of on-chain market activity, yet their risk profile remains analytically
-under-studied.
+DeFi lending protocols such as AAVE and Compound enable a leveraged long--short strategy: deposit a
+cryptocurrency as collateral, borrow a second asset, and sell it short. The position is governed by a
+real-time \emph{health factor} — a borrowing-power-adjusted ratio of collateral to liability — and is
+liquidated automatically and irrevocably the instant that ratio falls below one. A practitioner must
+choose the initial coin holdings to balance two opposing forces: a more aggressive position amplifies
+expected returns on surviving paths but raises the probability of forced exit. Cryptocurrency markets
+compound the difficulty — daily log-returns of 10--20\% are common and flash crashes can exceed 50\%
+— making fat-tailed jump dynamics essential for realistic liquidation probabilities. 
 
-The defining feature of DeFi lending is automatic liquidation. Each platform computes a real-time
-\emph{health factor} — a ratio of collateral value to outstanding liability, scaled by the borrowing
-power of the collateral — and liquidates the position the instant this ratio falls below one. Unlike
-traditional margin accounts, where a broker may issue a call and allow time for top-up, smart-contract
-liquidation is instantaneous and irrevocable. A practitioner must therefore choose the initial coin
-holdings carefully: a more aggressive position amplifies expected returns on surviving paths but raises
-the probability of forced exit. The central question this paper addresses is how to set those holdings
-optimally given the underlying asset dynamics.
+This paper provides the first exact, semi-analytic solution to the mean-variance-solvency optimal sizing problem.
 
-Wrong-way risk is the dominant concern. An adverse move in either leg — a fall in the collateral asset
-or a rise in the borrowed asset — simultaneously erodes the numerator and inflates the denominator of
-the health factor. Cryptocurrency markets are particularly exposed: daily log-returns of 10--20\% are
-common and flash-crash episodes can exceed 50\%, so fat-tailed jump dynamics are essential for
-capturing realistic liquidation probabilities.
+We work under the Kou double-exponential jump--diffusion framework \citep{Kou2002}. The solution
+rests on two successive dimensional reductions. First, an exponential change of measure absorbs the
+short-leg price factor into the path-measure density, collapsing what is nominally a bivariate barrier
+problem to a \emph{univariate} first-exit problem for the log-ratio process under a tilted
+L\'{e}vy measure. Second, because exponential jump sizes are eigenfunctions of the Kou generator,
+the Laplace-domain resolvent of the first-exit problem reduces to a $3\!\times\!3$ linear system —
+the same size regardless of moment order — that is solved in closed form. Time-domain quantities
+follow by numerical Laplace inversion via the Talbot contour algorithm \citep{Talbot1979}. The entire
+optimisation therefore reduces to a scalar search over a single parameter, the \emph{initial log
+health factor}, with the conditional expected payoff, its variance, and the liquidation probability
+all expressible as semi-analytic functions of that scalar. Unlike Monte Carlo, which suffers
+from sampling noise that becomes severe when few paths survive liquidation and requires fresh
+simulation at each candidate $h_0$, the semi-analytic expressions are noise-free and
+differentiable in $h_0$, reducing the optimization to a smooth scalar search; numerical
+experiments confirm a ${\approx}55\times$ speed-up over Monte Carlo.
 
-We model the bivariate log-price process under the \emph{Kou double-exponential jump--diffusion}
-framework \citep{Kou2002}, in which each asset follows a diffusion with correlated Brownian parts and
-independent compound Poisson jumps with double-exponentially distributed sizes. This specification
-captures the asymmetric, leptokurtic return distributions observed in cryptocurrency markets while
-remaining analytically tractable. In particular, exponential jump sizes are eigenfunctions of the
-generator, which allows the Laplace-domain resolvent equation to be solved in closed form.
-
-\paragraph{Related literature.}
-
-This paper is closest to the literature on first-passage and barrier problems under
-double-exponential jump diffusion, and to the emerging empirical literature on DeFi
-liquidation. The economic motivation is the mechanical liquidation rule embedded in
-overcollateralized lending protocols such as AAVE: once the collateral-to-liability ratio
-falls below the protocol threshold, the position is forcibly and irrevocably unwound.
-\citet{Qin2021} document the incentives, risks, and instability channels associated with
-such liquidations across major DeFi lending platforms, while \citet{HeimbachHuang2024}
-study leverage formation and amplification in DeFi lending markets. These papers establish
-that liquidation is economically significant but are empirical and institutional in nature.
-They do not address the ex-ante problem of choosing the initial health factor of a leveraged
-long--short position under a stochastic liquidation boundary.
-
-The technical core of this paper belongs to the first-passage and barrier-option literature
-for jump diffusions. \citet{KouWang2003} derive explicit Laplace-transform results for
-first-passage times of a double-exponential jump diffusion, exploiting the overshoot
-properties of exponential jumps. \citet{Sepp2004} extends the transform approach to
-single- and double-barrier option pricing under double-exponential jump diffusion by
-converting the time-dependent pricing equation into a Laplace-domain boundary-value problem
-that reduces to a finite algebraic system. Our analysis inherits this structural advantage:
-exponential jump sizes are eigenfunctions of the Kou generator, turning the
-integro-differential resolvent equation into a finite-dimensional linear system. The
-difference is that the payoff studied here is not a standard barrier option on a single
-asset. It is a barrier-killed long--short ratio payoff generated by a DeFi borrowing
-position, in which the short-leg factor and the liquidation boundary on the log-ratio are
-entangled. An exponential change of measure absorbs the short-leg factor and reduces each
-conditional payoff moment to a one-dimensional first-passage problem for the log-ratio
-process under a tilted measure. This measure reduction is the paper's main technical step.
-Time-domain quantities are recovered by numerical Laplace inversion via the Talbot contour
-algorithm \citep{Talbot1979}.
-
-This paper is also related, more remotely, to long--short portfolio construction and
-portfolio optimization under jump risk. \citet{JacobsLevyStarer1999} emphasise that the
-long and short legs of a portfolio should be optimised jointly rather than constructed
-sequentially; here the strategy is static after initiation, so the economically relevant
-control is the initial log health factor rather than a dynamic rebalancing rule. Portfolio
-optimization under jump risk is a large literature studying dynamic rebalancing and
-HJB-type controls, including the mean--variance approach of \citet{DangForsyth2016}; our
-setting differs because the central constraint is an endogenous first-passage liquidation
-event rather than a soft variance or execution-cost bound.
-
-\paragraph{Measure change.}
-Computing the moments of the payoff conditional on survival requires tracking the joint evolution of
-both asset prices up to the random liquidation time — a substantially harder object than a
-one-dimensional counterpart. A change of measure eliminates this complexity. By exponentially tilting
-the path measure by a power of the short-leg price, that power is absorbed into the new numeraire, so
-that the expectation under the tilted measure depends only on the log-ratio of the two prices. The
-bivariate killing problem thus reduces to a \emph{univariate} first-exit problem for the log-ratio
-process, which remains a L\'{e}vy process under the tilted measure. This reduction is purely a matter
-of analytical tractability: no information about the joint dynamics is discarded, since the
-characteristic exponent of the tilted log-ratio encodes its full marginal law.
-
-\paragraph{Laplace transform and the resolvent equation.}
-With the problem reduced to one dimension, the killed expectation satisfies a partial
-integro-differential equation (PIDE) in time and the log-ratio state. Following \citet{Sepp2004},
-applying the Laplace transform in time converts this evolution equation into a stationary
-\emph{ordinary} integro-differential equation (OIDE) in the log-ratio alone, with the Laplace
-parameter playing the role of a discount rate and the payoff function appearing as the source term.
-The Kou structure then reduces the OIDE to an effective ODE: because exponential functions are
-eigenfunctions of the Kou generator, every term in the integro-differential operator acts
-algebraically on an exponential ansatz, and the resolvent equation becomes a finite-dimensional
-algebraic system. Boundary conditions at the liquidation barrier supply three equations for the three
-admissible decaying modes, closing the system. Time-domain quantities are finally recovered by
-numerical Laplace inversion.
-
-The key object is the \emph{initial log health factor}, the logarithm of the
-borrowing-power-adjusted ratio of initial collateral value to initial liability. It encodes the
-initial distance of the position from the liquidation boundary: a larger value means the position
-starts further from forced exit. Once the net book value is normalised to one unit of account at
-inception, both coin holdings are determined entirely by this single scalar, reducing the
-optimisation to a scalar search. The optimal value maximises a penalised conditional mean--variance
-criterion: the conditional expected payoff on surviving paths, minus a risk-aversion-weighted penalty
-on its conditional variance, minus a penalty on the probability of liquidation. This balances
-risk-adjusted return against the cost of forced exit.
+This paper sits at the intersection of the DeFi liquidation literature and the analytical
+first-passage literature for jump diffusions.
+\citet{Qin2021} and \citet{HeimbachHuang2024} document the incentive structure and leverage
+amplification of DeFi liquidations; these papers are empirical and do not address the ex-ante optimal
+sizing problem. Filling that gap requires tools from the first-passage literature for jump diffusions:
+\citet{KouWang2003} derive explicit Laplace-transform results for first-passage times under
+double-exponential jump diffusion, and \citet{Sepp2004} extends this to single- and double-barrier
+option pricing, reducing the resolvent to a finite algebraic system — the same structural advantage
+exploited here. The difference is that the payoff is a barrier-killed long--short ratio, not a
+single-asset barrier option; the change-of-measure reduction is the key step that bridges the two
+settings. More distantly, \citet{JacobsLevyStarer1999} advocate joint optimisation of long and short
+legs, while \citet{DangForsyth2016} study dynamic mean--variance control under jump risk; our setting
+is static and the binding constraint is an endogenous first-passage event rather than a variance bound.
 
 The paper makes the following contributions. First, we show that the portfolio optimisation reduces
 to a one-dimensional scalar problem parameterised by the initial log health factor, with all
@@ -290,7 +313,6 @@ Positivity of both holdings requires $e^{h_0}>b$, i.e.
 h_0>\ln b.
 \]
 
-\paragraph{Optimisation over $h_0$.}
 Since every quantity of interest — the expected payoff, its variance, and the liquidation probability — is
 determined by $h_0$ through \eqref{eq:n-from-h0} and the killed process $(Z,\tau)$, the portfolio problem reduces to a one-dimensional optimisation:
 \[
@@ -367,7 +389,6 @@ Here $\eta_{i,+}$ and $\eta_{i,-}$ are the \emph{means} of the positive and nega
 (not exponential rates); the corresponding rates are $1/\eta_{i,+}$ and $1/\eta_{i,-}$.
 The constraint $\eta_{i,+}<1$ is required for the price-jump compensator $\chi_i$ defined below to be finite.
 
-\paragraph{Drift convention and effective drift.}
 The parameter $\mu_i$ is the \emph{continuously compounded expected asset-price growth rate},
 i.e.\ $\E_\P[S_{i,t}/S_{i,0}]=e^{\mu_i t}$.
 Define the price-jump compensator
@@ -399,13 +420,12 @@ The bivariate process $(X_1,X_2)$ is a L\'evy process with joint characteristic 
 \end{equation}
 so that $\E_\P[e^{i(uX_{1,t}+vX_{2,t})}]=e^{t\Psi(u,v)}$.
 
-\paragraph{Parameter summary.}
 Table~\ref{tab:params} collects all model parameters and their roles.
 
-\begin{table}[h]
-\centering
+\begin{table}[ht]
+\centering\small
 \renewcommand{\arraystretch}{1.35}
-\begin{tabular}{llll}
+\begin{tabularx}{\linewidth}{l l X l}
 \hline
 Symbol & Asset & Economic meaning / role & Constraint \\
 \hline
@@ -419,20 +439,20 @@ $\eta_{i,-}$ & $i=1,2$ & Mean size of downward jumps in $X_i$ & $\eta_{i,-}>0$ \
 \hline
 $\chi_i$ & $i=1,2$ & Price-jump compensator $M_i(1)-1=\E[e^{J_i}-1]$; enters $\mu_i^{\mathrm{eff}}$ via \eqref{eq:effective-drift} & \\
 $\mu_i^{\mathrm{eff}}$ & $i=1,2$ & Actual drift coefficient in the log-price SDE \eqref{eq:log-price-sde} & \\
-$\Psi(u,v)$ & --- & Joint characteristic exponent; $e^{T\Psi(0,-ik)}=\E_\P[e^{kX_{2,T}}]$ appears in the moment formula & \\
+$\Psi(u,v)$ & --- & Joint characteristic exponent; $e^{T\Psi(0,-ik)}=\E[e^{kX_{2,T}}]$ appears in the moment formula & \\
 \hline
 $S_{i,0}$ & $i=1,2$ & Initial price of asset $i$ & $S_{i,0}>0$ \\
 $b$ & --- & Borrowing power of the collateral (AAVE liquidation threshold) & $b\in(0,1)$ \\
 $T$ & --- & Investment horizon & $T>0$ \\
 $n_i$ & $i=1,2$ & Number of coins held: $n_1>0$ long in $S_1$, $n_2>0$ short in $S_2$ & $n_i>0$ \\
 \hline
-$H_t$ & --- & Health factor: $b\,n_1 S_{1,t}/(n_2 S_{2,t})$; position liquidated the first time $H_t<1$ & \\
+$H_t$ & --- & Health factor: $b\,n_1 S_{1,t}/(n_2 S_{2,t})$; liquidated when $H_t<1$ & \\
 $h_t$ & --- & Log health factor: $h_t=\log H_t=h_0+Z_t$ & \\
 $h_0$ & --- & Initial log health factor; the optimisation variable; determines $n_i$ via \eqref{eq:n-from-h0} & $h_0>\log b$ \\
 $\tau$ & --- & Liquidation time: $\tau=\inf\{t\ge 0: H_t<1\}$ & \\
 $\Pi_T$ & --- & Terminal payoff: $(n_1 S_{1,T}-n_2 S_{2,T})^+\,\one_{\{\tau>T\}}$ & \\
 \hline
-\end{tabular}
+\end{tabularx}
 \caption{Model parameters and derived quantities. The first block contains freely chosen Kou model
 inputs; the second block contains derived model quantities; the third block contains portfolio and
 contract inputs; the fourth block contains derived portfolio quantities.}
@@ -468,7 +488,10 @@ where
 \qquad
 \mu_Z^{(k)}:=(\mu_1^{\mathrm{eff}}-\mu_2^{\mathrm{eff}})-k(\sigma_2^2-\rho\sigma_1\sigma_2).
 \]
-In particular, the generator satisfies $\mathcal{L}^{(k)}e^{sz}=\psi_Z^{(k)}(s)e^{sz}$.
+In particular, the generator satisfies
+\begin{equation}\label{eq:generator-eigen}
+\mathcal{L}^{(k)}e^{sz}=\psi_Z^{(k)}(s)\,e^{sz}.
+\end{equation}
 \end{lemma}
 This eigenrelation is the key identity used in Section~\ref{sec:resolvent} to build the resolvent equation.
 
@@ -518,13 +541,12 @@ The nonlocal jump integral thus reduces to a scalar multiple of the same exponen
 algebraic identity exploited in Section~\ref{sec:resolvent} to convert the PIDE into a finite-dimensional
 linear system.
 
-\paragraph{Tilted parameter summary.}
 Table~\ref{tab:tilted-params} collects the quantities introduced in this subsection.
 
-\begin{table}[h]
-\centering
+\begin{table}[ht]
+\centering\small
 \renewcommand{\arraystretch}{1.35}
-\begin{tabular}{lll}
+\begin{tabularx}{\linewidth}{l l X}
 \hline
 Symbol & Definition & Role \\
 \hline
@@ -537,7 +559,7 @@ $\mathcal{L}^{(k)}$ & Generator of $Z$ under $\P^{(k)}$ & $\mathcal{L}^{(k)}e^{s
 $r_{j,\pm}^{(k)}$ & Phase rates (see above) & Exponential rates of the jump components of $Z$ under $\P^{(k)}$ \\
 $K_{j,\pm}^{(k)}$ & Phase operators (see above) & Convert jump integrals to scalars on exponential ansatz \\
 \hline
-\end{tabular}
+\end{tabularx}
 \caption{Tilted-dynamics quantities. Subscript $j=1$ refers to the contribution from $X_1$ jumps;
 $j=2$ to that from $X_2$ jumps (sign-reversed because $Z=X_1-X_2$).}
 \label{tab:tilted-params}
@@ -547,13 +569,15 @@ $j=2$ to that from $X_2$ jumps (sign-reversed because $Z=X_1-X_2$).}
 \section{Moments via Measure Change}\label{sec:moments}
 % ============================================================
 
-Computing $\E_\P[\Pi_T^k]$ directly under $\P$ is difficult because the payoff couples the joint
-process $(X_1,X_2)$ with the barrier event $\{\tau>T\}$, producing an expectation that is neither
-separable nor analytically tractable. The key step is a change of measure that absorbs the $e^{kX_{2,T}}$
-factor — which carries the short-leg contribution — into the density, leaving a purely one-dimensional
-killed expectation for the log-ratio $Z$ under the $k$-tilted measure $\P^{(k)}$. The moment formula
-then factorises into the known scalar $e^{T\Psi(0,-ik)}=\E_\P[e^{kX_{2,T}}]$ and the barrier-killed
-expectation $m_k(T;h_0)$ under $\P^{(k)}$, which is tractable via the Laplace--resolvent of
+Computing $\E_\P[\Pi_T^k]$ directly under $\P$ is intractable: the payoff couples the joint
+process $(X_1,X_2)$ to the barrier event $\{\tau>T\}$ in a way that is neither separable nor
+analytically tractable. An exponential change of measure resolves this by tilting the path measure by
+$e^{kX_{2,T}}$, which absorbs the short-leg factor into the density and leaves a purely one-dimensional
+killed expectation for the log-ratio $Z=X_1-X_2$ under the $k$-tilted measure $\P^{(k)}$. Since $Z$
+remains a L\'{e}vy process under $\P^{(k)}$, no information about the joint dynamics is lost: the
+tilted characteristic exponent encodes the full marginal law of $Z$. The $k$-th moment then factorises
+as the known scalar $e^{T\Psi(0,-ik)}=\E_\P[e^{kX_{2,T}}]$ times the barrier-killed expectation
+$m_k(T;h_0)$ under $\P^{(k)}$, which is computed via the Laplace--resolvent of
 Section~\ref{sec:resolvent}.
 
 Define
@@ -587,7 +611,6 @@ where $m_k(T;h_0)=U^{(k)}(T,0;h_0)$ is computed via the Laplace--resolvent metho
 Section~\ref{sec:resolvent}. The maximum admissible order is $k_{\max}=\lfloor 1/\eta_{2,+}\rfloor -1$.
 \end{proposition}
 
-\paragraph{Conditional moments and portfolio objective.}
 Let $p_{\mathrm{surv}}(h_0):=\P(\tau>T)$ and $p_{\mathrm{liq}}(h_0):=1-p_{\mathrm{surv}}(h_0)$.
 Since $\Pi_T$ already contains the survival indicator $\one_{\{\tau>T\}}$, the conditional $k$-th
 moment on surviving paths is
@@ -647,11 +670,15 @@ and $p_{\mathrm{surv}}(h_0)$ via the Laplace--resolvent construction.
 \section{Resolvent Equations for Moments and Survival Probability}\label{sec:resolvent}
 % ============================================================
 
-This section derives closed-form Laplace-domain resolvents for the killed moments
-$m_k(T;h_0)$ ($k\ge 1$) and the survival probability $p_{\mathrm{surv}}(T,0;h_0)$
-($k=0$). Both cases share the same architecture: an exponential ansatz reduces the
-integro-differential resolvent to a $3\times 3$ linear system whose right-hand side
-is evaluated at the absorbing barrier.
+With the moment problem reduced to a one-dimensional killed expectation under $\P^{(k)}$, the
+function $U(t,z)=\E_z^{(k)}[g_k(Z_t;h_0)\one_{\{\tau>t\}}]$ satisfies a PIDE in $(t,z)$.
+Taking the Laplace transform in $t$ converts this to a stationary integro-differential equation in
+$z$ alone, with the Laplace parameter acting as a discount rate. The Kou structure then reduces
+it further: because exponentials are eigenfunctions of the generator, every integro-differential
+term acts algebraically on an exponential ansatz, and the resolvent collapses to a finite-dimensional
+linear system. Three boundary conditions at the absorbing barrier close the $3\times 3$ system.
+The survival probability follows by the same architecture at zero tilt ($k=0$). This section derives
+both resolvents in closed form.
 
 \subsection{Killed Moment Resolvent}\label{sec:moment-resolvent}
 
@@ -697,7 +724,7 @@ with $\widehat{U}(q,z)=0$ for $z\le -h_0$.
 
 \begin{assumption}[Generic six-root regime]\label{ass:six-root}
 Fix an integer $k\ge 0$ satisfying $k\eta_{2,+}<1$, and let $q>0$. Assume:
-\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\begin{enumerate}[(i)]
 \item $\sigma_Z>0$;
 \item the characteristic equation $\psi_Z^{(k)}(\gamma)=q$ has six simple roots $\gamma_1(q),\dots,\gamma_6(q)$,
 ordered so that
@@ -708,13 +735,14 @@ ordered so that
 \end{enumerate}
 \end{assumption}
 
-\paragraph{Forcing expansion.}
+\begin{lemma}[Forcing expansion]\label{lem:forcing-expansion}
 Since $b\in(0,1)$ and $z>-h_0$ together imply $e^{h_0+z}>1>b$, the payoff kernel is a polynomial in $e^z$:
-\[
+\begin{equation}\label{eq:forcing-expansion}
 g_k(z;h_0) = \sum_{j=0}^k c_{k,j}(h_0)\,e^{jz},
 \qquad
 c_{k,j}(h_0) := \binom{k}{j}(-1)^{k-j}b^{k-j}e^{jh_0}.
-\]
+\end{equation}
+\end{lemma}
 
 \begin{lemma}[Particular solution]\label{lem:Upart}
 Under Assumption~\ref{ass:six-root}(iii),
@@ -842,7 +870,7 @@ By Lemma~\ref{lem:Mbar-inv} below, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is inver
 \begin{proof}
 \textit{Step 1: boundary conditions from killing.}
 The killing condition $\widehat{U}(q,z;h_0)=0$ for $z\le-h_0$ imposes, at $z=-h_0^+$,
-\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\begin{enumerate}[(i)]
 \item $\widehat{U}(q,-h_0^+;h_0)=0$;
 \item $K_{j,-}^{(k)}\!\left[\widehat{U}(q,\cdot\,;h_0)\right](-h_0^+)=0$, \quad $j=1,2$.
 \end{enumerate}
@@ -884,9 +912,9 @@ Applying~\eqref{eq:phase-on-exp} to $\widehat{U}_{\mathrm{part}}(q,z;h_0)=\sum_j
 yields the explicit entries of $\mathbf{b}^{(k)}$ stated above.
 
 \textit{Step 5: matrix form and solution.}
-Collecting the three conditions into a single system gives
+The three conditions assemble into
 $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\,\mathbf{B}^{(k)}=-\mathbf{b}^{(k)}$.
-By Lemma~\ref{lem:Mbar-inv} below, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is invertible, so
+By Lemma~\ref{lem:Mbar-inv}, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is invertible, so
 \[
 \mathbf{B}^{(k)}(q;h_0)=-\big(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\big)^{-1}\mathbf{b}^{(k)}(q;h_0).\qedhere
 \]
@@ -926,7 +954,6 @@ and $r_{j,-}^{(k)}+\gamma_m\neq 0$ because $-r_{j,-}^{(k)}$ is a pole of $\psi_Z
 so $\psi_Z^{(k)}(-r_{j,-}^{(k)})=\infty\neq q$, hence $\gamma_m\neq -r_{j,-}^{(k)}$.
 \end{proof}
 
-\paragraph{Laplace-domain moment.}
 Evaluating $\widehat{U}$ at the initial state $Z_0=0$ gives
 \begin{equation}\label{eq:Uhat-zero}
 \widehat{U}(q,0;h_0)
@@ -1061,7 +1088,7 @@ $\Rea(\gamma)<0$.
 
 \textit{Step 4: boundary conditions.}
 The killing condition imposes, at $z=-h_0^+$:
-\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\begin{enumerate}[(i)]
 \item $\widehat{U}_{\mathrm{surv}}(q,-h_0^+;h_0)=0$;
 \item $K_{j,-}^{(0)}[\widehat{U}_{\mathrm{surv}}](-h_0^+)=0$, \quad $j=1,2$,
 \end{enumerate}
@@ -1143,119 +1170,62 @@ For each $h_0\in\{0.01,0.10,0.25,0.50,0.75,1.00,1.50,2.00\}$ we report the survi
 probability $p_{\mathrm{surv}}$ and the following conditional statistics of $\Pi_T\mid\{\tau>T\}$,
 where $\mu_k:=\E[\Pi_T^k\mid\tau>T]$:
 \begin{equation}\label{eq:stdmom}
-\text{mean}:=\mu_1,\quad
-\text{variance}:=\mu_2-\mu_1^2,\quad
-\text{skewness}:=\frac{\mu_3-3\mu_1\mu_2+2\mu_1^3}{(\mu_2-\mu_1^2)^{3/2}},\quad
+\begin{aligned}
+&\text{mean}:=\mu_1,\qquad
+\text{variance}:=\mu_2-\mu_1^2,\\
+&\text{skewness}:=\frac{\mu_3-3\mu_1\mu_2+2\mu_1^3}{(\mu_2-\mu_1^2)^{3/2}},\qquad
 \text{ex.\ kurt}:=\frac{\mu_4-4\mu_1\mu_3+6\mu_1^2\mu_2-3\mu_1^4}{(\mu_2-\mu_1^2)^{2}}-3.
+\end{aligned}
 \end{equation}
 
-The MC benchmark uses $10^5$ Euler--Poisson paths with $252$ steps and seed 42;
-conditional statistics are computed over surviving paths only.
-
-\paragraph{Note on $h_0=0.01$.}
-At $h_0=0.01$ the survival probability is only $\approx\!2.7\%$, leaving roughly
-$2{,}700$ surviving paths out of $10^5$. MC estimates of higher-order statistics are
-therefore noisy at this point; the Laplace method is unaffected.
-
-\begin{table}[h]
-\centering
-\small
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{c cc cc cc}
-\toprule
-& \multicolumn{2}{c}{$p_{\mathrm{surv}}$}
-& \multicolumn{2}{c}{Mean}
-& \multicolumn{2}{c}{Variance} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
-$h_0$ & Laplace & MC & Laplace & MC & Laplace & MC \\
-\midrule
-$0.01$ & $0.0271$ & $0.0550$ & $3.4548$ & $3.4362$ & $3.5915$ & $3.7417$ \\
-$0.10$ & $0.2420$ & $0.2631$ & $2.4707$ & $2.4436$ & $1.8218$ & $1.8338$ \\
-$0.25$ & $0.5290$ & $0.5444$ & $1.7329$ & $1.7200$ & $0.9009$ & $0.9052$ \\
-$0.50$ & $0.8331$ & $0.8412$ & $1.2922$ & $1.2862$ & $0.4955$ & $0.4996$ \\
-$0.75$ & $0.9560$ & $0.9586$ & $1.1602$ & $1.1590$ & $0.3648$ & $0.3671$ \\
-$1.00$ & $0.9908$ & $0.9917$ & $1.1231$ & $1.1235$ & $0.2975$ & $0.2990$ \\
-$1.50$ & $0.9998$ & $0.9998$ & $1.1102$ & $1.1113$ & $0.2289$ & $0.2299$ \\
-$2.00$ & $1.0000$ & $1.0000$ & $1.1078$ & $1.1090$ & $0.1992$ & $0.2001$ \\
-\bottomrule
-\end{tabular}
-\caption{Survival probability, conditional mean and conditional variance:
-Laplace--resolvent vs.\ Monte Carlo ($10^5$ paths, $252$ steps).
-The discrepancy in $p_{\mathrm{surv}}$ at $h_0=0.01$ reflects the scarcity of
-surviving paths ($\approx\!2{,}700$ out of $10^5$).}
-\label{tab:moments-low}
-\end{table}
-
-\begin{table}[h]
-\centering
-\small
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{c cc cc cc}
-\toprule
-& \multicolumn{2}{c}{Skewness}
-& \multicolumn{2}{c}{Excess kurtosis}
-& \multicolumn{2}{c}{CPU time (s)} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
-$h_0$ & Laplace & MC & Laplace & MC & Laplace & MC \\
-\midrule
-$0.01$ & $2.030$ & $2.101$ & $9.33$ & $8.01$ & $0.06$ & $3.34$ \\
-$0.10$ & $2.006$ & $2.036$ & $9.09$ & $8.28$ & $0.06$ & $3.34$ \\
-$0.25$ & $1.946$ & $1.962$ & $8.51$ & $7.87$ & $0.06$ & $3.34$ \\
-$0.50$ & $1.784$ & $1.803$ & $7.20$ & $6.97$ & $0.06$ & $3.30$ \\
-$0.75$ & $1.625$ & $1.645$ & $6.18$ & $6.06$ & $0.06$ & $3.28$ \\
-$1.00$ & $1.539$ & $1.562$ & $5.72$ & $5.65$ & $0.06$ & $3.29$ \\
-$1.50$ & $1.502$ & $1.527$ & $5.48$ & $5.44$ & $0.06$ & $3.28$ \\
-$2.00$ & $1.490$ & $1.517$ & $5.35$ & $5.33$ & $0.06$ & $3.33$ \\
-\bottomrule
-\end{tabular}
-\caption{Conditional skewness, excess kurtosis, and wall-clock CPU time:
-Laplace--resolvent vs.\ Monte Carlo ($10^5$ paths, $252$ steps).
-Laplace time covers five Talbot inversions ($k=0,1,2,3,4$) on a standard laptop.
-The Laplace method achieves a ${\approx}55\times$ speed-up.}
-\label{tab:moments-high}
-\end{table}
-
-\paragraph{No-shorting limit.}
 As $h_0\to\infty$ the short holding $n_2\to 0$ and the portfolio converges to a unit long
-position in asset $1$ (Remark~\ref{rem:no-shorting}).
-All conditional statistics converge to those of $e^{X_{1,T}}$ under $\P$, which are
-available in closed form from the characteristic exponent \eqref{eq:Psi}:
+position in asset $1$ (Remark~\ref{rem:no-shorting}), so all conditional statistics
+converge to those of $e^{X_{1,T}}$ under $\P$:
 \[
 \lim_{h_0\to\infty}\mu_k = \E_\P\!\left[e^{kX_{1,T}}\right]
 = \exp\!\bigl(T\,\Psi(-ik,0)\bigr).
 \]
-Table~\ref{tab:noshorting} compares the Laplace output at $h_0=100$ against these targets.
-The relative errors are below $10^{-11}$, confirming the internal consistency of the
-resolvent construction, the Talbot algorithm, and the drift normalisation
-$\mu_i^{\mathrm{eff}}=\mu_i-\tfrac{1}{2}\sigma_i^2-\lambda_i\chi_i$.
+Table~\ref{tab:results} reports all statistics together with these analytical limits.
 
-\begin{table}[h]
-\centering
+\begin{table}[ht]
+\centering\small
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{l ccc}
+\begin{tabular}{c cc cccc}
 \toprule
-Statistic & Analytical & Laplace ($h_0=100$) & $|\text{rel.\ error}|$ \\
+& \multicolumn{2}{c}{$p_{\mathrm{surv}}$} & & & & \\
+\cmidrule(lr){2-3}
+$h_0$ & Lap. & MC & Mean & Variance & Skewness & Ex.\ Kurt. \\
 \midrule
-Mean           & $1.10517092$ & $1.10517092$ & $<10^{-11}$ \\
-Variance       & $0.16677912$ & $0.16677912$ & $<10^{-11}$ \\
-Skewness       & $1.44931133$ & $1.44931133$ & $<10^{-10}$ \\
-Excess kurtosis& $5.03708463$ & $5.03708463$ & $<10^{-10}$ \\
+$0.01$ & $0.0271$ & $0.0550$ & $3.4548$ & $3.5915$ & $2.030$ & $9.33$ \\
+$0.10$ & $0.2420$ & $0.2631$ & $2.4707$ & $1.8218$ & $2.006$ & $9.09$ \\
+$0.25$ & $0.5290$ & $0.5444$ & $1.7329$ & $0.9009$ & $1.946$ & $8.51$ \\
+$0.50$ & $0.8331$ & $0.8412$ & $1.2922$ & $0.4955$ & $1.784$ & $7.20$ \\
+$0.75$ & $0.9560$ & $0.9586$ & $1.1602$ & $0.3648$ & $1.625$ & $6.18$ \\
+$1.00$ & $0.9908$ & $0.9917$ & $1.1231$ & $0.2975$ & $1.539$ & $5.72$ \\
+$1.50$ & $0.9998$ & $0.9998$ & $1.1102$ & $0.2289$ & $1.502$ & $5.48$ \\
+$2.00$ & $1.0000$ & $1.0000$ & $1.1078$ & $0.1992$ & $1.490$ & $5.35$ \\
+\midrule
+$\infty$ & $1$ & --- & $1.10517092$ & $0.16677912$ & $1.44931133$ & $5.03708463$ \\
 \bottomrule
 \end{tabular}
-\caption{No-shorting limit: Laplace at $h_0=100$ vs.\ analytical statistics of
-$e^{X_{1,T}}$ under $\P$. The analytical values use raw moments
-$\E[e^{kX_{1,T}}]=\exp(T\,\Psi(-ik,0))$ converted via \eqref{eq:stdmom}.}
-\label{tab:noshorting}
+\caption{Laplace--resolvent conditional statistics and the no-shorting analytical limit.
+Mean, variance, skewness, and excess kurtosis are conditional on survival ($\tau>T$)
+and computed via the resolvent method (Laplace); survival probability MC benchmark uses
+$10^5$ Euler--Poisson paths ($252$ steps, seed 42).
+The large MC discrepancy in $p_{\mathrm{surv}}$ at $h_0=0.01$ reflects path scarcity
+($\approx\!2{,}700$ surviving paths), where MC is unreliable; the Laplace method is unaffected.
+The bottom row gives the analytical limits as $h_0\to\infty$; Laplace at $h_0=100$ matches
+these values to relative error $<10^{-11}$, confirming internal consistency of the
+resolvent construction, Talbot inversion, and the drift normalisation
+$\mu_i^{\mathrm{eff}}=\mu_i-\tfrac{1}{2}\sigma_i^2-\lambda_i\chi_i$.}
+\label{tab:results}
 \end{table}
 
-% ============================================================
-\section{Bibliography}
-% ============================================================
 \bibliographystyle{abbrvnat}
 \bibliography{finance}
 
 % ============================================================
-\appendix
+\appendices
 \section{Generalised Beta of the Second Kind Approximation to the Payoff Distribution}\label{app:gb2}
 % ============================================================
 
@@ -1264,7 +1234,6 @@ four killed moments $M_k(h_0)$, $k=1,2,3,4$, and the survival probability $p_{\m
 This appendix shows how to fit a four-parameter \emph{Generalised Beta of the Second Kind} (GB2)
 distribution to these outputs.
 
-\paragraph{Structure of the conditional law.}
 On $\{\tau>T\}$ the payoff satisfies
 \[
 Y := \Pi_T\mid\{\tau>T\}
@@ -1279,7 +1248,6 @@ $Y\in(0,\infty)$ with no natural positive shift. The full payoff law is
 \end{equation}
 where $p_{\mathrm{liq}}=1-p_{\mathrm{surv}}$.
 
-\paragraph{Conditional survival moments.}
 Since $\Pi_T^k = Y^k\,\one_{\{\tau>T\}}$,
 \begin{equation}\label{eq:cond-moments}
 \mu_k^+ := \E[Y^k] = \frac{M_k(h_0)}{p_{\mathrm{surv}}(h_0)},
@@ -1287,7 +1255,6 @@ Since $\Pi_T^k = Y^k\,\one_{\{\tau>T\}}$,
 \end{equation}
 from Proposition~\ref{prop:first-two-moments}, for $k=1,2,3,4$.
 
-\paragraph{GB2 distribution.}
 We model $Y\sim\mathrm{GB2}(a,\beta,p,q)$ with density
 \begin{equation}\label{eq:gb2-density}
 f_Y(y)
@@ -1299,8 +1266,8 @@ where $a>0$ is a tail/shape parameter, $\beta>0$ is a scale parameter,
 $p>0$ and $q>0$ are left- and right-shape parameters, and $B(p,q)=\Gamma(p)\Gamma(q)/\Gamma(p+q)$
 is the beta function.
 
-\paragraph{GB2 moments.}
-For $k < aq$, the $k$-th raw moment is
+\begin{lemma}[GB2 raw moments]\label{lem:gb2-moments}
+For $k < aq$, the $k$-th raw moment of $Y\sim\mathrm{GB2}(a,\beta,p,q)$ is
 \begin{equation}\label{eq:gb2-moments}
 \E[Y^k]
 =
@@ -1309,8 +1276,8 @@ For $k < aq$, the $k$-th raw moment is
 \beta^k\,\frac{\Gamma(p+k/a)\,\Gamma(q-k/a)}{\Gamma(p)\,\Gamma(q)}.
 \end{equation}
 The first four moments exist if and only if $q>4/a$.
+\end{lemma}
 
-\paragraph{Calibration.}
 We fit $(a,\beta,p,q)$ by matching the four conditional moments $\mu_1^+,\ldots,\mu_4^+$.
 
 \medskip\noindent
@@ -1347,7 +1314,6 @@ Given $(a,p,q)$ from Step 1, recover
 \mu_1^+\,\frac{B(p,q)}{B\!\left(p+1/a,\;q-1/a\right)}.
 \end{equation}
 
-\paragraph{Full distribution and quantiles.}
 The CDF of $\Pi_T$ is
 \[
 F_{\Pi}(y) =
@@ -1367,7 +1333,6 @@ F_Y^{-1}\!\!\left(\dfrac{u - p_{\mathrm{liq}}}{p_{\mathrm{surv}}}\right) & u > p
 \]
 where $F_Y^{-1}$ is the GB2 quantile function.
 
-\paragraph{Consistency check.}
 After fitting, verify that
 \[
 \beta^k\,\frac{\Gamma(p+k/a)\,\Gamma(q-k/a)}{\Gamma(p)\,\Gamma(q)}
@@ -1376,7 +1341,6 @@ After fitting, verify that
 \qquad k=1,2,3,4.
 \]
 
-\paragraph{Rationale for GB2.}
 The GB2 family nests several common distributions (Burr XII, log-logistic, Pareto,
 Weibull, log-normal in a limit) and has four free parameters, enabling the simultaneous
 matching of four conditional moments. It accommodates the power-law tails that arise in

@@ -22,7 +22,11 @@
       "Bash(kpsewhich abbrvnamed.bst)",
       "Read(//usr/local/texlive/2026/texmf-dist/bibtex/bst/natbib/**)",
       "Read(//usr/local/texlive/**)",
-      "Bash(bibtex optimal_long_short)"
+      "Bash(bibtex optimal_long_short)",
+      "WebFetch(domain:mirrors.ctan.org)",
+      "WebFetch(domain:ch.mirrors.cicku.me)",
+      "Bash(curl -L --max-time 60 \"https://ch.mirrors.cicku.me/ctan/macros/latex/contrib/interact/interact.cls\")",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/emitanaka/combine2019/master/output/articles/article_template_tf_article/interact.cls\")"
     ],
     "deny": []
   }
