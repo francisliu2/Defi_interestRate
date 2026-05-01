@@ -26,7 +26,10 @@
       "WebFetch(domain:mirrors.ctan.org)",
       "WebFetch(domain:ch.mirrors.cicku.me)",
       "Bash(curl -L --max-time 60 \"https://ch.mirrors.cicku.me/ctan/macros/latex/contrib/interact/interact.cls\")",
-      "Bash(curl -sL \"https://raw.githubusercontent.com/emitanaka/combine2019/master/output/articles/article_template_tf_article/interact.cls\")"
+      "Bash(curl -sL \"https://raw.githubusercontent.com/emitanaka/combine2019/master/output/articles/article_template_tf_article/interact.cls\")",
+      "Bash(/Users/francis/Defi_interestRate/.venv/bin/python jobs/sensitivity_analysis.py)",
+      "Bash(.venv/bin/python jobs/sensitivity_analysis.py)",
+      "Bash(.venv/bin/python -)"
     ],
     "deny": []
   }

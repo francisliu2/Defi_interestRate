@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/python jobs/frontier_analysis.py)"
+    ]
+  }
+}

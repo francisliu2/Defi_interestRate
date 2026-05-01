@@ -121,8 +121,10 @@
 
 \begin{abstract}
 We study the optimal initial sizing of a leveraged long--short position in a DeFi lending
-protocol, where the position is liquidated irrevocably once the collateral-to-liability
-health factor breaches one. Under Kou double-exponential jump--diffusion dynamics, two
+protocol under a survival-conditioned solvent-path payoff model: the position is terminated
+irrevocably when the collateral-to-liability health factor breaches one, and we model
+the payoff distribution on surviving paths together with the survival probability, without
+modelling the mechanics of liquidation itself. Under Kou double-exponential jump--diffusion dynamics, two
 classical tools --- an exponential change of measure and a Laplace--resolvent reduction ---
 combine to yield semi-analytic expressions for the conditional payoff moments and survival
 probability as explicit functions of the initial log health factor; these are new results
@@ -130,8 +132,8 @@ for this problem and market. The expressions evaluate in milliseconds versus min
 Monte Carlo, enabling smooth gradient-based optimisation. The same methodology extends
 directly to other barrier-terminated leveraged positions, including traditional margin
 accounts, FX carry trades with stop-loss triggers, and commodity spread positions.
-Using these expressions, we characterise how the optimal health factor trades off expected
-return against liquidation risk.
+Using these expressions, we characterise how the optimal initial health buffer $h_0^\star$
+trades off expected return against liquidation risk.
 \end{abstract}
 
 \begin{keywords}
@@ -155,7 +157,11 @@ expected returns on surviving paths but raises the probability of forced exit. C
 compound the difficulty — daily log-returns of 10--20\% are common and flash crashes can exceed 50\%
 — making fat-tailed jump dynamics essential for realistic liquidation probabilities. 
 
-This paper provides the first exact, semi-analytic solution to the mean-variance-solvency optimal sizing problem.
+This paper provides the first exact, semi-analytic solution to the optimal sizing problem under a
+\emph{survival-conditioned solvent-path payoff model}: the objective is defined on the payoff
+realised on paths that avoid liquidation, and the liquidation boundary is treated as an absorbing
+barrier\footnote{Internal mechanics — keeper fees, partial penalties, slippage — are outside the
+scope of the model.}.
 
 We work under the Kou double-exponential jump--diffusion framework \citep{Kou2002}. The solution
 rests on two successive dimensional reductions. First, an exponential change of measure absorbs the
@@ -229,23 +235,32 @@ S_{i,t}=S_{i,0}e^{X_{i,t}},\qquad X_{i,0}=0,\quad i=1,2,
 where $X_1,X_2$ are log-price processes to be specified in Section~\ref{sec:model}.
 The investor holds $n_1>0$ units of asset $S_1$ (long leg) and $n_2>0$ units of asset $S_2$ (short leg).
 
-Fix $b\in(0,1)$, the \emph{borrowing power} (or \emph{liquidation threshold} in AAVE's terminology) of
-the collateral asset $S_1$: it is the maximum fraction of the collateral value that the protocol requires
-to be maintained against the outstanding liability at all times.
-The \emph{health factor} is
+Let
 \[
-H_t := \frac{b\,n_1S_{1,t}}{n_2S_{2,t}},
+V_{1,t}:=n_1 S_{1,t},\qquad V_{2,t}:=n_2 S_{2,t}
+\]
+denote the \emph{collateral value} (long leg) and the \emph{borrow value} (outstanding liability) at
+time $t$. Fix $b\in(0,1)$, the \emph{collateral factor} of asset $S_1$ (called \emph{liquidation
+threshold} in AAVE v3 terminology): the protocol requires the $b$-adjusted collateral to cover the
+borrow value at all times,
+\[
+b\,V_{1,t} \;\ge\; V_{2,t}.
+\]
+The \emph{health factor} summarises this margin condition as a single ratio,
+\begin{equation}\label{eq:health-factor}
+H_t := \frac{b\,V_{1,t}}{V_{2,t}} = \frac{b\,n_1 S_{1,t}}{n_2 S_{2,t}},
 \qquad
-h_t:=\log H_t,
-\]
-where $h_t$ is the \emph{log health factor}.
-Liquidation is triggered the instant the collateral can no longer cover the liability at rate $b$:
+h_t := \log H_t,
+\end{equation}
+where $h_t$ is the \emph{log health factor}. The solvency condition is $H_t\ge 1$
+($h_t\ge 0$); breaching it is equivalent to the borrow value exceeding the $b$-adjusted collateral.
+Liquidation is triggered at the first such instant:
 \[
-\tau:=\inf\{t\ge 0:\; H_t<1\}.
+\tau:=\inf\{t\ge 0:\;H_t<1\} = \inf\{t\ge 0:\;h_t<0\}.
 \]
-When $H_t\ge 1$ the position is solvent; when $H_t<1$ the smart contract liquidates it instantaneously
-and irrevocably. A larger $b$ sets the liquidation boundary more conservatively, triggering early exit
-on adverse price moves and limiting the protocol's risk of bad debt.
+A smaller $b$ allows a larger borrow-to-collateral ratio before the boundary is breached, giving the
+position more room to absorb adverse price moves; a larger $b$ triggers earlier forced exit and limits
+the protocol's risk of bad debt.
 
 Since
 \[
@@ -264,14 +279,54 @@ so that $h_t=h_0+Z_t$ and the liquidation time is equivalently
 \tau=\inf\{t\ge 0:\; Z_t<-h_0\}.
 \]
 The one-dimensional process $Z$ thus inherits all the relevant risk: the position survives if and only if
-$Z$ stays above the level $-h_0$.
+$Z$ stays above the absorbing level $-h_0$. The parameter $h_0 = \log H_0$ is therefore the
+\emph{initial log-cushion} — the log-distance of the initial health factor from the liquidation
+boundary $H=1$. A larger $h_0$ means the position starts further from forced exit; $h_0\to 0^+$
+means the position starts almost at the boundary with negligible cushion.
 
 The gross profit at horizon $T$, contingent on survival, is
 \[
 \Pi_T:=(n_1S_{1,T}-n_2S_{2,T})^+\,\one_{\{\tau>T\}}.
 \]
 The positive part reflects that the investor closes the position only if it is in profit at $T$; the
-indicator $\one_{\{\tau>T\}}$ reflects that the position must have survived to maturity. Using the definition of $H_T$, one obtains the following factorization.
+indicator $\one_{\{\tau>T\}}$ reflects that the position must have survived to maturity.
+This paper is a \emph{survival-conditioned solvent-path payoff model}: it characterises the
+distribution of $\Pi_T$ on the event $\{\tau>T\}$ and the probability of that event, with the
+boundary $H_t=1$ treated as an absorbing state. The liquidation mechanics are intentionally
+outside the model scope; the remark below clarifies what is omitted and why the absorbing-barrier
+proxy is nonetheless appropriate for position-sizing purposes.
+
+\begin{remark}[Liquidation mechanics]\label{rem:liquidation}
+When $H_t$ hits one, a DeFi lending protocol does not simply extinguish the position: it
+initiates a protocol-specific liquidation procedure executed by third-party keepers.
+In AAVE v3, a keeper may close up to 50\% of the debt (100\% if the health factor falls below a
+secondary threshold), claiming a \emph{liquidation bonus} of 5--15\% of the seized collateral as
+compensation; Compound uses a fixed close factor with a similar bonus structure
+\citep{Qin2021,HeimbachHuang2024}.
+
+The execution price received by the keeper — and hence the residual recovery value for the
+borrower — is itself uncertain. Liquidations in DeFi are settled on-chain via decentralised
+exchanges: in stressed markets, the available liquidity may be insufficient to absorb a large
+collateral sale without significant slippage, compressing the borrower's recovery further
+\citep{Qin2021}. The mechanics therefore depend on the specific protocol version, the pool
+liquidity at the moment of liquidation, the gas price environment, and the speed of keeper
+response — none of which are captured by a single-barrier first-passage model.
+
+For these reasons we assign zero payoff to liquidated paths: $\Pi_T := 0$ on $\{\tau\le T\}$.
+This is a \emph{conservative proxy} — it understates the expected residual value whenever the
+borrower retains a fractional recovery, and overstates the loss relative to protocols that
+execute partial liquidations. Its practical justification is two-fold. First, the borrower
+typically has no control over the execution details once the boundary is breached; from an
+ex-ante sizing perspective the liquidation payoff is a zero-mean random variable with uncertain
+sign, and setting it to zero is the risk-neutral midpoint. Second, the penalty term
+$\delta\,p_{\mathrm{liq}}$ in the objective of \eqref{eq:Phi} provides a separate lever to
+price liquidation risk at whatever level the investor deems appropriate, without requiring an
+explicit model of the post-liquidation cash flow. The fragility of DeFi lending protocols under
+large price shocks \citep{Chiu2022} further supports a conservative treatment of the
+post-liquidation value.
+\end{remark}
+
+Using the definition of $H_T$, one obtains the following factorization.
 
 \begin{lemma}[Payoff factorization]\label{lem:payoff-factor}
 \begin{equation}\label{eq:payoff-factor}
@@ -307,6 +362,16 @@ Positivity of both holdings requires $e^{h_0}>b$, i.e.
 \[
 h_0>\ln b.
 \]
+The initial gross leverage — long-leg value per unit of equity — follows directly from
+\eqref{eq:n-from-h0}:
+\begin{equation}\label{eq:leverage}
+L_0 := n_1(h_0)\,S_{1,0} = \frac{e^{h_0}}{e^{h_0}-b}.
+\end{equation}
+$L_0$ is strictly decreasing in $h_0$: as $h_0\downarrow\ln b$, leverage $L_0\uparrow\infty$;
+as $h_0\to\infty$, leverage $L_0\downarrow 1$ (the short leg vanishes and the position becomes
+unlevered). Equivalently, the borrow-to-equity ratio is $L_0 - 1 = b/(e^{h_0}-b)$, which also
+collapses the initial health factor back to $H_0=e^{h_0}$ via $H_0 = b\,L_0/(L_0-1)$.
+Choosing $h_0$ is therefore equivalent to choosing the initial leverage.
 
 Since every quantity of interest — the expected payoff, its variance, and the liquidation probability — is
 determined by $h_0$ through \eqref{eq:n-from-h0} and the killed process $(Z,\tau)$, the portfolio problem reduces to a one-dimensional optimisation:
@@ -319,7 +384,7 @@ by substituting $h_0^\star$ back into \eqref{eq:n-from-h0}.
 
 The specific criterion studied in this paper is a penalised conditional mean--variance objective. Let
 $\E[\,\cdot\mid\tau>T]$ denote expectation conditional on non-liquidation. The objective is
-\[
+\begin{equation}\label{eq:Phi}
 \Phi(h_0)
 :=
 \E[\Pi_T\mid\tau>T]
@@ -327,12 +392,17 @@ $\E[\,\cdot\mid\tau>T]$ denote expectation conditional on non-liquidation. The o
 \tfrac{\alpha}{2}\,\mathrm{Var}(\Pi_T\mid\tau>T)
 -
 \delta\,p_{\mathrm{liq}}(T,0;h_0),
-\]
+\end{equation}
 where $\alpha\ge 0$ is a risk-aversion coefficient and $\delta\ge 0$ penalises the probability of forced
 liquidation. The first two terms reward a high risk-adjusted return on the surviving paths; the third term
 discourages positions so aggressive that liquidation becomes likely. The interplay between the three terms
-means that the optimal $h_0^\star$ balances leverage (higher $h_0$ increases the conditional payoff but
-also raises liquidation risk) against downside protection.
+means that the optimal $h_0^\star$ — which we call the \emph{optimal initial health buffer} —
+balances leverage against downside protection: a lower $h_0$ implies higher leverage, a larger
+conditional upside on surviving paths, but a higher probability of forced liquidation; a higher $h_0$
+provides more cushion above the barrier, reducing liquidation risk at the cost of a smaller
+conditional payoff. We do not refer to $h_0^\star$ as ``optimal leverage'' because leverage is a
+derived quantity \eqref{eq:leverage} that is not directly controlled; the investor chooses the
+health buffer and leverage follows.
 
 The remainder of the paper is devoted to computing the building blocks of $\Phi$: the killed moments
 $m_k(T;h_0)$ and the survival probability $p_{\mathrm{surv}}(T,0;h_0)$, each as a closed-form function
@@ -1311,6 +1381,131 @@ sample sizes. The Laplace method covers five Talbot inversions ($k=0,\ldots,4$);
 ${\approx}55{\times}$ speed-up over MC is uniform across all $h_0$ values.}
 \label{tab:diff}
 \end{table}
+
+\subsection{Parameter sensitivity}\label{sec:sensitivity}
+
+Figure~\ref{fig:sensitivity} shows how $p_{\mathrm{surv}}$ (left column) and the conditional
+mean $\E[\Pi_T\mid\tau>T]$ (right column) vary with $h_0$ as each parameter is swept in turn.
+For the collateral factor $b$ (row~e--f), survival probability is independent of $b$ at fixed
+$h_0$ — only the payoff kernel changes — so the left panel shows the initial leverage
+$L_0 = e^{h_0}/(e^{h_0}-b)$ instead.
+
+Three patterns dominate. (i)~\emph{Volatility} is the strongest driver: at $0.3\times$ scale,
+almost all paths survive for $h_0\ge 0.3$; at $2\times$ scale, the same cushion yields
+survival below 40\%. (ii)~\emph{Correlation} acts entirely through the effective variance
+of $Z=X_1-X_2$: high $\rho$ narrows the spread of $Z$ and lifts the survival curve, with
+negligible effect on the conditional mean. (iii)~\emph{Jump intensity} and \emph{horizon}
+compress survival monotonically, while increasing the conditional mean at low $h_0$ through
+selective survivor effects. For $b$, leverage can exceed $10\times$ at $h_0 < 0.2$ for
+$b = 0.95$, explaining why the conditional mean is highly sensitive to $b$ at small cushions.
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\linewidth]{fig_sensitivity.pdf}
+\caption{Left column: survival probability $p_{\mathrm{surv}}$ (rows~a--d) and initial
+leverage $L_0$ (row~e, log scale) versus $h_0$. Right column: conditional mean
+$\E[\Pi_T\mid\tau>T]$. Each row varies one parameter; all others fixed at
+Table~\ref{tab:num-params}. Encoding: colour and line style identify parameter values
+(solid/green = benchmark); the heavier line is the baseline.
+Laplace--resolvent, $h_0\in[0.05,2.00]$, 40 points per curve.}
+\label{fig:sensitivity}
+\end{figure}
+
+% ============================================================
+\section{Discussion}\label{sec:discussion}
+% ============================================================
+
+\subsection{Model limitations}\label{sec:limitations}
+
+The model yields an exact solution within a deliberately narrow scope. The following maintained
+assumptions represent the primary directions for future work.
+
+\textbf{Instantaneous oracle and price discovery.}
+The health factor $H_t$ in \eqref{eq:health-factor} is computed from protocol price oracles that
+report asset prices with a lag — typically one block (12 seconds on Ethereum mainnet). During
+periods of extreme volatility the oracle price can deviate substantially from the true market
+price, allowing the true health factor to breach one before the protocol detects it, or
+preventing liquidation when the true health factor has in fact recovered. The model treats oracle
+prices as continuous and perfectly synchronised with the underlying asset processes.
+
+\textbf{Zero slippage at liquidation.}
+The absorbing-barrier assumption implies that collateral is liquidated at the mid-price prevailing
+at $\tau$. In practice a keeper must sell the collateral into on-chain liquidity pools, and the
+effective execution price is depressed by slippage on that trade. For large positions this effect
+can be material; \citet{Qin2021} document cases where slippage exceeded the liquidation bonus
+itself.
+
+\textbf{No liquidation bonus recovery.}
+The zero-recovery proxy (Remark~\ref{rem:liquidation}) ignores the keeper's liquidation bonus,
+which reduces the borrower's net recovery. Incorporating an explicit recovery fraction $1-\ell$
+on liquidated paths — where $\ell$ is the protocol bonus rate — would add a second term to
+$\Phi$ in \eqref{eq:Phi} but would not alter the structure of the resolvent, since the bonus
+affects only paths on $\{\tau\le T\}$.
+
+\textbf{Static collateral management.}
+The investor posts an initial collateral position and makes no further adjustments before $T$.
+A sophisticated participant may top up collateral or partially unwind the short leg as $H_t$
+approaches one, dynamically managing the distance to the boundary. Incorporating such controls
+would convert the problem into a stochastic optimal control problem over a reflected or
+absorbed process.
+
+\textbf{Deterministic interest rates.}
+DeFi lending protocols charge a floating borrow rate updated algorithmically as a function of
+pool utilisation \citep{gudgeon2020defi}. The model absorbs the funding cost into the effective
+drift $\mu_2^{\mathrm{eff}}$, treating the rate as deterministic and fixed at inception.
+Stochastic interest rates would couple the short-leg dynamics to a latent utilisation process.
+
+\textbf{No funding constraints.}
+The analysis assumes the investor can hold the initial position to horizon $T$ without receiving
+collateral top-up demands. A capital-constrained investor who cannot post additional margin when
+required may be forced to close the position before $\tau$, introducing an additional stopping
+time that is not captured by the model.
+
+\subsection{Practical implementation}\label{sec:practical}
+
+Despite the above limitations, the semi-analytic framework provides a tractable and fast starting
+point for position sizing. A natural two-step procedure is the following.
+
+\textbf{Step 1 — survival constraint.}
+Fix a maximum tolerated liquidation probability $\bar{p}$ over the horizon $T$, for example
+$\bar{p}=5\%$. The survival probability $p_{\mathrm{surv}}(h_0)$ is monotonically increasing in
+$h_0$ (Table~\ref{tab:results}): at $h_0=0.50$ survival already exceeds $83\%$ under the
+benchmark parameters. Inverting this map identifies the minimum admissible health buffer
+$\underline{h}_0$ satisfying $p_{\mathrm{liq}}(T,0;\underline{h}_0)\le\bar{p}$. The Laplace
+method evaluates $p_{\mathrm{surv}}$ in $\approx60\,\mathrm{ms}$, so the inversion is a fast
+scalar root-find.
+
+\textbf{Step 2 — conditional upside maximisation.}
+Over the feasible set $h_0\ge\underline{h}_0$, maximise the conditional expected payoff, or a
+mean--variance functional, using the semi-analytic moments. Because the moments are noise-free
+and differentiable in $h_0$, a standard one-dimensional line search converges in a handful of
+evaluations with no simulation variance.
+
+The output of this procedure is the \emph{optimal initial health buffer} $h_0^\star$: the
+smallest cushion above the liquidation boundary that simultaneously satisfies the survival
+constraint and maximises conditional performance. The corresponding initial leverage is then
+read off from \eqref{eq:leverage} as $L_0^\star = e^{h_0^\star}/(e^{h_0^\star}-b)$; leverage is
+a consequence of the health-buffer choice, not the primary control variable.
+
+Figure~\ref{fig:frontier} visualises the full tradeoff. The benchmark frontier (solid, coloured
+by $p_{\mathrm{liq}}$) traces out all achievable (variance, mean) pairs as $h_0$ decreases from
+$2$ toward $0$: both the conditional mean and variance increase, but so does liquidation risk.
+The two flanking frontiers show the effect of scaling volatility by $0.5\times$ and $1.5\times$:
+lower volatility compresses the frontier toward the origin (less upside and less risk); higher
+volatility expands it. The two-step procedure picks the point on the investor's preferred
+frontier at which $p_{\mathrm{liq}} \le \bar{p}$ and $\E[\Pi_T\mid\tau>T]$ is maximised.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.72\linewidth]{fig_frontier.pdf}
+\caption{Mean--variance frontier of the conditional payoff $\Pi_T\mid\{\tau>T\}$ for three
+volatility regimes ($0.5\times$, benchmark, $1.5\times$). Each curve is parametrised by
+$h_0\in[0.04,2.00]$; the arrow shows the direction of increasing $h_0$ (lower risk, lower
+upside). The benchmark curve is coloured by $p_{\mathrm{liq}}=1-p_{\mathrm{surv}}$: red
+segments correspond to high liquidation risk (small $h_0$), green to near-certain survival
+(large $h_0$). Script \texttt{jobs/frontier\_analysis.py}.}
+\label{fig:frontier}
+\end{figure}
 
 \bibliographystyle{abbrvnat}
 \bibliography{finance}
