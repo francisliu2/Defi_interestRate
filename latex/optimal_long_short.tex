@@ -1488,28 +1488,27 @@ read off from \eqref{eq:leverage} as $L_0^\star = e^{h_0^\star}/(e^{h_0^\star}-b
 a consequence of the health-buffer choice, not the primary control variable.
 
 Figure~\ref{fig:frontier} visualises the full tradeoff in three dimensions.
-The vertical axis is the conditional mean $\E[\Pi_T\mid\tau>T]$; the two horizontal axes
-are the conditional variance and survival probability.
-Each curve is parametrised by $h_0\in[0.04,2.00]$: as $h_0$ falls, conditional variance
-rises and the curve moves forward along the $p_{\mathrm{surv}}$ axis toward lower survival,
-while the conditional mean (height) first rises then flattens.
-The floor projection (dotted) anchors the curve to the variance--survival plane;
-vertical drop lines link four labelled $h_0$ values to their floor shadows.
-The two flanking frontiers show how scaling volatility by $0.5\times$ or $1.5\times$ shifts
-the entire surface: lower volatility collapses the curve toward low variance and high survival;
-higher volatility expands it, raising conditional upside at the cost of heavier liquidation risk.
+The vertical axis is the conditional mean $\E[\Pi_T\mid\tau>T]$; the two horizontal
+axes are the conditional variance $\mathrm{Var}(\Pi_T\mid\tau>T)$ and the liquidation
+probability $p_\ell=1-p_{\mathrm{surv}}$.
+The curve is parametrised by $h_0\in[0.04,2.00]$: as $h_0$ falls the strategy takes
+on more leverage, pushing the curve toward higher variance and higher $p_\ell$, while
+the conditional mean rises.
+Projections onto all three coordinate planes are shown as solid grey curves: the floor
+($z=\text{const}$) gives the variance--liquidation tradeoff; the left wall ($x=\text{const}$)
+gives the liquidation--upside tradeoff; the back wall ($p_\ell=0$) gives the classical
+mean--variance frontier conditional on near-certain survival.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.78\linewidth]{fig_frontier.pdf}
-\caption{Mean--variance--survival frontier of $\Pi_T\mid\{\tau>T\}$ for three volatility
-regimes ($\sigma\times 0.5$ blue dashed, benchmark black solid, $\sigma\times 1.5$ red dashed).
-Axes: $x=\mathrm{Var}(\Pi_T\mid\tau>T)$, $y=p_{\mathrm{surv}}$, $z=\mathrm{E}[\Pi_T\mid\tau>T]$ (vertical).
-Each curve is parametrised by $h_0\in[0.04,2.00]$; the arrow marks the direction of
-increasing $h_0$ (lower leverage, lower risk, lower conditional upside).
-Four benchmark points are annotated with their $h_0$; vertical drop lines anchor them
-to the floor projection (dotted grey), which shows the variance--survival plane at the
-minimum conditional mean.
+\caption{Mean--variance--liquidation frontier of $\Pi_T\mid\{\tau>T\}$ for the benchmark
+parametrisation.
+Axes: $x=\mathrm{Var}(\Pi_T\mid\tau>T)$, $y=p_\ell=1-p_{\mathrm{surv}}$,
+$z=\mathrm{E}[\Pi_T\mid\tau>T]$ (vertical).
+The curve is parametrised by $h_0\in[0.04,2.00]$; decreasing $h_0$ moves the curve toward
+higher variance, higher $p_\ell$, and higher conditional mean.
+Grey projections on the three coordinate planes recover the pairwise two-dimensional tradeoffs.
 Script \texttt{jobs/frontier\_analysis.py}.}
 \label{fig:frontier}
 \end{figure}
