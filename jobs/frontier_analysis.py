@@ -1,8 +1,8 @@
 """
-3-D mean–variance–survival frontier.
+3-D mean–variance–liquidation frontier.
 
   x = Var(Pi_T | tau > T)   — conditional variance
-  y = p_surv                 — survival probability
+  y = p_liq = 1 - p_surv    — liquidation probability
   z = E[Pi_T | tau > T]     — conditional mean  (the vertical axis)
 
 Three volatility regimes are drawn.  The benchmark is annotated at four
@@ -91,9 +91,7 @@ for lbl, kw, color, ls, lw, alpha in FRONTIERS:
 #   +x  → right on screen
 #   +y  → left / into depth on screen
 #   +z  → up on screen
-# Labels staggered alternately left-right.
 
-FLOOR_Z = 1.08  # floor of the z (mean) axis for drop lines (just below data min ~1.108)
 
 # Labels sit on the floor (z = FLOOR_Z); offsets are in (dx_var, dy_ps) only.
 # view_init(elev=24, azim=-52): +x → right on screen, +y → left/depth on screen.
@@ -101,13 +99,13 @@ ANNOTS = [
     (0.10,  ( 0.18, -0.06), "left",  "bottom"),
     (0.25,  (-0.20,  0.05), "right", "bottom"),
     (0.50,  ( 0.16,  0.00), "left",  "top"   ),
-    (1.00,  (-0.14, -0.04), "right", "bottom"),
+    # (1.00,  (-0.14, -0.04), "right", "bottom"),
 ]
 
 # ── Figure ─────────────────────────────────────────────────────────────────────
 fig  = plt.figure(figsize=(5.6, 4.6))
 ax   = fig.add_subplot(111, projection="3d")
-ax.view_init(elev=24, azim=-52)
+ax.view_init(elev=10, azim=-30)
 
 # ── Subtle pane background ─────────────────────────────────────────────────────
 for pane in (ax.xaxis.pane, ax.yaxis.pane, ax.zaxis.pane):
@@ -115,80 +113,95 @@ for pane in (ax.xaxis.pane, ax.yaxis.pane, ax.zaxis.pane):
     pane.set_edgecolor((0.80, 0.80, 0.80, 1.00))
 ax.grid(True, lw=0.35, alpha=0.45)
 
-# ── Draw frontiers  (x=var, y=ps, z=mu) ───────────────────────────────────────
-bm_ps = bm_mu = bm_var = None
+# ── Draw frontiers  (x=var, y=p_liq, z=mu) ───────────────────────────────────
+bm_pliq = bm_mu = bm_var = None
 for lbl, color, ls, lw, alpha, (ps, mu, var) in computed:
     good = np.isfinite(var) & np.isfinite(mu) & np.isfinite(ps)
-    ax.plot(var[good], ps[good], mu[good],
+    pliq = 1.0 - ps
+    ax.plot(var[good], pliq[good], mu[good],
             color=color, ls=ls, lw=lw * 0.55, alpha=alpha, label=lbl, zorder=3)
     if lbl == "Benchmark":
-        bm_ps, bm_mu, bm_var = ps[good], mu[good], var[good]
+        bm_pliq, bm_mu, bm_var = pliq[good], mu[good], var[good]
+
+# Labels staggered alternately left-right.
+pad_x = (bm_var.max() - bm_var.min()) * 0.04
+pad_z = (bm_mu.max()  - bm_mu.min())  * 0.04
+
+FLOOR_Z = 1.08  # floor of the z (mean) axis for drop lines (just below data min ~1.108)
+FLOOR_X = max(0.0, bm_var.min() - pad_x)
+
+ax.set_xlim(FLOOR_X, bm_var.max() + pad_x)
+ax.set_ylim(0.0, 1.0)
+ax.set_zlim(FLOOR_Z, bm_mu.max() + pad_z)
+ax.tick_params(axis="x", labelsize=7, pad=1)
+ax.tick_params(axis="y", labelsize=7, pad=1)
+ax.tick_params(axis="z", labelsize=7, pad=1)
 
 # ── Shadows on all three pane walls ───────────────────────────────────────────
-# Floor  (z = FLOOR_Z): variance × p_surv plane
-ax.plot(bm_var, bm_ps, np.full_like(bm_var, FLOOR_Z),
-        color="0.60", lw=0.9, ls=":", alpha=0.55, zorder=1)
-# Left wall  (x = 0): p_surv × E[mean] plane
-ax.plot(np.zeros_like(bm_ps), bm_ps, bm_mu,
-        color="0.60", lw=0.9, ls=":", alpha=0.55, zorder=1)
-# Back wall  (y = 0): variance × E[mean] plane
+# Floor  (z = FLOOR_Z): variance × p_liq plane
+ax.plot(bm_var, bm_pliq, np.full_like(bm_var, FLOOR_Z),
+        color="0.60", lw=0.9, ls="-", alpha=0.85, zorder=1)
+# Left wall  (x = FLOOR_X): p_liq × E[mean] plane
+ax.plot(np.full_like(bm_pliq, FLOOR_X), bm_pliq, bm_mu,
+        color="0.60", lw=0.9, ls="-", alpha=0.85, zorder=1)
+# Back wall  (y = 0): variance × E[mean] plane  (p_liq = 0 = fully solvent)
 ax.plot(bm_var, np.ones_like(bm_var), bm_mu,
-        color="0.60", lw=0.9, ls=":", alpha=0.55, zorder=1)
+        color="0.60", lw=0.9, ls="-", alpha=0.85, zorder=1)
 
 # ── Annotated points ──────────────────────────────────────────────────────────
 h0_grid = H0[np.isfinite(bm_var)]    # H0 values corresponding to good bm data
 
 for h0_target, (dx, dy), ha, va in ANNOTS:
     idx = int(np.argmin(np.abs(h0_grid - h0_target)))
-    xi  = bm_var[idx]   # variance
-    yi  = bm_ps[idx]    # p_surv
-    zi  = bm_mu[idx]    # conditional mean  (vertical)
+    xi  = bm_var[idx]    # variance
+    yi  = bm_pliq[idx]   # p_liq
+    zi  = bm_mu[idx]     # conditional mean  (vertical)
 
     # Marker on curve
-    ax.scatter(xi, yi, zi, s=28, color="black", zorder=6, depthshade=False)
+    ax.scatter(xi, yi, zi, s=10, color="black", zorder=6, depthshade=False)
 
-    # Vertical drop line to floor
+    # drop line to floor
     ax.plot([xi, xi], [yi, yi], [FLOOR_Z, zi],
-            color="0.50", lw=0.7, ls="--", alpha=0.60, zorder=2)
+            color="0.50", lw=0.5, ls="--", alpha=0.60, zorder=2)
+
+    ax.plot([xi, xi], [yi, 1], [zi, zi],
+            color="0.50", lw=0.5, ls="--", alpha=0.60, zorder=2)
+    
+    ax.plot([FLOOR_X, xi], [yi, yi], [zi, zi],
+            color="0.50", lw=0.5, ls="--", alpha=0.60, zorder=2)
 
     # Floor marker
     ax.scatter(xi, yi, FLOOR_Z, s=14, color="0.55", marker="x", zorder=2)
+    ax.scatter(xi, 1, zi, s=14, color="0.55", marker="x", zorder=2)
+    ax.scatter(FLOOR_X, yi, zi, s=14, color="0.55", marker="x", zorder=2)
 
-    # Label on the floor plane
-    txt = rf"$h_0\!=\!{h0_target}$"
-    ax.text(xi + dx, yi + dy, FLOOR_Z, txt,
-            fontsize=7.5, ha=ha, va=va, color="0.30",
-            bbox=dict(boxstyle="round,pad=0.22",
-                      fc="white", ec="none", alpha=0.85),
-            zorder=7)
+    # # Label on the floor plane
+    # txt = rf"$h_0\!=\!{h0_target}$"
+    # ax.text(xi + dx, yi + dy, FLOOR_Z, txt,
+    #         fontsize=7.5, ha=ha, va=va, color="0.30",
+    #         bbox=dict(boxstyle="round,pad=0.22",
+    #                   fc="white", ec="none", alpha=0.85),
+    #         zorder=7)
 
 # ── Direction indicator (increasing h0) ───────────────────────────────────────
 i_tail = int(np.argmin(np.abs(h0_grid - 0.95)))
 i_head = int(np.argmin(np.abs(h0_grid - 0.70)))
-ax.quiver(bm_var[i_tail], bm_ps[i_tail], bm_mu[i_tail],
-          bm_var[i_head] - bm_var[i_tail],
-          bm_ps[i_head]  - bm_ps[i_tail],
-          bm_mu[i_head]  - bm_mu[i_tail],
-          color="0.40", arrow_length_ratio=0.45, lw=1.0, alpha=0.80)
-ax.text(bm_var[i_tail] + 0.06, bm_ps[i_tail] + 0.04, bm_mu[i_tail] - 0.03,
-        r"$h_0\!\uparrow$", fontsize=7.5, color="0.40", va="top")
+# ax.quiver(bm_var[i_tail], bm_pliq[i_tail], bm_mu[i_tail],
+#           bm_var[i_head] - bm_var[i_tail],
+#           bm_pliq[i_head]  - bm_pliq[i_tail],
+#           bm_mu[i_head]  - bm_mu[i_tail],
+#           color="0.40", arrow_length_ratio=0.45, lw=1.0, alpha=0.80)
+# ax.text(bm_var[i_tail] + 0.06, bm_pliq[i_tail] + 0.04, bm_mu[i_tail] - 0.03,
+#         r"$h_0\!\uparrow$", fontsize=7.5, color="0.40", va="top")
 
 # ── Axis labels and limits ────────────────────────────────────────────────────
 ax.set_xlabel(r"$\mathrm{Var}(\Pi_T\!\mid\!\tau>T)$",
               labelpad=9, fontsize=8.5)
-ax.set_ylabel(r"$p_{\mathrm{surv}}$",
+ax.set_ylabel(r"$p_{\mathrm{liq}}$",
               labelpad=9, fontsize=8.5)
 ax.set_zlabel(r"$\mathrm{E}[\Pi_T\!\mid\!\tau>T]$",
               labelpad=7, fontsize=8.5)
 
-pad_x = (bm_var.max() - bm_var.min()) * 0.04
-pad_z = (bm_mu.max()  - bm_mu.min())  * 0.04
-ax.set_xlim(max(0.0, bm_var.min() - pad_x), bm_var.max() + pad_x)
-ax.set_ylim(0.0, 1.0)
-ax.set_zlim(FLOOR_Z, bm_mu.max() + pad_z)
-ax.tick_params(axis="x", labelsize=7, pad=1)
-ax.tick_params(axis="y", labelsize=7, pad=1)
-ax.tick_params(axis="z", labelsize=7, pad=1)
 
 
 out = Path(__file__).parent.parent / "latex" / "fig_frontier.pdf"
