@@ -115,25 +115,21 @@
 
 \begin{document}
 
-\title{Optimal sizing of mean-variance-liquidation long-short portfolio on decentralized lending protocols}
+\title{Semi-Analytic Sizing of DeFi Long-Short Positions under Health-Factor Liquidation and Kou Jump-Diffusion Risk}
 
 \maketitle
 
 \begin{abstract}
-We study the optimal initial sizing of a leveraged long--short position in a DeFi lending
-protocol under a survival-conditioned solvent-path payoff model: the position is terminated
-irrevocably when the collateral-to-liability health factor breaches one, and we model
-the payoff distribution on surviving paths together with the survival probability, without
-modelling the mechanics of liquidation itself. Under Kou double-exponential jump--diffusion dynamics, two
-classical tools --- an exponential change of measure and a Laplace--resolvent reduction ---
-combine to yield semi-analytic expressions for the conditional payoff moments and survival
-probability as explicit functions of the initial log health factor; these are new results
-for this problem and market. The expressions evaluate in milliseconds versus minutes for
-Monte Carlo, enabling smooth gradient-based optimisation. The same methodology extends
-directly to other barrier-terminated leveraged positions, including traditional margin
-accounts, FX carry trades with stop-loss triggers, and commodity spread positions.
-Using these expressions, we characterise how the optimal initial health buffer $h_0^\star$
-trades off expected return against liquidation risk.
+We study the initial sizing of a leveraged DeFi long--short position whose solvency is
+governed by a protocol health factor. The position is modelled as absorbed when the health
+factor crosses the liquidation boundary; practical liquidation mechanics are outside the
+model scope. Under bivariate Kou double-exponential jump--diffusion dynamics, we reduce
+surviving-path payoff moments to one-dimensional killed expectations of the log
+collateral-to-liability ratio. An exponential change of measure absorbs the short-leg
+price factor, while the exponential jump structure reduces the Laplace-domain resolvent to
+a finite-dimensional linear system. The framework provides fast semi-analytic estimates of
+survival probabilities and conditional payoff moments as functions of the initial log health
+buffer, adapting classical first-passage machinery to the DeFi health-factor payoff setting.
 \end{abstract}
 
 \begin{keywords}
@@ -198,11 +194,28 @@ to a one-dimensional scalar problem parameterised by the initial log health fact
 performance quantities expressible as explicit functions of that single parameter
 (Section~\ref{sec:setup}). Second, we derive a semi-analytical Laplace--resolvent for killed moments
 of all admissible orders under the exponentially tilted measure (Section~\ref{sec:resolvent}):
-because the payoff kink lies strictly below the liquidation barrier whenever the borrowing power is
-strictly less than one, the source term is a polynomial on the entire survival domain and the
+because the payoff kink lies strictly below the liquidation barrier whenever the liquidation
+threshold satisfies $b<1$, the source term is a polynomial on the entire survival domain and the
 resolvent reduces to a three-by-three linear system with no interface conditions, regardless of
 moment order. Third, we derive the survival probability by the same resolvent method at zero tilt
 (Section~\ref{sec:resolvent}, Subsection~\ref{sec:liquidation}).
+
+\subsection*{Scope of the contribution}
+
+The paper makes three contributions. \emph{Mathematical}: it adapts Kou first-passage and
+resolvent methods to a DeFi health-factor liquidation setting, showing that the bivariate
+barrier problem reduces to a univariate first-exit problem via an exponential change of
+measure. \emph{Computational}: it provides fast semi-analytic evaluation of survival
+probabilities and conditional payoff moments, replacing Monte Carlo with a closed-form
+resolvent that evaluates in milliseconds. \emph{Economic}: it identifies the initial log
+health factor $h_0$ as the natural scalar sizing variable for static DeFi lending
+positions, replacing the ad-hoc collateral ratios used in practice with a principled
+liquidation-buffer measure.
+
+The paper does \emph{not} model full protocol liquidation execution, dynamic collateral
+management, stochastic borrow rates, oracle delays, or on-chain liquidity constraints.
+Its output should be interpreted as a stylized liquidation-buffer evaluation engine for
+ex-ante position sizing, not as a complete DeFi trading system.
 
 The remainder of the paper is organised as follows. Section~\ref{sec:setup} introduces the position,
 health factor, payoff, and the one-dimensional reduction to a scalar optimisation.
@@ -226,7 +239,7 @@ sufficiently relative to the short leg, reflecting margin requirements or stop-l
 practice. The objective is to choose the initial coin holdings so as to optimise a performance criterion
 defined on the terminal payoff, conditional on surviving the liquidation threshold.
 
-\subsection{Terminal payoff of the long-short portfolio}
+\subsection{Surviving-path terminal wealth}
 Let $(\Omega,\F,(\F_t)_{t\ge 0},\P)$ be a filtered probability space.
 Two strictly positive asset prices $S_1,S_2$ evolve as
 \[
@@ -240,9 +253,10 @@ Let
 V_{1,t}:=n_1 S_{1,t},\qquad V_{2,t}:=n_2 S_{2,t}
 \]
 denote the \emph{collateral value} (long leg) and the \emph{borrow value} (outstanding liability) at
-time $t$. Fix $b\in(0,1)$, the \emph{collateral factor} of asset $S_1$ (called \emph{liquidation
-threshold} in AAVE v3 terminology): the protocol requires the $b$-adjusted collateral to cover the
-borrow value at all times,
+time $t$. Fix $b\in(0,1)$, the \emph{liquidation threshold} of asset $S_1$ (the Aave v3 parameter of the
+same name; distinct from the maximum LTV at origination, which is a separate and typically lower
+protocol constant): the protocol liquidates the position the first time the borrow value
+exceeds the $b$-adjusted collateral,
 \[
 b\,V_{1,t} \;\ge\; V_{2,t}.
 \]
@@ -258,9 +272,9 @@ Liquidation is triggered at the first such instant:
 \[
 \tau:=\inf\{t\ge 0:\;H_t<1\} = \inf\{t\ge 0:\;h_t<0\}.
 \]
-A smaller $b$ allows a larger borrow-to-collateral ratio before the boundary is breached, giving the
-position more room to absorb adverse price moves; a larger $b$ triggers earlier forced exit and limits
-the protocol's risk of bad debt.
+A larger $b$ permits a larger borrow-to-collateral ratio $V_2/V_1\le b$ before liquidation,
+giving the position more room to absorb adverse price moves; a smaller $b$ is more conservative,
+triggering earlier forced exit and limiting the protocol's risk of bad debt.
 
 Since
 \[
@@ -284,17 +298,21 @@ $Z$ stays above the absorbing level $-h_0$. The parameter $h_0 = \log H_0$ is th
 boundary $H=1$. A larger $h_0$ means the position starts further from forced exit; $h_0\to 0^+$
 means the position starts almost at the boundary with negligible cushion.
 
-The gross profit at horizon $T$, contingent on survival, is
+The \emph{surviving-path terminal wealth} at horizon $T$ is
 \[
-\Pi_T:=(n_1S_{1,T}-n_2S_{2,T})^+\,\one_{\{\tau>T\}}.
+\Pi_T:=(n_1S_{1,T}-n_2S_{2,T})\,\one_{\{\tau>T\}}.
 \]
-The positive part reflects that the investor closes the position only if it is in profit at $T$; the
-indicator $\one_{\{\tau>T\}}$ reflects that the position must have survived to maturity.
-This paper is a \emph{survival-conditioned solvent-path payoff model}: it characterises the
-distribution of $\Pi_T$ on the event $\{\tau>T\}$ and the probability of that event, with the
-boundary $H_t=1$ treated as an absorbing state. The liquidation mechanics are intentionally
-outside the model scope; the remark below clarifies what is omitted and why the absorbing-barrier
-proxy is nonetheless appropriate for position-sizing purposes.
+On $\{\tau>T\}$ the health factor satisfies $H_T\ge 1$, so $b\,n_1S_{1,T}\ge n_2S_{2,T}$;
+since $b\in(0,1)$ this forces $n_1S_{1,T}>n_2S_{2,T}$, meaning the position carries strictly
+positive terminal equity on every surviving path. No positive-part truncation is needed.
+The indicator $\one_{\{\tau>T\}}$ assigns zero terminal wealth to liquidated paths; the remark
+below explains why zero is used as a conservative proxy for the residual recovery value.
+Since the initial net book value is normalised to one unit of account (Section~\ref{sec:1d}),
+net profit on a surviving path is $R_T:=\Pi_T-1$, but all moments in this paper are stated in
+terms of $\Pi_T$ directly.
+This paper characterises the distribution of $\Pi_T$ on the event $\{\tau>T\}$ and the
+probability of that event, with the boundary $H_t=1$ treated as an absorbing state; the
+liquidation mechanics are outside the model scope.
 
 \begin{remark}[Liquidation mechanics]\label{rem:liquidation}
 When $H_t$ hits one, a DeFi lending protocol does not simply extinguish the position: it
@@ -332,8 +350,10 @@ Using the definition of $H_T$, one obtains the following factorization.
 \begin{equation}\label{eq:payoff-factor}
 \Pi_T
 =
-\frac{n_2}{b}\,S_{2,0}e^{X_{2,T}}\,(e^{h_0+Z_T}-b)^+\,\one_{\{\tau>T\}}.
+\frac{n_2}{b}\,S_{2,0}e^{X_{2,T}}\,(e^{h_0+Z_T}-b)\,\one_{\{\tau>T\}}.
 \end{equation}
+The factor $(e^{h_0+Z_T}-b)$ is strictly positive on $\{\tau>T\}$ because $H_T=e^{h_0+Z_T}\ge 1>b$,
+consistent with the definition of $\Pi_T$.
 \end{lemma}
 This separates the payoff into a numeraire factor driven by $S_2$, and a barrier-killed option on the
 log-ratio $Z$ with moneyness controlled by $h_0$.
@@ -507,7 +527,7 @@ $\mu_i^{\mathrm{eff}}$ & $i=1,2$ & Actual drift coefficient in the log-price SDE
 $\Psi(u,v)$ & --- & Joint characteristic exponent; $e^{T\Psi(0,-ik)}=\E[e^{kX_{2,T}}]$ appears in the moment formula & \\
 \hline
 $S_{i,0}$ & $i=1,2$ & Initial price of asset $i$ & $S_{i,0}>0$ \\
-$b$ & --- & Borrowing power of the collateral (AAVE liquidation threshold) & $b\in(0,1)$ \\
+$b$ & --- & Liquidation threshold: maximum borrow-to-collateral ratio $V_2/V_1$ before forced liquidation (Aave v3 liquidation threshold; distinct from maximum LTV) & $b\in(0,1)$ \\
 $T$ & --- & Investment horizon & $T>0$ \\
 $n_i$ & $i=1,2$ & Number of coins held: $n_1>0$ long in $S_1$, $n_2>0$ short in $S_2$ & $n_i>0$ \\
 \hline
@@ -515,7 +535,7 @@ $H_t$ & --- & Health factor: $b\,n_1 S_{1,t}/(n_2 S_{2,t})$; liquidated when $H_
 $h_t$ & --- & Log health factor: $h_t=\log H_t=h_0+Z_t$ & \\
 $h_0$ & --- & Initial log health factor; the optimisation variable; determines $n_i$ via \eqref{eq:n-from-h0} & $h_0>\log b$ \\
 $\tau$ & --- & Liquidation time: $\tau=\inf\{t\ge 0: H_t<1\}$ & \\
-$\Pi_T$ & --- & Terminal payoff: $(n_1 S_{1,T}-n_2 S_{2,T})^+\,\one_{\{\tau>T\}}$ & \\
+$\Pi_T$ & --- & Surviving-path terminal wealth: $(n_1 S_{1,T}-n_2 S_{2,T})\,\one_{\{\tau>T\}}$ & \\
 \hline
 \end{tabularx}
 \caption{Model parameters and derived quantities. The first block contains freely chosen Kou model
@@ -718,7 +738,7 @@ Define
 \[
 g_k(z;h_0):=(e^{h_0+z}-b)^k.
 \]
-Since the survival event $\{\tau>T\}$ implies $Z_T>-h_0$, and $b\in(0,1)$ gives $z_*(h_0):=\ln b - h_0 < -h_0$, we have $e^{h_0+Z_T}>1>b$ on $\{\tau>T\}$. The positive part in~\eqref{eq:payoff-factor} is therefore redundant on the survival set, and $g_k$ is a polynomial in $e^{Z_T}$.
+Since the survival event $\{\tau>T\}$ implies $Z_T>-h_0$, we have $e^{h_0+Z_T}>1>b$ on $\{\tau>T\}$, so $g_k(Z_T;h_0)=(e^{h_0+Z_T}-b)^k>0$ and is a polynomial in $e^{Z_T}$.
 From \eqref{eq:payoff-factor},
 \[
 \Pi_T^k
@@ -1516,128 +1536,5 @@ Script \texttt{jobs/frontier\_analysis.py}.}
 \bibliographystyle{abbrvnat}
 \bibliography{finance}
 
-% ============================================================
-\appendices
-\section{Generalised Beta of the Second Kind Approximation to the Payoff Distribution}\label{app:gb2}
-% ============================================================
-
-The semi-analytic machinery of Section~\ref{sec:resolvent} delivers the first
-four killed moments $M_k(h_0)$, $k=1,2,3,4$, and the survival probability $p_{\mathrm{surv}}(h_0)$.
-This appendix shows how to fit a four-parameter \emph{Generalised Beta of the Second Kind} (GB2)
-distribution to these outputs.
-
-On $\{\tau>T\}$ the payoff satisfies
-\[
-Y := \Pi_T\mid\{\tau>T\}
-=
-\frac{n_2}{b}\,S_{2,0}\,e^{X_{2,T}}\,(e^{h_0+Z_T}-b).
-\]
-Since $Z_T>-h_0$ on $\{\tau>T\}$, we have $e^{h_0+Z_T}>1>b$, so the factor $(e^{h_0+Z_T}-b)>0$.
-However, because $e^{X_{2,T}}$ can be arbitrarily close to zero, $\inf Y=0$, and the support is
-$Y\in(0,\infty)$ with no natural positive shift. The full payoff law is
-\begin{equation}\label{eq:law-decomp}
-\Pi_T \;\overset{d}{=}\; p_{\mathrm{liq}}\,\delta_0 + p_{\mathrm{surv}}\,Y,
-\end{equation}
-where $p_{\mathrm{liq}}=1-p_{\mathrm{surv}}$.
-
-Since $\Pi_T^k = Y^k\,\one_{\{\tau>T\}}$,
-\begin{equation}\label{eq:cond-moments}
-\mu_k^+ := \E[Y^k] = \frac{M_k(h_0)}{p_{\mathrm{surv}}(h_0)},
-\qquad M_k(h_0) = \frac{e^{T\Psi(0,-ik)}}{(e^{h_0}-b)^k}\,m_k(T;h_0),
-\end{equation}
-from Proposition~\ref{prop:first-two-moments}, for $k=1,2,3,4$.
-
-We model $Y\sim\mathrm{GB2}(a,\beta,p,q)$ with density
-\begin{equation}\label{eq:gb2-density}
-f_Y(y)
-=
-\frac{a\,y^{ap-1}}{\beta^{ap}\,B(p,q)\,\bigl(1+(y/\beta)^a\bigr)^{p+q}},
-\qquad y>0,
-\end{equation}
-where $a>0$ is a tail/shape parameter, $\beta>0$ is a scale parameter,
-$p>0$ and $q>0$ are left- and right-shape parameters, and $B(p,q)=\Gamma(p)\Gamma(q)/\Gamma(p+q)$
-is the beta function.
-
-\begin{lemma}[GB2 raw moments]\label{lem:gb2-moments}
-For $k < aq$, the $k$-th raw moment of $Y\sim\mathrm{GB2}(a,\beta,p,q)$ is
-\begin{equation}\label{eq:gb2-moments}
-\E[Y^k]
-=
-\beta^k\,\frac{B\!\left(p+k/a,\;q-k/a\right)}{B(p,q)}
-=
-\beta^k\,\frac{\Gamma(p+k/a)\,\Gamma(q-k/a)}{\Gamma(p)\,\Gamma(q)}.
-\end{equation}
-The first four moments exist if and only if $q>4/a$.
-\end{lemma}
-
-We fit $(a,\beta,p,q)$ by matching the four conditional moments $\mu_1^+,\ldots,\mu_4^+$.
-
-\medskip\noindent
-\textit{Step 1: shape parameters from scale-free ratios.}
-Define
-\begin{equation}\label{eq:Rk}
-R_k := \frac{\mu_k^+}{(\mu_1^+)^k}
-=
-\frac{B(p+k/a,\;q-k/a)/B(p,q)}{\bigl[B(p+1/a,\;q-1/a)/B(p,q)\bigr]^k},
-\qquad k=2,3,4.
-\end{equation}
-The ratios $R_k$ depend only on $(a,p,q)$, not on $\beta$. Solve
-\begin{equation}\label{eq:shape-system}
-R_k(a,p,q) = \hat R_k,\qquad k=2,3,4,
-\end{equation}
-where $\hat R_k = \mu_k^+/(\mu_1^+)^k$ are the targets, subject to $a>0$, $p>0$, $q>4/a$.
-For numerical stability, evaluate \eqref{eq:Rk} in log-space:
-\begin{equation}\label{eq:log-moment}
-\log\E[Y^k]
-=
-k\log\beta
-+\log\Gamma\!\left(p+\tfrac{k}{a}\right)
-+\log\Gamma\!\left(q-\tfrac{k}{a}\right)
--\log\Gamma(p)
--\log\Gamma(q).
-\end{equation}
-
-\medskip\noindent
-\textit{Step 2: scale from the first moment.}
-Given $(a,p,q)$ from Step 1, recover
-\begin{equation}\label{eq:beta-recover}
-\beta
-=
-\mu_1^+\,\frac{B(p,q)}{B\!\left(p+1/a,\;q-1/a\right)}.
-\end{equation}
-
-The CDF of $\Pi_T$ is
-\[
-F_{\Pi}(y) =
-\begin{cases}
-0 & y < 0, \\
-p_{\mathrm{liq}} & y = 0, \\
-p_{\mathrm{liq}} + p_{\mathrm{surv}}\,F_Y(y) & y > 0,
-\end{cases}
-\]
-where $F_Y$ is the GB2 CDF. For a confidence level $u\in(0,1)$, the Value-at-Risk is
-\[
-\mathrm{VaR}(u) =
-\begin{cases}
-0 & u \le p_{\mathrm{liq}}, \\[4pt]
-F_Y^{-1}\!\!\left(\dfrac{u - p_{\mathrm{liq}}}{p_{\mathrm{surv}}}\right) & u > p_{\mathrm{liq}},
-\end{cases}
-\]
-where $F_Y^{-1}$ is the GB2 quantile function.
-
-After fitting, verify that
-\[
-\beta^k\,\frac{\Gamma(p+k/a)\,\Gamma(q-k/a)}{\Gamma(p)\,\Gamma(q)}
-=
-\mu_k^+,
-\qquad k=1,2,3,4.
-\]
-
-The GB2 family nests several common distributions (Burr XII, log-logistic, Pareto,
-Weibull, log-normal in a limit) and has four free parameters, enabling the simultaneous
-matching of four conditional moments. It accommodates the power-law tails that arise in
-Kou jump-diffusion models, which the Generalized Gamma family — having thinner stretched-exponential
-tails — cannot capture. The condition $q>4/a$ provides an explicit testable constraint on
-whether the fourth moment of the conditional payoff is finite.
 
 \end{document}
