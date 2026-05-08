@@ -83,6 +83,9 @@
   \par\addvspace{26pt plus 4pt}%
 }
 
+% ==== HYPERLINKS ====
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
 % ==== APPENDICES (renames sections to "Appendix A: ...") ====
 \newcommand{\appendices}{%
   \appendix
@@ -92,6 +95,8 @@
 }
 
 % ==== CUSTOM COMMANDS ====
+\newcommand{\proofref}[1]{%
+  \par\noindent\hfill{\small\itshape\hyperref[#1]{$\triangleright$ Proof, p.\,\pageref{#1}}}}
 \newcommand{\E}{\mathbb{E}}
 \renewcommand{\P}{\mathbb{P}}
 \newcommand{\R}{\mathbb{R}}
@@ -156,8 +161,7 @@ compound the difficulty — daily log-returns of 10--20\% are common and flash c
 This paper provides the first exact, semi-analytic solution to the optimal sizing problem under a
 \emph{survival-conditioned solvent-path payoff model}: the objective is defined on the payoff
 realised on paths that avoid liquidation, and the liquidation boundary is treated as an absorbing
-barrier\footnote{Internal mechanics — keeper fees, partial penalties, slippage — are outside the
-scope of the model.}.
+barrier.
 
 We work under the Kou double-exponential jump--diffusion framework \citep{Kou2002}. The solution
 rests on two successive dimensional reductions. First, an exponential change of measure absorbs the
@@ -189,41 +193,31 @@ settings. More distantly, \citet{JacobsLevyStarer1999} advocate joint optimisati
 legs, while \citet{DangForsyth2016} study dynamic mean--variance control under jump risk; our setting
 is static and the binding constraint is an endogenous first-passage event rather than a variance bound.
 
-The paper makes the following contributions. First, we show that the portfolio optimisation reduces
-to a one-dimensional scalar problem parameterised by the initial log health factor, with all
-performance quantities expressible as explicit functions of that single parameter
-(Section~\ref{sec:setup}). Second, we derive a semi-analytical Laplace--resolvent for killed moments
-of all admissible orders under the exponentially tilted measure (Section~\ref{sec:resolvent}):
-because the payoff kink lies strictly below the liquidation barrier whenever the liquidation
-threshold satisfies $b<1$, the source term is a polynomial on the entire survival domain and the
-resolvent reduces to a three-by-three linear system with no interface conditions, regardless of
-moment order. Third, we derive the survival probability by the same resolvent method at zero tilt
-(Section~\ref{sec:resolvent}, Subsection~\ref{sec:liquidation}).
-
-\subsection*{Scope of the contribution}
-
-The paper makes three contributions. \emph{Mathematical}: it adapts Kou first-passage and
-resolvent methods to a DeFi health-factor liquidation setting, showing that the bivariate
-barrier problem reduces to a univariate first-exit problem via an exponential change of
-measure. \emph{Computational}: it provides fast semi-analytic evaluation of survival
-probabilities and conditional payoff moments, replacing Monte Carlo with a closed-form
-resolvent that evaluates in milliseconds. \emph{Economic}: it identifies the initial log
-health factor $h_0$ as the natural scalar sizing variable for static DeFi lending
-positions, replacing the ad-hoc collateral ratios used in practice with a principled
-liquidation-buffer measure.
-
-The paper does \emph{not} model full protocol liquidation execution, dynamic collateral
-management, stochastic borrow rates, oracle delays, or on-chain liquidity constraints.
-Its output should be interpreted as a stylized liquidation-buffer evaluation engine for
-ex-ante position sizing, not as a complete DeFi trading system.
+The paper makes three contributions to the sizing of leveraged DeFi positions.
+First, it establishes the initial log health factor $h_0$ as the natural scalar sizing
+variable: once a unit-initial-value constraint is imposed, the two-dimensional portfolio
+problem collapses to a scalar health-buffer decision, with the raw killed moments
+$\E[\Pi_T^k]$ for all admissible orders $k\eta_{2,+}<1$, and the liquidation
+probability $p_{\mathrm{liq}}(h_0)$, all explicit in $h_0$ alone.
+Second, it delivers those quantities semi-analytically — noise-free, differentiable in
+$h_0$, and ${\approx}55\times$ faster than Monte Carlo — making gradient-based
+optimisation of any criterion of the form $\Phi\!\left(\E[\Pi_T\mid\tau>T],\ldots,\E[\Pi_T^K\mid\tau>T],p_{\mathrm{liq}}\right)$
+practical.
+Third, it characterises how the optimal buffer trades conditional upside against
+liquidation risk, providing a principled alternative to the ad-hoc collateral ratios
+used in practice.
+The framework abstracts away liquidation execution, dynamic collateral management,
+stochastic borrow rates, and oracle delays; it is a liquidation-buffer evaluation engine
+for ex-ante position sizing, not a complete trading system.
 
 The remainder of the paper is organised as follows. Section~\ref{sec:setup} introduces the position,
 health factor, payoff, and the one-dimensional reduction to a scalar optimisation.
 Section~\ref{sec:model} specifies the asset dynamics under the Kou model;
 Section~\ref{sec:tilted} introduces the tilted-measure machinery.
 Section~\ref{sec:moments} shows how the change of measure decouples the short-leg factor from the
-barrier problem, reducing each moment to a one-dimensional killed expectation, and states the
-objective in terms of those moments. Section~\ref{sec:resolvent} derives the respective resolvents.
+barrier problem, reducing each raw killed moment $\E[\Pi_T^k]$ to a one-dimensional killed
+expectation for all admissible orders $k\eta_{2,+}<1$; dividing by $p_{\mathrm{surv}}(h_0)$ yields
+the conditional moments entering the general objective \eqref{eq:Phi-general}. Section~\ref{sec:resolvent} derives the respective resolvents.
 Section~\ref{sec:numerical} presents numerical results, comparing the Laplace--resolvent method
 against Monte Carlo simulation across a range of initial log health factor values and verifying the
 analytical no-shorting limit.
@@ -339,10 +333,29 @@ ex-ante sizing perspective the liquidation payoff is a zero-mean random variable
 sign, and setting it to zero is the risk-neutral midpoint. Second, the penalty term
 $\delta\,p_{\mathrm{liq}}$ in the objective of \eqref{eq:Phi} provides a separate lever to
 price liquidation risk at whatever level the investor deems appropriate, without requiring an
-explicit model of the post-liquidation cash flow. The fragility of DeFi lending protocols under
-large price shocks \citep{Chiu2022} further supports a conservative treatment of the
-post-liquidation value.
+explicit model of the post-liquidation cash flow. Assigning zero to liquidated paths is
+therefore \emph{conservative} — it never overstates residual value — and \emph{practical}:
+it avoids an unverifiable recovery model while keeping the payoff specification tractable.
 \end{remark}
+
+\begin{remark}[Dynamic collateral management]\label{rem:dynamic}
+A practitioner who monitors the health factor in continuous time could top up collateral
+or partially unwind the short leg to steer $H_t$ away from the liquidation boundary.
+Such a strategy would replace the absorbing barrier with a reflecting or controlled
+boundary and the static sizing problem with a stochastic control problem.
+We do not pursue this extension for two reasons.
+First, on-chain collateral top-ups incur gas costs and are subject to block-confirmation
+delays; during a flash crash the position may be liquidated before a remedial transaction
+is confirmed, so the absorbing-barrier model represents the practically relevant worst case.
+Second, the paper's central question is the ex-ante buffer decision — how much initial
+cushion to hold given that dynamic intervention may be unavailable — and a static
+framework isolates that question cleanly.
+\end{remark}
+
+Taken together, the two modelling choices — zero recovery at liquidation and no dynamic
+intervention — define a \emph{conservative floor} for position sizing: any position that
+is viable under these assumptions remains viable whenever protocol outcomes are more
+favourable.
 
 Using the definition of $H_T$, one obtains the following factorization.
 
@@ -393,17 +406,34 @@ unlevered). Equivalently, the borrow-to-equity ratio is $L_0 - 1 = b/(e^{h_0}-b)
 collapses the initial health factor back to $H_0=e^{h_0}$ via $H_0 = b\,L_0/(L_0-1)$.
 Choosing $h_0$ is therefore equivalent to choosing the initial leverage.
 
-Since every quantity of interest — the expected payoff, its variance, and the liquidation probability — is
-determined by $h_0$ through \eqref{eq:n-from-h0} and the killed process $(Z,\tau)$, the portfolio problem reduces to a one-dimensional optimisation:
+Since every quantity of interest is determined by $h_0$ through \eqref{eq:n-from-h0} and the
+killed process $(Z,\tau)$, the portfolio problem reduces to a scalar optimisation
 \[
-\max_{h_0\,\in\,(\ln b,\,\infty)}\;\Phi\!\left(h_0\right),
+\max_{h_0\,\in\,(\ln b,\,\infty)}\;\Phi\!\left(h_0\right).
 \]
-where $\Phi$ is a scalar performance criterion, for example the Sharpe ratio, expected return subject to a
-liquidation probability constraint, or a mean--variance objective. The optimal holdings are then recovered
-by substituting $h_0^\star$ back into \eqref{eq:n-from-h0}.
+The optimal holdings are recovered by substituting $h_0^\star$ back into \eqref{eq:n-from-h0};
+we call $h_0^\star$ the \emph{optimal initial health buffer}.
 
-The specific criterion studied in this paper is a penalised conditional mean--variance objective. Let
-$\E[\,\cdot\mid\tau>T]$ denote expectation conditional on non-liquidation. The objective is
+The framework supports any performance criterion of the form
+\begin{equation}\label{eq:Phi-general}
+\Phi(h_0) \;=\; f\!\left(\E[\Pi_T\mid\tau>T],\,\ldots,\,\E[\Pi_T^K\mid\tau>T],\;p_{\mathrm{liq}}(h_0)\right),
+\end{equation}
+where $\E[\Pi_T^k\mid\tau>T]=\E[\Pi_T^k]/p_{\mathrm{surv}}(h_0)$ are the conditional moments
+obtained from the raw killed moments $\E[\Pi_T^k]$ delivered in Section~\ref{sec:moments},
+$p_{\mathrm{liq}}(h_0):=1-p_{\mathrm{surv}}(h_0)$, and $f$ is any smooth function.
+The admissible range of moment orders is $k=1,\ldots,K$ with
+$K\eta_{2,+}<1$, a bound determined by the integrability of $e^{kX_{2,T}}$ under the
+exponential tilt (Proposition~\ref{prop:first-two-moments}).
+This class covers the classical mean--variance criterion \citep{Markowitz1952}, which uses
+$\E[\Pi_T\mid\tau>T]$ and $\E[\Pi_T^2\mid\tau>T]$; higher-moment objectives that penalise skewness or excess kurtosis, which
+use $\E[\Pi_T\mid\tau>T],\ldots,\E[\Pi_T^4\mid\tau>T]$; the conditional Sharpe ratio; and polynomial approximations to
+expected utility of arbitrary order.
+\citet{DangForsyth2016} and \citet{ShenZou2022} adopt mean--variance criteria in related
+jump-diffusion settings; the distinguishing feature here is that $p_{\mathrm{liq}}(h_0)$ is
+an explicit, separately computed building block rather than an implicit risk charge.
+
+For the numerical illustration in Section~\ref{sec:numerical} we adopt the penalised
+conditional mean--variance criterion
 \begin{equation}\label{eq:Phi}
 \Phi(h_0)
 :=
@@ -411,23 +441,21 @@ $\E[\,\cdot\mid\tau>T]$ denote expectation conditional on non-liquidation. The o
 -
 \tfrac{\alpha}{2}\,\mathrm{Var}(\Pi_T\mid\tau>T)
 -
-\delta\,p_{\mathrm{liq}}(T,0;h_0),
+\delta\,p_{\mathrm{liq}}(h_0),
 \end{equation}
-where $\alpha\ge 0$ is a risk-aversion coefficient and $\delta\ge 0$ penalises the probability of forced
-liquidation. The first two terms reward a high risk-adjusted return on the surviving paths; the third term
-discourages positions so aggressive that liquidation becomes likely. The interplay between the three terms
-means that the optimal $h_0^\star$ — which we call the \emph{optimal initial health buffer} —
-balances leverage against downside protection: a lower $h_0$ implies higher leverage, a larger
-conditional upside on surviving paths, but a higher probability of forced liquidation; a higher $h_0$
-provides more cushion above the barrier, reducing liquidation risk at the cost of a smaller
-conditional payoff. We do not refer to $h_0^\star$ as ``optimal leverage'' because leverage is a
-derived quantity \eqref{eq:leverage} that is not directly controlled; the investor chooses the
-health buffer and leverage follows.
+where $\alpha\ge 0$ is a risk-aversion coefficient and $\delta\ge 0$ penalises forced
+liquidation. The optimal $h_0^\star$ balances leverage against downside protection: a lower
+$h_0$ implies higher leverage and a larger conditional upside but a higher liquidation
+probability; a higher $h_0$ provides more cushion at the cost of a smaller conditional
+payoff. We do not refer to $h_0^\star$ as ``optimal leverage'' because leverage is a derived
+quantity \eqref{eq:leverage}; the investor chooses the health buffer and leverage follows.
 
-The remainder of the paper is devoted to computing the building blocks of $\Phi$: the killed moments
-$m_k(T;h_0)$ and the survival probability $p_{\mathrm{surv}}(T,0;h_0)$, each as a closed-form function
-of $h_0$, evaluated semi-analytically via the Laplace--resolvent method developed in
-Section~\ref{sec:resolvent}.
+The remainder of the paper is devoted to computing the building blocks of \eqref{eq:Phi-general}:
+the raw killed moments $\E[\Pi_T^k]$ for all admissible orders $k\eta_{2,+}<1$, and the
+survival probability $p_{\mathrm{surv}}(h_0)$, each as an explicit semi-analytic function
+of $h_0$ via the Laplace--resolvent method of Section~\ref{sec:resolvent}.
+The conditional moments $\E[\Pi_T^k\mid\tau>T]$ and liquidation probability $p_{\mathrm{liq}}(h_0)$
+then follow immediately.
 
 % ============================================================
 \section{Asset Dynamics}\label{sec:model}
@@ -578,70 +606,7 @@ In particular, the generator satisfies
 \mathcal{L}^{(k)}e^{sz}=\psi_Z^{(k)}(s)\,e^{sz}.
 \end{equation}
 \end{lemma}
-
-\begin{proof}
-\textit{Step 1: Laplace transform under $\P^{(k)}$.}
-Because $Z_t = X_{1,t}-X_{2,t}$ and the density on $\mathcal{F}_t$ equals
-$e^{kX_{2,t}-t\Psi(0,-ik)}$,
-\begin{equation}\label{eq:mgf-tilted}
-\E_{\P^{(k)}}\!\left[e^{sZ_t}\right]
-=
-e^{-t\Psi(0,-ik)}\,
-\E_\P\!\left[e^{s X_{1,t}+(k-s)X_{2,t}}\right]
-=
-e^{t\left[\Psi(-is,-i(k-s))-\Psi(0,-ik)\right]},
-\end{equation}
-where we used $\E_\P[e^{\alpha X_{1,t}+\beta X_{2,t}}]=e^{t\Psi(-i\alpha,-i\beta)}$.
-Since the Radon--Nikod\'ym density is exponential-linear in $(X_{1,t},X_{2,t})$, Girsanov's theorem
-for L\'evy processes guarantees that $Z$ remains a L\'evy process under $\P^{(k)}$ with exponent
-\begin{equation}\label{eq:psiZk-raw}
-\psi_Z^{(k)}(s) = \Psi\!\left(-is,\,-i(k-s)\right)-\Psi(0,-ik).
-\end{equation}
-
-\textit{Step 2: Expand and simplify.}
-Substituting \eqref{eq:Psi} with $(u,v)=(-is,-i(k-s))$, and noting
-$u^2=-s^2$, $v^2=-(k-s)^2$, $uv=-s(k-s)$, and $\varphi_{J_i}(-i\cdot)=M_i(\cdot)$:
-\begin{equation}\label{eq:Psi-expanded}
-\begin{aligned}
-\Psi(-is,-i(k-s))
-={}&\mu_1^{\mathrm{eff}} s + \mu_2^{\mathrm{eff}}(k-s)
-+\tfrac12\sigma_1^2 s^2+\tfrac12\sigma_2^2(k-s)^2+\rho\sigma_1\sigma_2 s(k-s)\\
-&+\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-1).
-\end{aligned}
-\end{equation}
-Setting $s=0$ in \eqref{eq:Psi-expanded} gives
-$\Psi(0,-ik)=\mu_2^{\mathrm{eff}} k + \tfrac12\sigma_2^2 k^2 + \lambda_2(M_2(k)-1)$.
-Subtracting and collecting terms by type:
-
-\smallskip
-\noindent\textit{Drift.}
-$\mu_1^{\mathrm{eff}} s + \mu_2^{\mathrm{eff}}(k-s) - \mu_2^{\mathrm{eff}} k
-= (\mu_1^{\mathrm{eff}}-\mu_2^{\mathrm{eff}})s$.
-
-\smallskip
-\noindent\textit{Diffusion.}
-Expanding $(k-s)^2 = k^2-2ks+s^2$ and $(k-s) = k-s$:
-\begin{align*}
-&\tfrac12\sigma_1^2 s^2+\tfrac12\sigma_2^2(k-s)^2+\rho\sigma_1\sigma_2 s(k-s)
--\tfrac12\sigma_2^2 k^2\\
-&\quad =\tfrac12(\sigma_1^2+\sigma_2^2-2\rho\sigma_1\sigma_2)s^2
--k(\sigma_2^2-\rho\sigma_1\sigma_2)s
-= \tfrac12\sigma_Z^2 s^2 - k(\sigma_2^2-\rho\sigma_1\sigma_2)s.
-\end{align*}
-
-\smallskip
-\noindent\textit{Jumps.}
-$\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-1)-\lambda_2(M_2(k)-1)
-=\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-M_2(k))$.
-
-\smallskip
-Combining, the drift coefficient is
-$\mu_Z^{(k)}:=(\mu_1^{\mathrm{eff}}-\mu_2^{\mathrm{eff}})-k(\sigma_2^2-\rho\sigma_1\sigma_2)$,
-which establishes \eqref{eq:psiZk}.
-The eigenrelation \eqref{eq:generator-eigen} follows because for any L\'evy process with
-exponent $\psi$, the generator satisfies $\mathcal{L} e^{sz}=\psi(s)\,e^{sz}$, as can be
-seen by differentiating $\E[e^{sZ_t}]=e^{t\psi(s)}$ with respect to $t$ at $t=0$.
-\end{proof}
+\proofref{proof:lem:psiZk}
 
 This eigenrelation is the key identity used in Section~\ref{sec:resolvent} to build the resolvent equation.
 
@@ -759,7 +724,7 @@ m_k(T;h_0):=\E_{\P^{(k)}}\!\Big[g_k(Z_T;h_0)\,\one_{\{\tau>T\}}\Big].
 \]
 Then
 \[
-M_k(h_0):=\E_{\P}[\Pi_T^k]=\frac{e^{T\Psi(0,-ik)}}{(e^{h_0}-b)^k}\,m_k(T;h_0),
+\E[\Pi_T^k]:=\E_{\P}[\Pi_T^k]=\frac{e^{T\Psi(0,-ik)}}{(e^{h_0}-b)^k}\,m_k(T;h_0),
 \]
 where $m_k(T;h_0)=U^{(k)}(T,0;h_0)$ is computed via the Laplace--resolvent method of
 Section~\ref{sec:resolvent}. The maximum admissible order is $k_{\max}=\lfloor 1/\eta_{2,+}\rfloor -1$.
@@ -771,32 +736,32 @@ moment on surviving paths is
 \[
 \E[\Pi_T^k\mid\tau>T]
 =
-\frac{M_k(h_0)}{p_{\mathrm{surv}}(h_0)},
+\frac{\E[\Pi_T^k]}{p_{\mathrm{surv}}(h_0)},
 \qquad k\ge 1,\quad k\eta_{2,+}<1.
 \]
 In particular,
 \[
 \E[\Pi_T\mid\tau>T]
 =
-\frac{M_1(h_0)}{p_{\mathrm{surv}}(h_0)},
+\frac{\E[\Pi_T]}{p_{\mathrm{surv}}(h_0)},
 \qquad
 \mathrm{Var}(\Pi_T\mid\tau>T)
 =
-\frac{M_2(h_0)}{p_{\mathrm{surv}}(h_0)}
+\frac{\E[\Pi_T^2]}{p_{\mathrm{surv}}(h_0)}
 -
-\left(\frac{M_1(h_0)}{p_{\mathrm{surv}}(h_0)}\right)^{\!2}.
+\left(\frac{\E[\Pi_T]}{p_{\mathrm{surv}}(h_0)}\right)^{\!2}.
 \]
 The mean--variance--liquidation objective is therefore
 \begin{equation}\label{eq:objective}
 \Phi(h_0)
 =
-\frac{M_1(h_0)}{p_{\mathrm{surv}}(h_0)}
+\frac{\E[\Pi_T]}{p_{\mathrm{surv}}(h_0)}
 -
 \frac{\alpha}{2}
 \!\left[
-\frac{M_2(h_0)}{p_{\mathrm{surv}}(h_0)}
+\frac{\E[\Pi_T^2]}{p_{\mathrm{surv}}(h_0)}
 -
-\!\left(\frac{M_1(h_0)}{p_{\mathrm{surv}}(h_0)}\right)^{\!2}
+\!\left(\frac{\E[\Pi_T]}{p_{\mathrm{surv}}(h_0)}\right)^{\!2}
 \right]
 -
 \delta\,p_{\mathrm{liq}}(h_0),
@@ -813,7 +778,7 @@ becomes impossible and the portfolio converges to a unit long position in asset~
 \[
 \lim_{h_0\to\infty}\E[\Pi_T^k]=\E[e^{kX_{1,T}}]=e^{T\Psi(-ik,0)},
 \]
-which provides a useful diagnostic: the formula for $M_k(h_0)$ must satisfy this limit exactly.
+which provides a useful diagnostic: the formula for $\E[\Pi_T^k]$ must satisfy this limit exactly.
 The $k=1$ case gives $e^{\mu_1 T}$ by the drift normalisation \eqref{eq:effective-drift}.
 \end{remark}
 
@@ -823,6 +788,9 @@ and $p_{\mathrm{surv}}(h_0)$ via the Laplace--resolvent construction.
 % ============================================================
 \section{Resolvent Equations for Moments and Survival Probability}\label{sec:resolvent}
 % ============================================================
+
+Proofs of all results in Sections~\ref{sec:tilted}--\ref{sec:resolvent} are collected in
+Appendix~\ref{app:proofs}.
 
 With the moment problem reduced to a one-dimensional killed expectation under $\P^{(k)}$, the
 function $U(t,z)=\E_z^{(k)}[g_k(Z_t;h_0)\one_{\{\tau>t\}}]$ satisfies a PIDE in $(t,z)$.
@@ -903,33 +871,7 @@ Under Assumption~\ref{ass:six-root}(iii),
 \end{equation}
 is a particular solution to~\eqref{eq:resolvent}.
 \end{lemma}
-\begin{proof}
-Substitute the forcing expansion into the right-hand side of~\eqref{eq:resolvent}:
-\[
-(q - \mathcal{L}^{(k)})\widehat{U}_{\mathrm{part}}
-= \sum_{j=0}^k c_{k,j}(h_0)\,e^{jz}.
-\]
-Since the sum is finite and $\mathcal{L}^{(k)}$ is linear, it suffices to find, for each $j$, a function $v_j$
-satisfying
-\[
-(q - \mathcal{L}^{(k)})v_j(z) = c_{k,j}(h_0)\,e^{jz}.
-\]
-Propose the exponential ansatz $v_j(z) = A_j\,e^{jz}$. By the eigenrelation~\eqref{eq:generator-eigen},
-\[
-\mathcal{L}^{(k)}[A_j e^{jz}] = A_j\,\psi_Z^{(k)}(j)\,e^{jz},
-\]
-so
-\[
-(q - \mathcal{L}^{(k)})[A_j e^{jz}]
-= A_j\bigl(q - \psi_Z^{(k)}(j)\bigr)e^{jz}.
-\]
-Matching to $c_{k,j}(h_0)\,e^{jz}$ and using Assumption~\ref{ass:six-root}(iii) to ensure
-$q - \psi_Z^{(k)}(j)\neq 0$ gives
-\[
-A_j = \frac{c_{k,j}(h_0)}{q - \psi_Z^{(k)}(j)}.
-\]
-Summing over $j=0,\dots,k$ yields~\eqref{eq:Upart}.
-\end{proof}
+\proofref{proof:lem:Upart}
 
 \begin{lemma}[Homogeneous solution]\label{lem:Uhom}
 Under Assumption~\ref{ass:six-root}(i)--(ii), the general solution to $(q-\mathcal{L}^{(k)})u=0$ on $z>-h_0$ that
@@ -939,36 +881,7 @@ is admissible at $+\infty$ is
 \end{equation}
 where $B_1^{(k)},B_2^{(k)},B_3^{(k)}$ are free constants.
 \end{lemma}
-\begin{proof}
-\textit{Step 1: exponential ansatz.} Seek solutions of the form $u(z)=e^{\gamma z}$. By the
-eigenrelation~\eqref{eq:generator-eigen},
-\[
-\mathcal{L}^{(k)}e^{\gamma z} = \psi_Z^{(k)}(\gamma)\,e^{\gamma z},
-\]
-so $(q-\mathcal{L}^{(k)})e^{\gamma z} = (q - \psi_Z^{(k)}(\gamma))e^{\gamma z}$. This vanishes if and only if
-$\gamma$ satisfies the characteristic equation
-\[
-\psi_Z^{(k)}(\gamma) = q.
-\]
-
-\textit{Step 2: root count.} The exponent $\psi_Z^{(k)}$ is the sum of a quadratic term
-$\frac{1}{2}\sigma_Z^2\gamma^2$ (non-degenerate by Assumption~\ref{ass:six-root}(i)) and rational terms from the
-Kou jumps. Clearing denominators yields a degree-six polynomial in $\gamma$, so there are exactly six roots
-$\gamma_1,\dots,\gamma_6$ (counted with multiplicity). Under Assumption~\ref{ass:six-root}(ii) all six are simple
-and split as $\Rea(\gamma_{1,2,3})>0$ and $\Rea(\gamma_{4,5,6})<0$.
-
-\textit{Step 3: admissibility.} On the half-line $z>-h_0$, the solution must remain bounded as $z\to+\infty$.
-Since $e^{\gamma z}\to\infty$ whenever $\Rea(\gamma)>0$, the roots $\gamma_1,\gamma_2,\gamma_3$ are inadmissible.
-Only $\gamma_4,\gamma_5,\gamma_6$ are retained.
-
-\textit{Step 4: centering and general solution.} Writing $e^{\gamma_{m+3}z} = e^{\gamma_{m+3}(z+h_0)}\cdot
-e^{-\gamma_{m+3}h_0}$ and absorbing the constant factor into the free coefficient, the general admissible
-homogeneous solution is
-\[
-\widehat{U}_{\mathrm{hom}}(q,z;h_0) = \sum_{m=1}^3 B_m^{(k)}(q;h_0)\,e^{\gamma_{m+3}(q)(z+h_0)},
-\]
-where $B_1^{(k)},B_2^{(k)},B_3^{(k)}$ are free constants to be determined by the boundary conditions.
-\end{proof}
+\proofref{proof:lem:Uhom}
 
 The general solution on $z>-h_0$ is then
 \[
@@ -1019,92 +932,13 @@ By Lemma~\ref{lem:Mbar-inv} below, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is inver
 \mathbf{B}^{(k)}(q;h_0) = -\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\bigr)^{-1}\mathbf{b}^{(k)}(q;h_0).
 \]
 \end{proposition}
-\begin{proof}
-\textit{Step 1: boundary conditions from killing.}
-The killing condition $\widehat{U}(q,z;h_0)=0$ for $z\le-h_0$ imposes, at $z=-h_0^+$,
-\begin{enumerate}[(i)]
-\item $\widehat{U}(q,-h_0^+;h_0)=0$;
-\item $K_{j,-}^{(k)}\!\left[\widehat{U}(q,\cdot\,;h_0)\right](-h_0^+)=0$, \quad $j=1,2$.
-\end{enumerate}
-Condition (i) is continuity at the barrier. Conditions (ii) arise because
-$K_{j,-}^{(k)}[f](z)=\int_{-\infty}^0 f(z+y)\,r_{j,-}^{(k)}e^{r_{j,-}^{(k)}y}\diff y$
-integrates $f$ over landing points $z+y < z$; for $z=-h_0^+$ every landing point satisfies
-$z+y<-h_0$, where $\widehat{U}=0$, so the integral vanishes.
-
-\textit{Step 2: substitute the full solution.}
-Write $\widehat{U}=\widehat{U}_{\mathrm{part}}+\widehat{U}_{\mathrm{hom}}$ and insert into each condition.
-Since the conditions are linear, each splits as
-\[
-[\text{condition on }\widehat{U}_{\mathrm{hom}}] = -[\text{condition on }\widehat{U}_{\mathrm{part}}].
-\]
-
-\textit{Step 3: condition (i).}
-Evaluating at $z=-h_0$ and using $e^{\gamma_{m+3}(q)\cdot 0}=1$,
-\[
-\widehat{U}_{\mathrm{hom}}(q,-h_0;h_0) = \sum_{m=1}^3 B_m^{(k)} = -\,\widehat{U}_{\mathrm{part}}(q,-h_0;h_0),
-\]
-which is the first row of the system.
-
-\textit{Step 4: conditions (ii).}
-Apply $K_{j,-}^{(k)}$ to $\widehat{U}_{\mathrm{hom}}$. By the phase-operator formula~\eqref{eq:phase-on-exp},
-\[
-K_{j,-}^{(k)}\!\left[e^{\gamma_{m+3}(\cdot+h_0)}\right](-h_0)
-=
-\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_{m+3}(q)}\,e^{\gamma_{m+3}(q)\cdot 0}
-=
-\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_{m+3}(q)},
-\]
-giving row $j+1$ of the system:
-\[
-\sum_{m=1}^3 \frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_{m+3}(q)}\,B_m^{(k)}
-=
--K_{j,-}^{(k)}\!\left[\widehat{U}_{\mathrm{part}}(q,\cdot\,;h_0)\right](-h_0).
-\]
-Applying~\eqref{eq:phase-on-exp} to $\widehat{U}_{\mathrm{part}}(q,z;h_0)=\sum_j\frac{c_{k,j}}{q-\psi_Z^{(k)}(j)}e^{jz}$
-yields the explicit entries of $\mathbf{b}^{(k)}$ stated above.
-
-\textit{Step 5: matrix form and solution.}
-The three conditions assemble into
-$\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\,\mathbf{B}^{(k)}=-\mathbf{b}^{(k)}$.
-By Lemma~\ref{lem:Mbar-inv}, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is invertible, so
-\[
-\mathbf{B}^{(k)}(q;h_0)=-\big(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\big)^{-1}\mathbf{b}^{(k)}(q;h_0).\qedhere
-\]
-\end{proof}
+\proofref{proof:prop:Ubar}
 
 \begin{lemma}[Invertibility of $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$]\label{lem:Mbar-inv}
 Under Assumption~\ref{ass:six-root} and condition~\eqref{eq:nondeg-bar},
 the barrier matrix $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ of Proposition~\ref{prop:Ubar} is invertible.
 \end{lemma}
-\begin{proof}
-Subtracting row~1 from rows~2 and~3 replaces entry $(i,m)$ for $i=2,3$ by
-$-\gamma_{m+3}(q)/(r_{i-1,-}^{(k)}+\gamma_{m+3}(q))$.
-Pulling out $-1$ from each of these two rows (net sign $(-1)^2=1$) and then factoring
-$\gamma_{m+3}(q)$ from each column gives
-\[
-\det\!\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}\bigr)
-=
-\gamma_4\gamma_5\gamma_6\;
-\det\!\left(\frac{1}{x_i+\gamma_{j+3}(q)}\right)_{\!1\le i,j\le 3},
-\]
-where $x_1:=0$, $x_2:=r_{1,-}^{(k)}$, $x_3:=r_{2,-}^{(k)}$.
-The right-hand factor is a Cauchy determinant; the Cauchy formula yields
-\[
-\det\!\left(\frac{1}{x_i+\gamma_{j+3}}\right)
-=
-\frac{\prod_{1\le i<i'\le 3}(x_{i'}-x_i)\cdot
-      \prod_{4\le m<m'\le 6}(\gamma_{m'}-\gamma_m)}
-     {\prod_{i=1}^3\prod_{m=4}^6(x_i+\gamma_m)}.
-\]
-Since $x_1=0$, the factor $\prod_{m=4}^6(x_1+\gamma_m)=\gamma_4\gamma_5\gamma_6$
-cancels with the prefactor, yielding a ratio whose every factor is nonzero:
-$r_{1,-}^{(k)}>0$ since $\eta_{1,-}>0$;
-$r_{2,-}^{(k)}>0$ since $k\eta_{2,+}<1$;
-$(r_{2,-}^{(k)}-r_{1,-}^{(k)})\neq 0$ by~\eqref{eq:nondeg-bar};
-the $\gamma_m$ are pairwise distinct by Assumption~\ref{ass:six-root}(ii);
-and $r_{j,-}^{(k)}+\gamma_m\neq 0$ because $-r_{j,-}^{(k)}$ is a pole of $\psi_Z^{(k)}$,
-so $\psi_Z^{(k)}(-r_{j,-}^{(k)})=\infty\neq q$, hence $\gamma_m\neq -r_{j,-}^{(k)}$.
-\end{proof}
+\proofref{proof:lem:Mbar-inv}
 
 Evaluating $\widehat{U}$ at the initial state $Z_0=0$ gives
 \begin{equation}\label{eq:Uhat-zero}
@@ -1210,68 +1044,13 @@ p_{\mathrm{surv}}(T,0;h_0)
 p_{\mathrm{liq}}(T,0;h_0)=1-p_{\mathrm{surv}}(T,0;h_0).
 \]
 \end{proposition}
-\begin{proof}
-\textit{Step 1: resolvent equation.}
-Taking the Laplace transform of the PIDE $\partial_t p_{\mathrm{surv}} = \mathcal{L}^{(0)}p_{\mathrm{surv}}$
-with initial condition $p_{\mathrm{surv}}(0,z;h_0)=1$ and killing condition $p_{\mathrm{surv}}=0$ for $z\le-h_0$,
-exactly as in Section~\ref{sec:resolvent} with $g_k\equiv 1$, gives
-\[
-(q-\mathcal{L}^{(0)})\widehat{U}_{\mathrm{surv}}(q,z;h_0)=1, \qquad z>-h_0.
-\]
-
-\textit{Step 2: particular solution.}
-The constant forcing $f\equiv 1$ is an eigenfunction of $\mathcal{L}^{(0)}$ with eigenvalue
-$\psi_Z^{(0)}(0)=0$, so the particular solution is
-\[
-\widehat{U}_{\mathrm{surv,part}}(q,z) = \frac{1}{q-\psi_Z^{(0)}(0)} = \frac{1}{q}.
-\]
-
-\textit{Step 3: homogeneous solution.}
-By Lemma~\ref{lem:Uhom} applied with $k=0$, the admissible homogeneous solution on $z>-h_0$ is
-\[
-\widehat{U}_{\mathrm{surv,hom}}(q,z;h_0)
-=
-C_1 e^{\gamma_4^{(0)}(q)(z+h_0)}
-+C_2 e^{\gamma_5^{(0)}(q)(z+h_0)}
-+C_3 e^{\gamma_6^{(0)}(q)(z+h_0)},
-\]
-where $\gamma_4^{(0)},\gamma_5^{(0)},\gamma_6^{(0)}$ are the roots of $\psi_Z^{(0)}(\gamma)=q$ with
-$\Rea(\gamma)<0$.
-
-\textit{Step 4: boundary conditions.}
-The killing condition imposes, at $z=-h_0^+$:
-\begin{enumerate}[(i)]
-\item $\widehat{U}_{\mathrm{surv}}(q,-h_0^+;h_0)=0$;
-\item $K_{j,-}^{(0)}[\widehat{U}_{\mathrm{surv}}](-h_0^+)=0$, \quad $j=1,2$,
-\end{enumerate}
-by the same argument as in Proposition~\ref{prop:Ubar}: downward jumps from $-h_0^+$ land in the killed region.
-
-\textit{Step 5: linear system.}
-Substituting the full solution $\widehat{U}_{\mathrm{surv}}=1/q+\widehat{U}_{\mathrm{surv,hom}}$ into each
-condition and applying~\eqref{eq:phase-on-exp} to the homogeneous terms yields
-\[
-\mathbf{M}_{\mathrm{surv}}(q)\,\mathbf{C}(q;h_0) = -\begin{pmatrix}1/q\\1/q\\1/q\end{pmatrix},
-\]
-where the right-hand side entries are
-$K_{j,-}^{(0)}[1/q](-h_0^+)=1/q$ (since $K_{j,-}^{(0)}$ integrates to one against the exponential density).
-By Lemma~\ref{lem:Msurv-inv} below, $\mathbf{M}_{\mathrm{surv}}(q)$ is invertible, so the coefficients $\mathbf{C}$ are uniquely determined.
-
-\textit{Step 6: inversion and liquidation probability.}
-Evaluating at $Z_0=0$ and inverting via the Bromwich formula gives $p_{\mathrm{surv}}(T,0;h_0)$. The
-liquidation probability follows from the complement.
-\end{proof}
+\proofref{proof:prop:survival}
 
 \begin{lemma}[Invertibility of $\mathbf{M}_{\mathrm{surv}}(q)$]\label{lem:Msurv-inv}
 Under Assumption~\ref{ass:six-root} and condition~\eqref{eq:nondeg-surv},
 the survival matrix $\mathbf{M}_{\mathrm{surv}}(q)$ of Proposition~\ref{prop:survival} is invertible.
 \end{lemma}
-\begin{proof}
-The argument is identical to that of Lemma~\ref{lem:Mbar-inv} with $k=0$.
-The phase rates are $r_{1,-}^{(0)}=1/\eta_{1,-}$ and $r_{2,-}^{(0)}=1/\eta_{2,+}$,
-so condition~\eqref{eq:nondeg-surv} is equivalent to $\eta_{1,-}\neq\eta_{2,+}$.
-Each denominator factor is nonzero because $-r_{j,-}^{(0)}$ is a pole of $\psi_Z^{(0)}$,
-hence cannot equal any root $\gamma_m^{(0)}(q)$ of $\psi_Z^{(0)}(\cdot)=q$ for finite $q$.
-\end{proof}
+\proofref{proof:lem:Msurv-inv}
 
 % ============================================================
 \section{Numerical Results}\label{sec:numerical}
@@ -1532,6 +1311,277 @@ Grey projections on the three coordinate planes recover the pairwise two-dimensi
 Script \texttt{jobs/frontier\_analysis.py}.}
 \label{fig:frontier}
 \end{figure}
+
+\appendices
+
+% ============================================================
+\section{Proofs}\label{app:proofs}
+% ============================================================
+
+\begin{proof}[Proof of Lemma~\ref{lem:psiZk}]\label{proof:lem:psiZk}
+\textit{Step 1: Laplace transform under $\P^{(k)}$.}
+Because $Z_t = X_{1,t}-X_{2,t}$ and the density on $\mathcal{F}_t$ equals
+$e^{kX_{2,t}-t\Psi(0,-ik)}$,
+\begin{equation}\label{eq:mgf-tilted}
+\E_{\P^{(k)}}\!\left[e^{sZ_t}\right]
+=
+e^{-t\Psi(0,-ik)}\,
+\E_\P\!\left[e^{s X_{1,t}+(k-s)X_{2,t}}\right]
+=
+e^{t\left[\Psi(-is,-i(k-s))-\Psi(0,-ik)\right]},
+\end{equation}
+where we used $\E_\P[e^{\alpha X_{1,t}+\beta X_{2,t}}]=e^{t\Psi(-i\alpha,-i\beta)}$.
+Since the Radon--Nikod\'ym density is exponential-linear in $(X_{1,t},X_{2,t})$, Girsanov's theorem
+for L\'evy processes guarantees that $Z$ remains a L\'evy process under $\P^{(k)}$ with exponent
+\begin{equation}\label{eq:psiZk-raw}
+\psi_Z^{(k)}(s) = \Psi\!\left(-is,\,-i(k-s)\right)-\Psi(0,-ik).
+\end{equation}
+
+\textit{Step 2: Expand and simplify.}
+Substituting \eqref{eq:Psi} with $(u,v)=(-is,-i(k-s))$, and noting
+$u^2=-s^2$, $v^2=-(k-s)^2$, $uv=-s(k-s)$, and $\varphi_{J_i}(-i\cdot)=M_i(\cdot)$:
+\begin{equation}\label{eq:Psi-expanded}
+\begin{aligned}
+\Psi(-is,-i(k-s))
+={}&\mu_1^{\mathrm{eff}} s + \mu_2^{\mathrm{eff}}(k-s)
++\tfrac12\sigma_1^2 s^2+\tfrac12\sigma_2^2(k-s)^2+\rho\sigma_1\sigma_2 s(k-s)\\
+&+\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-1).
+\end{aligned}
+\end{equation}
+Setting $s=0$ in \eqref{eq:Psi-expanded} gives
+$\Psi(0,-ik)=\mu_2^{\mathrm{eff}} k + \tfrac12\sigma_2^2 k^2 + \lambda_2(M_2(k)-1)$.
+Subtracting and collecting terms by type:
+
+\smallskip
+\noindent\textit{Drift.}
+$\mu_1^{\mathrm{eff}} s + \mu_2^{\mathrm{eff}}(k-s) - \mu_2^{\mathrm{eff}} k
+= (\mu_1^{\mathrm{eff}}-\mu_2^{\mathrm{eff}})s$.
+
+\smallskip
+\noindent\textit{Diffusion.}
+Expanding $(k-s)^2 = k^2-2ks+s^2$ and $(k-s) = k-s$:
+\begin{align*}
+&\tfrac12\sigma_1^2 s^2+\tfrac12\sigma_2^2(k-s)^2+\rho\sigma_1\sigma_2 s(k-s)
+-\tfrac12\sigma_2^2 k^2\\
+&\quad =\tfrac12(\sigma_1^2+\sigma_2^2-2\rho\sigma_1\sigma_2)s^2
+-k(\sigma_2^2-\rho\sigma_1\sigma_2)s
+= \tfrac12\sigma_Z^2 s^2 - k(\sigma_2^2-\rho\sigma_1\sigma_2)s.
+\end{align*}
+
+\smallskip
+\noindent\textit{Jumps.}
+$\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-1)-\lambda_2(M_2(k)-1)
+=\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-M_2(k))$.
+
+\smallskip
+Combining, the drift coefficient is
+$\mu_Z^{(k)}:=(\mu_1^{\mathrm{eff}}-\mu_2^{\mathrm{eff}})-k(\sigma_2^2-\rho\sigma_1\sigma_2)$,
+which establishes \eqref{eq:psiZk}.
+The eigenrelation \eqref{eq:generator-eigen} follows because for any L\'evy process with
+exponent $\psi$, the generator satisfies $\mathcal{L} e^{sz}=\psi(s)\,e^{sz}$, as can be
+seen by differentiating $\E[e^{sZ_t}]=e^{t\psi(s)}$ with respect to $t$ at $t=0$.
+\end{proof}
+
+\begin{proof}[Proof of Lemma~\ref{lem:Upart}]\label{proof:lem:Upart}
+Substitute the forcing expansion into the right-hand side of~\eqref{eq:resolvent}:
+\[
+(q - \mathcal{L}^{(k)})\widehat{U}_{\mathrm{part}}
+= \sum_{j=0}^k c_{k,j}(h_0)\,e^{jz}.
+\]
+Since the sum is finite and $\mathcal{L}^{(k)}$ is linear, it suffices to find, for each $j$, a function $v_j$
+satisfying
+\[
+(q - \mathcal{L}^{(k)})v_j(z) = c_{k,j}(h_0)\,e^{jz}.
+\]
+Propose the exponential ansatz $v_j(z) = A_j\,e^{jz}$. By the eigenrelation~\eqref{eq:generator-eigen},
+\[
+\mathcal{L}^{(k)}[A_j e^{jz}] = A_j\,\psi_Z^{(k)}(j)\,e^{jz},
+\]
+so
+\[
+(q - \mathcal{L}^{(k)})[A_j e^{jz}]
+= A_j\bigl(q - \psi_Z^{(k)}(j)\bigr)e^{jz}.
+\]
+Matching to $c_{k,j}(h_0)\,e^{jz}$ and using Assumption~\ref{ass:six-root}(iii) to ensure
+$q - \psi_Z^{(k)}(j)\neq 0$ gives
+\[
+A_j = \frac{c_{k,j}(h_0)}{q - \psi_Z^{(k)}(j)}.
+\]
+Summing over $j=0,\dots,k$ yields~\eqref{eq:Upart}.
+\end{proof}
+
+\begin{proof}[Proof of Lemma~\ref{lem:Uhom}]\label{proof:lem:Uhom}
+\textit{Step 1: exponential ansatz.} Seek solutions of the form $u(z)=e^{\gamma z}$. By the
+eigenrelation~\eqref{eq:generator-eigen},
+\[
+\mathcal{L}^{(k)}e^{\gamma z} = \psi_Z^{(k)}(\gamma)\,e^{\gamma z},
+\]
+so $(q-\mathcal{L}^{(k)})e^{\gamma z} = (q - \psi_Z^{(k)}(\gamma))e^{\gamma z}$. This vanishes if and only if
+$\gamma$ satisfies the characteristic equation
+\[
+\psi_Z^{(k)}(\gamma) = q.
+\]
+
+\textit{Step 2: root count.} The exponent $\psi_Z^{(k)}$ is the sum of a quadratic term
+$\frac{1}{2}\sigma_Z^2\gamma^2$ (non-degenerate by Assumption~\ref{ass:six-root}(i)) and rational terms from the
+Kou jumps. Clearing denominators yields a degree-six polynomial in $\gamma$, so there are exactly six roots
+$\gamma_1,\dots,\gamma_6$ (counted with multiplicity). Under Assumption~\ref{ass:six-root}(ii) all six are simple
+and split as $\Rea(\gamma_{1,2,3})>0$ and $\Rea(\gamma_{4,5,6})<0$.
+
+\textit{Step 3: admissibility.} On the half-line $z>-h_0$, the solution must remain bounded as $z\to+\infty$.
+Since $e^{\gamma z}\to\infty$ whenever $\Rea(\gamma)>0$, the roots $\gamma_1,\gamma_2,\gamma_3$ are inadmissible.
+Only $\gamma_4,\gamma_5,\gamma_6$ are retained.
+
+\textit{Step 4: centering and general solution.} Writing $e^{\gamma_{m+3}z} = e^{\gamma_{m+3}(z+h_0)}\cdot
+e^{-\gamma_{m+3}h_0}$ and absorbing the constant factor into the free coefficient, the general admissible
+homogeneous solution is
+\[
+\widehat{U}_{\mathrm{hom}}(q,z;h_0) = \sum_{m=1}^3 B_m^{(k)}(q;h_0)\,e^{\gamma_{m+3}(q)(z+h_0)},
+\]
+where $B_1^{(k)},B_2^{(k)},B_3^{(k)}$ are free constants to be determined by the boundary conditions.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:Ubar}]\label{proof:prop:Ubar}
+\textit{Step 1: boundary conditions from killing.}
+The killing condition $\widehat{U}(q,z;h_0)=0$ for $z\le-h_0$ imposes, at $z=-h_0^+$,
+\begin{enumerate}[(i)]
+\item $\widehat{U}(q,-h_0^+;h_0)=0$;
+\item $K_{j,-}^{(k)}\!\left[\widehat{U}(q,\cdot\,;h_0)\right](-h_0^+)=0$, \quad $j=1,2$.
+\end{enumerate}
+Condition (i) is continuity at the barrier. Conditions (ii) arise because
+$K_{j,-}^{(k)}[f](z)=\int_{-\infty}^0 f(z+y)\,r_{j,-}^{(k)}e^{r_{j,-}^{(k)}y}\diff y$
+integrates $f$ over landing points $z+y < z$; for $z=-h_0^+$ every landing point satisfies
+$z+y<-h_0$, where $\widehat{U}=0$, so the integral vanishes.
+
+\textit{Step 2: substitute the full solution.}
+Write $\widehat{U}=\widehat{U}_{\mathrm{part}}+\widehat{U}_{\mathrm{hom}}$ and insert into each condition.
+Since the conditions are linear, each splits as
+\[
+[\text{condition on }\widehat{U}_{\mathrm{hom}}] = -[\text{condition on }\widehat{U}_{\mathrm{part}}].
+\]
+
+\textit{Step 3: condition (i).}
+Evaluating at $z=-h_0$ and using $e^{\gamma_{m+3}(q)\cdot 0}=1$,
+\[
+\widehat{U}_{\mathrm{hom}}(q,-h_0;h_0) = \sum_{m=1}^3 B_m^{(k)} = -\,\widehat{U}_{\mathrm{part}}(q,-h_0;h_0),
+\]
+which is the first row of the system.
+
+\textit{Step 4: conditions (ii).}
+Apply $K_{j,-}^{(k)}$ to $\widehat{U}_{\mathrm{hom}}$. By the phase-operator formula~\eqref{eq:phase-on-exp},
+\[
+K_{j,-}^{(k)}\!\left[e^{\gamma_{m+3}(\cdot+h_0)}\right](-h_0)
+=
+\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_{m+3}(q)}\,e^{\gamma_{m+3}(q)\cdot 0}
+=
+\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_{m+3}(q)},
+\]
+giving row $j+1$ of the system:
+\[
+\sum_{m=1}^3 \frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_{m+3}(q)}\,B_m^{(k)}
+=
+-K_{j,-}^{(k)}\!\left[\widehat{U}_{\mathrm{part}}(q,\cdot\,;h_0)\right](-h_0).
+\]
+Applying~\eqref{eq:phase-on-exp} to $\widehat{U}_{\mathrm{part}}(q,z;h_0)=\sum_j\frac{c_{k,j}}{q-\psi_Z^{(k)}(j)}e^{jz}$
+yields the explicit entries of $\mathbf{b}^{(k)}$ stated above.
+
+\textit{Step 5: matrix form and solution.}
+The three conditions assemble into
+$\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\,\mathbf{B}^{(k)}=-\mathbf{b}^{(k)}$.
+By Lemma~\ref{lem:Mbar-inv}, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is invertible, so
+\[
+\mathbf{B}^{(k)}(q;h_0)=-\big(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\big)^{-1}\mathbf{b}^{(k)}(q;h_0).\qedhere
+\]
+\end{proof}
+
+\begin{proof}[Proof of Lemma~\ref{lem:Mbar-inv}]\label{proof:lem:Mbar-inv}
+Subtracting row~1 from rows~2 and~3 replaces entry $(i,m)$ for $i=2,3$ by
+$-\gamma_{m+3}(q)/(r_{i-1,-}^{(k)}+\gamma_{m+3}(q))$.
+Pulling out $-1$ from each of these two rows (net sign $(-1)^2=1$) and then factoring
+$\gamma_{m+3}(q)$ from each column gives
+\[
+\det\!\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}\bigr)
+=
+\gamma_4\gamma_5\gamma_6\;
+\det\!\left(\frac{1}{x_i+\gamma_{j+3}(q)}\right)_{\!1\le i,j\le 3},
+\]
+where $x_1:=0$, $x_2:=r_{1,-}^{(k)}$, $x_3:=r_{2,-}^{(k)}$.
+The right-hand factor is a Cauchy determinant; the Cauchy formula yields
+\[
+\det\!\left(\frac{1}{x_i+\gamma_{j+3}}\right)
+=
+\frac{\prod_{1\le i<i'\le 3}(x_{i'}-x_i)\cdot
+      \prod_{4\le m<m'\le 6}(\gamma_{m'}-\gamma_m)}
+     {\prod_{i=1}^3\prod_{m=4}^6(x_i+\gamma_m)}.
+\]
+Since $x_1=0$, the factor $\prod_{m=4}^6(x_1+\gamma_m)=\gamma_4\gamma_5\gamma_6$
+cancels with the prefactor, yielding a ratio whose every factor is nonzero:
+$r_{1,-}^{(k)}>0$ since $\eta_{1,-}>0$;
+$r_{2,-}^{(k)}>0$ since $k\eta_{2,+}<1$;
+$(r_{2,-}^{(k)}-r_{1,-}^{(k)})\neq 0$ by~\eqref{eq:nondeg-bar};
+the $\gamma_m$ are pairwise distinct by Assumption~\ref{ass:six-root}(ii);
+and $r_{j,-}^{(k)}+\gamma_m\neq 0$ because $-r_{j,-}^{(k)}$ is a pole of $\psi_Z^{(k)}$,
+so $\psi_Z^{(k)}(-r_{j,-}^{(k)})=\infty\neq q$, hence $\gamma_m\neq -r_{j,-}^{(k)}$.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:survival}]\label{proof:prop:survival}
+\textit{Step 1: resolvent equation.}
+Taking the Laplace transform of the PIDE $\partial_t p_{\mathrm{surv}} = \mathcal{L}^{(0)}p_{\mathrm{surv}}$
+with initial condition $p_{\mathrm{surv}}(0,z;h_0)=1$ and killing condition $p_{\mathrm{surv}}=0$ for $z\le-h_0$,
+exactly as in Section~\ref{sec:resolvent} with $g_k\equiv 1$, gives
+\[
+(q-\mathcal{L}^{(0)})\widehat{U}_{\mathrm{surv}}(q,z;h_0)=1, \qquad z>-h_0.
+\]
+
+\textit{Step 2: particular solution.}
+The constant forcing $f\equiv 1$ is an eigenfunction of $\mathcal{L}^{(0)}$ with eigenvalue
+$\psi_Z^{(0)}(0)=0$, so the particular solution is
+\[
+\widehat{U}_{\mathrm{surv,part}}(q,z) = \frac{1}{q-\psi_Z^{(0)}(0)} = \frac{1}{q}.
+\]
+
+\textit{Step 3: homogeneous solution.}
+By Lemma~\ref{lem:Uhom} applied with $k=0$, the admissible homogeneous solution on $z>-h_0$ is
+\[
+\widehat{U}_{\mathrm{surv,hom}}(q,z;h_0)
+=
+C_1 e^{\gamma_4^{(0)}(q)(z+h_0)}
++C_2 e^{\gamma_5^{(0)}(q)(z+h_0)}
++C_3 e^{\gamma_6^{(0)}(q)(z+h_0)},
+\]
+where $\gamma_4^{(0)},\gamma_5^{(0)},\gamma_6^{(0)}$ are the roots of $\psi_Z^{(0)}(\gamma)=q$ with
+$\Rea(\gamma)<0$.
+
+\textit{Step 4: boundary conditions.}
+The killing condition imposes, at $z=-h_0^+$:
+\begin{enumerate}[(i)]
+\item $\widehat{U}_{\mathrm{surv}}(q,-h_0^+;h_0)=0$;
+\item $K_{j,-}^{(0)}[\widehat{U}_{\mathrm{surv}}](-h_0^+)=0$, \quad $j=1,2$,
+\end{enumerate}
+by the same argument as in Proposition~\ref{prop:Ubar}: downward jumps from $-h_0^+$ land in the killed region.
+
+\textit{Step 5: linear system.}
+Substituting the full solution $\widehat{U}_{\mathrm{surv}}=1/q+\widehat{U}_{\mathrm{surv,hom}}$ into each
+condition and applying~\eqref{eq:phase-on-exp} to the homogeneous terms yields
+\[
+\mathbf{M}_{\mathrm{surv}}(q)\,\mathbf{C}(q;h_0) = -\begin{pmatrix}1/q\\1/q\\1/q\end{pmatrix},
+\]
+where the right-hand side entries are
+$K_{j,-}^{(0)}[1/q](-h_0^+)=1/q$ (since $K_{j,-}^{(0)}$ integrates to one against the exponential density).
+By Lemma~\ref{lem:Msurv-inv}, $\mathbf{M}_{\mathrm{surv}}(q)$ is invertible, so the coefficients $\mathbf{C}$ are uniquely determined.
+
+\textit{Step 6: inversion and liquidation probability.}
+Evaluating at $Z_0=0$ and inverting via the Bromwich formula gives $p_{\mathrm{surv}}(T,0;h_0)$. The
+liquidation probability follows from the complement.
+\end{proof}
+
+\begin{proof}[Proof of Lemma~\ref{lem:Msurv-inv}]\label{proof:lem:Msurv-inv}
+The argument is identical to that of Lemma~\ref{lem:Mbar-inv} with $k=0$.
+The phase rates are $r_{1,-}^{(0)}=1/\eta_{1,-}$ and $r_{2,-}^{(0)}=1/\eta_{2,+}$,
+so condition~\eqref{eq:nondeg-surv} is equivalent to $\eta_{1,-}\neq\eta_{2,+}$.
+Each denominator factor is nonzero because $-r_{j,-}^{(0)}$ is a pole of $\psi_Z^{(0)}$,
+hence cannot equal any root $\gamma_m^{(0)}(q)$ of $\psi_Z^{(0)}(\cdot)=q$ for finite $q$.
+\end{proof}
 
 \bibliographystyle{abbrvnat}
 \bibliography{finance}
