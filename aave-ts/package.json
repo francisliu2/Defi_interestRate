@@ -1,0 +1,25 @@
+{
+  "name": "aave-ts",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "run": "tsx src/run.ts",
+    "fetch": "tsx src/run.ts --mode=markets",
+    "fetch:history": "tsx src/run.ts --mode=history --assets=USDC --days=30"
+  },
+  "dependencies": {
+    "@aave/contract-helpers": "^1.22.3",
+    "@aave/math-utils": "^1.22.3",
+    "@bgd-labs/aave-address-book": "^4.44.22",
+    "@dsnp/parquetjs": "^1.8.7",
+    "dayjs": "^1.11.20",
+    "dotenv": "^17.4.2",
+    "ethers": "^5.7.2",
+    "graphql-request": "^6.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
+  }
+}
