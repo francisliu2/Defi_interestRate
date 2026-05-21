@@ -221,6 +221,8 @@ the conditional moments entering the general objective \eqref{eq:Phi-general}. S
 Section~\ref{sec:numerical} presents numerical results, comparing the Laplace--resolvent method
 against Monte Carlo simulation across a range of initial log health factor values and verifying the
 analytical no-shorting limit.
+Section~\ref{sec:calibration} describes the empirical characteristic function estimator used to
+calibrate the bivariate Kou parameters from observed bivariate log-returns.
 
 % ============================================================
 \section{Problem Setup}\label{sec:setup}
@@ -1208,6 +1210,194 @@ Table~\ref{tab:num-params}. Encoding: colour and line style identify parameter v
 (solid/green = benchmark); the heavier line is the baseline.
 Laplace--resolvent, $h_0\in[0.05,2.00]$, 40 points per curve.}
 \label{fig:sensitivity}
+\end{figure}
+
+% ============================================================
+\section{Empirical Calibration}\label{sec:calibration}
+% ============================================================
+
+\subsection{Estimator}\label{sec:ecf-estimator}
+
+The bivariate Kou model admits the closed-form Lévy--Khintchine exponent
+$\Psi(u,v)$ derived in Section~\ref{sec:model}, so no numerical density
+inversion is required to compute the model-implied characteristic function
+\begin{equation}\label{eq:model-cf}
+\phi_\theta(u,v;\Delta)
+=
+\exp\!\bigl(\Delta\,\Psi_\theta(u,v)\bigr),
+\end{equation}
+where $\Delta$ is the observation interval.
+Given $N$ observed bivariate log-return pairs $(r_{1,n},r_{2,n})_{n=1}^N$,
+the empirical characteristic function is
+\begin{equation}\label{eq:ecf}
+\widehat{\phi}_N(u,v)
+=
+\frac{1}{N}\sum_{n=1}^N
+\exp\!\bigl(i(u\,r_{1,n}+v\,r_{2,n})\bigr).
+\end{equation}
+We estimate $\theta$ by minimising the weighted squared distance between
+\eqref{eq:ecf} and \eqref{eq:model-cf} over a discrete frequency grid $\mathcal{G}$:
+\begin{equation}\label{eq:ecf-objective}
+\widehat{\theta}
+=
+\arg\min_{\theta\in\Theta}\,
+Q_N(\theta),
+\qquad
+Q_N(\theta)
+=
+\sum_{(u,v)\in\mathcal{G}}
+w(u,v)
+\,\bigl|\widehat{\phi}_N(u,v)-\phi_\theta(u,v;\Delta)\bigr|^2.
+\end{equation}
+This is the empirical-characteristic-function approach of
+\citet{Singleton2001}, which is particularly natural for affine and
+Lévy-based asset-pricing models whose characteristic functions are known in
+closed form.
+\citet{FeuervergerMcDunnough1981} establish that ECF estimators over a
+rich grid can attain maximum-likelihood efficiency.
+The procedure avoids evaluating the bivariate transition density, which would
+require a two-dimensional numerical Fourier inversion inside every optimizer
+call.
+For background on DEJD likelihood estimation in the univariate case
+see \citet{RamezaniZeng2007}.
+
+\subsection{Frequency grid}\label{sec:ecf-grid}
+
+The parameter vector $\theta$ has $13$ free components; see Table~\ref{tab:params}.
+Identification is most efficient when the frequency grid $\mathcal{G}$
+probes the directions that are informative for different parameter groups.
+We use three groups:
+\begin{itemize}
+  \item $\mathcal{G}_1$ \emph{(marginal directions)}:
+    $\{(u,0):u\in\mathcal{U}\}\cup\{(0,v):v\in\mathcal{U}\}$.
+    These directions identify the marginal Kou parameters of each asset
+    independently.
+  \item $\mathcal{G}_2$ \emph{(joint directions)}:
+    $\{(u,v):u,v\in\mathcal{U}_{\mathrm{joint}}\}$.
+    Cross-frequency pairs identify the Brownian correlation $\rho$.
+  \item $\mathcal{G}_Z$ \emph{(spread direction)}:
+    $\{(s,-s):s\in\mathcal{U}_Z\}$.
+    Along this direction $u\,r_1+v\,r_2=s(r_1-r_2)$, so the
+    estimator directly matches the characteristic function of the
+    log-ratio process $Z=X_1-X_2$ that governs DeFi liquidation.
+    Including $\mathcal{G}_Z$ explicitly ties the calibration to the
+    object that drives barrier crossing.
+\end{itemize}
+The full grid is $\mathcal{G}=\mathcal{G}_1\cup\mathcal{G}_2\cup\mathcal{G}_Z$.
+Default frequency nodes are
+$\mathcal{U}=\{0.25,0.5,0.75,1.0,1.5,2.0,3.0,4.0,5.0\}$,
+$\mathcal{U}_{\mathrm{joint}}=\{0.5,1.0,2.0\}$,
+$\mathcal{U}_Z=\{0.25,0.5,0.75,1.0,1.5,2.0,3.0\}$,
+giving $M=34$ moment conditions for $13$ parameters.
+Weights use Gaussian damping
+$w(u,v)=\exp(-a(u^2+v^2))$ with $a=1$,
+which down-weights high frequencies sensitive to microstructure noise.
+
+\subsection{Reparameterisation and initialisation}\label{sec:ecf-init}
+
+\paragraph{Unconstrained reparameterisation.}
+Constraints in Table~\ref{tab:params} are enforced automatically via the
+change of variables
+\begin{equation}\label{eq:reparam}
+\sigma_i=e^{a_i},\quad
+\lambda_i=e^{b_i},\quad
+p_i=\mathrm{sigmoid}(c_i),\quad
+\eta_{i,+}=\mathrm{sigmoid}(d_i),\quad
+\eta_{i,-}=e^{e_i},\quad
+\rho=\tanh(f),
+\end{equation}
+where sigmoid$(x)=(1+e^{-x})^{-1}$.
+The unconstrained vector $\tau=({\mu_1,a_1,b_1,c_1,d_1,e_1,\mu_2,\ldots,f})$
+is optimised over $\mathbb{R}^{13}$ with no explicit bounds.
+The bound $\eta_{i,+}<1$ (needed for $\chi_i$ and for the $k$-tilted measure)
+is automatically satisfied since sigmoid maps to $(0,1)$.
+
+\paragraph{Threshold initialiser.}
+The characteristic-function objective is non-linear and non-convex,
+so the optimisation is initialised by a threshold-based decomposition
+following the logic of \citet{Mancini2009} for discretely observed
+jump-diffusions.
+Let $m_i=\mathrm{median}(r_{i,n})$ and
+$s_i=1.4826\cdot\mathrm{median}_n|r_{i,n}-m_i|$ be the robust MAD scale.
+For a threshold constant $c\in[3,5]$ (default $c=4$), define candidate
+jump observations
+\[
+\mathcal{J}_i=\{n:|r_{i,n}-m_i|>c\,s_i\},
+\qquad
+\mathcal{C}_i=\{1,\ldots,N\}\setminus\mathcal{J}_i.
+\]
+Initial parameter values are then:
+\begin{align*}
+\lambda_i^{(0)}&=\frac{|\mathcal{J}_i|}{N\Delta}
+  \quad(\text{floor at }0.5),
+&
+p_i^{(0)}&=\frac{|\mathcal{J}_{i,+}|}{|\mathcal{J}_i|}
+  \quad\text{clamped to }[0.05,0.95],\\
+\eta_{i,+}^{(0)}&=\mathrm{mean}(r_{i,n}-m_i:\,n\in\mathcal{J}_{i,+}),
+&
+\eta_{i,-}^{(0)}&=\mathrm{mean}(|r_{i,n}-m_i|:\,n\in\mathcal{J}_{i,-}),\\
+\sigma_i^{(0)}&=\mathrm{sd}(r_{i,n}:\,n\in\mathcal{C}_i)/\sqrt{\Delta},
+&
+\rho^{(0)}&=\mathrm{corr}(r_1,r_2)_{n\in\mathcal{C}_1\cap\mathcal{C}_2}.
+\end{align*}
+The effective drift is corrected for the mean jump contribution:
+\[
+\mu_i^{\mathrm{eff},(0)}=\bar{r}_i/\Delta
+-\lambda_i^{(0)}\!\left[p_i^{(0)}\eta_{i,+}^{(0)}-(1-p_i^{(0)})\eta_{i,-}^{(0)}\right].
+\]
+The threshold filter is not the final estimator.
+It is a warm start that places the optimizer in a sensible region of
+parameter space; see the remark in \citet{Mancini2009}.
+
+\paragraph{Multi-start cloud.}
+Because $Q_N(\tau)$ may have local minima, the optimizer is run from a
+cloud of $n_{\mathrm{start}}$ starting points (default 20).
+Each point perturbs the threshold initialiser by applying a multiplicative
+factor $\exp(U)$, $U\sim\mathrm{Uniform}(-0.4,0.4)$, to each scale
+parameter, and an additive shift $\epsilon\sim\mathrm{Uniform}(-0.15,0.15)$
+to $p_i$ and $\rho$.
+The estimate returned is the unconstrained L-BFGS-B minimiser with the
+lowest objective value across all starts.
+
+\subsection{Identifiability and model comparison}\label{sec:ecf-ident}
+
+The ECF objective $Q_N(\theta)$ is non-convex.
+Jump-diffusion models possess approximate ridges along directions that
+preserve the total jump variance
+$\lambda_i(p_i\eta_{i,+}^2+(1-p_i)\eta_{i,-}^2)$
+\citep{RamezaniZeng2007}.
+The diffusion volatilities $\sigma_i$ and the Brownian correlation $\rho$
+are well-identified from short samples; jump-size and intensity parameters
+carry larger finite-sample uncertainty unless the observation window
+contains many jump events.
+For hourly cryptocurrency data the expected number of jump observations
+per trading year is $\lambda_i\times 8760$, which is typically in the
+hundreds; daily data with $\lambda_i=2$ yields only $\approx 16$
+identifiable jumps per year.
+
+For model comparison, evaluate $Q_N(\widehat\theta)$ across nested models
+(GBM, Merton, bivariate Kou) together with liquidation-relevant diagnostics:
+empirical versus model $Z$-tail quantiles, empirical versus model
+barrier-crossing frequencies, and simulated versus observed drawdowns of $Z$.
+These are more directly informative for the sizing application than
+standard likelihood-based criteria.
+
+The implementation is in \texttt{optimal\_long\_short/calibration.py};
+the demo script \texttt{jobs/calibrate\_kou.py} shows parameter
+recovery on synthetic data and produces Figure~\ref{fig:ecf-fit}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.85\linewidth]{fig_ecf_fit.pdf}
+\caption{ECF fit along the spread direction $(s,-s)$ for $N=4{,}000$
+synthetic daily log-return observations.
+Left: modulus $|\phi(s,-s)|$; right: phase $\arg\phi(s,-s)$.
+Dots: empirical CF $\widehat\phi_N$; dashed: true model CF;
+solid red: ECF estimate.
+The estimator matches the empirical CF accurately across both
+modulus and phase, confirming that $Q_N(\widehat\theta)\approx 0$.
+Script \texttt{jobs/calibrate\_kou.py}.}
+\label{fig:ecf-fit}
 \end{figure}
 
 % ============================================================
