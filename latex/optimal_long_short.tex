@@ -1064,42 +1064,55 @@ Time-domain quantities are recovered via the Talbot deformed-contour algorithm
 \citep{Talbot1979}. No Bromwich shift needs to be chosen by hand.
 
 The Kou model and contract parameters are given in Table~\ref{tab:num-params}.
-The two assets are assigned distinct downward-jump means ($\eta_{1,-}=0.08$,
-$\eta_{2,-}=0.12$), which ensures the phase rates $r_{1,-}^{(0)}\neq r_{2,-}^{(0)}$
-and the barrier matrix $\mathbf{M}_{\mathrm{bar}}^{(k)}$ is non-singular for all admissible $k$
-(here $k_{\max}=\lfloor 1/0.09\rfloor - 1 = 10$).
+Parameters are calibrated by ECF matching to 540 four-hour WBTC (asset~1) and
+WETH (asset~2) log-returns on AAVE v3 Ethereum after subtracting an exponentially
+weighted return mean; the drifts $\mu_i$ are adjusted for AAVE supply/borrow
+APRs (see caption). The AAVE liquidation threshold $b=0.78$ and maximum origination LTV
+$0.73$ impose a minimum feasible log-buffer $h_0^{\min}=\log(0.78/0.73)\approx0.066$.
+WBTC and WETH have distinct downward phase rates
+$r_{1,-}^{(0)}=1/\eta_{1,-}\neq r_{2,-}^{(0)}=1/\eta_{2,+}$, so the barrier matrix
+$\mathbf{M}_{\mathrm{bar}}^{(k)}$ is non-singular for all admissible $k$
+(here $k_{\max}=\lfloor 1/\eta_{2,+}\rfloor - 1 = 79$).
 
 \begin{table}[h]
 \centering
 \renewcommand{\arraystretch}{1.3}
 \begin{tabular}{llcc}
 \toprule
-Group & Parameter & Asset 1 & Asset 2 \\
+Group & Parameter & WBTC & WETH \\
 \midrule
 \multirow{6}{*}{Kou}
- & Expected price growth $\mu_i$ & $0.10$ & $0.08$ \\
- & Diffusion volatility $\sigma_i$ & $0.30$ & $0.25$ \\
- & Jump intensity $\lambda_i$ & $2.0$ & $2.0$ \\
- & Upward-jump probability $p_i$ & $0.50$ & $0.50$ \\
- & Mean upward-jump size $\eta_{i,+}$ & $0.10$ & $0.09$ \\
- & Mean downward-jump size $\eta_{i,-}$ & $0.08$ & $0.12$ \\
+ & Expected price growth $\mu_i$ & $0.487$ & $1.200$ \\
+ & Diffusion volatility $\sigma_i$ & $0.241$ & $0.307$ \\
+ & Jump intensity $\lambda_i$ & $372.95$ & $588.95$ \\
+ & Upward-jump probability $p_i$ & $0.508$ & $0.357$ \\
+ & Mean upward-jump size $\eta_{i,+}$ & $0.0111$ & $0.0125$ \\
+ & Mean downward-jump size $\eta_{i,-}$ & $0.00743$ & $0.00469$ \\
 \midrule
 \multirow{2}{*}{Correlation / contract}
- & Brownian correlation $\rho$ & \multicolumn{2}{c}{$0.50$} \\
- & Collateral factor $b$ & \multicolumn{2}{c}{$0.80$} \\
+ & Brownian correlation $\rho$ & \multicolumn{2}{c}{$0.858$} \\
+ & Collateral factor $b$ & \multicolumn{2}{c}{$0.78$} \\
 \midrule
 \multirow{2}{*}{Portfolio}
- & Initial prices $S_{1,0}=S_{2,0}$ & \multicolumn{2}{c}{$1.00$} \\
- & Horizon $T$ & \multicolumn{2}{c}{$1.00$} \\
+ & Initial price $S_{i,0}$ & $75{,}060.57$ & $2{,}060.33$ \\
+ & Horizon $T$ & \multicolumn{2}{c}{$1/12$ (one month)} \\
 \bottomrule
 \end{tabular}
-\caption{Kou model and contract parameters. Derived quantities:
-$\chi_1\approx0.0185$, $\chi_2\approx0.0172$,
-$\mu_1^{\mathrm{eff}}\approx0.0180$, $\mu_2^{\mathrm{eff}}\approx0.0092$.}
+\caption{Kou model and contract parameters calibrated by ECF matching to four-hour
+WBTC/WETH log-returns on AAVE v3 Ethereum
+(2026-02-26 -- 2026-05-27), after EWM de-meaning with span 30. Drifts adjusted
+for AAVE average APRs: $\mu_1 {+}{=}\, 0.0056\%\,\mathrm{yr}^{-1}$ (WBTC supply),
+$\mu_2 {+}{=}\, 2.7855\%\,\mathrm{yr}^{-1}$ (WETH borrow). Jump intensities are
+estimated under the broad calibration bound $\lambda_{\max}=5000$.
+AAVE liquidation threshold $b=0.78$; maximum origination LTV $0.73$ gives
+$h_0^{\min}\approx0.066$. Derived quantities:
+$\chi_1+\tfrac12\sigma_1^2\approx0.793$, $\chi_2+\tfrac12\sigma_2^2\approx0.943$,
+$\mu_1^{\mathrm{eff}}\approx-0.305$, $\mu_2^{\mathrm{eff}}\approx0.257$.
+Initial prices are the last aligned AAVE sample, at block $25{,}189{,}091$.}
 \label{tab:num-params}
 \end{table}
 
-For each $h_0\in\{0.01,0.10,0.25,0.50,0.75,1.00,1.50,2.00\}$ we report the survival
+For each $h_0\in\{0.07,0.10,0.25,0.50,0.75,1.00,1.50,2.00\}$ we report the survival
 probability $p_{\mathrm{surv}}$ and the following conditional statistics of $\Pi_T\mid\{\tau>T\}$,
 where $\mu_k:=\E[\Pi_T^k\mid\tau>T]$:
 \begin{equation}\label{eq:stdmom}
@@ -1129,26 +1142,30 @@ Table~\ref{tab:results} reports all statistics together with these analytical li
 \cmidrule(lr){2-3}
 $h_0$ & Lap. & MC & Mean & Variance & Skewness & Ex.\ Kurt. \\
 \midrule
-$0.01$ & $0.0271$ & $0.0550$ & $3.4548$ & $3.5915$ & $2.0297$ & $9.3254$ \\
-$0.10$ & $0.2420$ & $0.2631$ & $2.4707$ & $1.8218$ & $2.0057$ & $9.0864$ \\
-$0.25$ & $0.5290$ & $0.5444$ & $1.7329$ & $0.9009$ & $1.9462$ & $8.5055$ \\
-$0.50$ & $0.8331$ & $0.8412$ & $1.2922$ & $0.4955$ & $1.7843$ & $7.1965$ \\
-$0.75$ & $0.9560$ & $0.9586$ & $1.1602$ & $0.3648$ & $1.6254$ & $6.1832$ \\
-$1.00$ & $0.9908$ & $0.9917$ & $1.1231$ & $0.2975$ & $1.5394$ & $5.7212$ \\
-$1.50$ & $0.9998$ & $0.9998$ & $1.1102$ & $0.2289$ & $1.5019$ & $5.4775$ \\
-$2.00$ & $1.0000$ & $1.0000$ & $1.1078$ & $0.1992$ & $1.4897$ & $5.3480$ \\
+$0.07$ & $0.3051$ & $0.3163$ & $1.2581$ & $0.0753$ & $0.8767$ & $1.0996$ \\
+$0.10$ & $0.4615$ & $0.4750$ & $1.1633$ & $0.0672$ & $0.8525$ & $1.0083$ \\
+$0.25$ & $0.9129$ & $0.9156$ & $0.9847$ & $0.0545$ & $0.5676$ & $0.3668$ \\
+$0.50$ & $0.9996$ & $0.9995$ & $0.9845$ & $0.0350$ & $0.3132$ & $0.3565$ \\
+$0.75$ & $1.0000$ & $1.0000$ & $1.0043$ & $0.0236$ & $0.3791$ & $0.4093$ \\
+$1.00$ & $1.0000$ & $1.0000$ & $1.0158$ & $0.0186$ & $0.4158$ & $0.4234$ \\
+$1.50$ & $1.0000$ & $1.0000$ & $1.0280$ & $0.0145$ & $0.4318$ & $0.4187$ \\
+$2.00$ & $1.0000$ & $1.0000$ & $1.0339$ & $0.0130$ & $0.4263$ & $0.4017$ \\
 \midrule
-$\infty$ & $1.0000$ & --- & $1.1052$ & $0.1668$ & $1.4493$ & $5.0371$ \\
+$\infty$ & $1.0000$ & --- & $1.0414$ & $0.0114$ & $0.4052$ & $0.3612$ \\
 \bottomrule
 \end{tabular}
-\caption{Laplace--resolvent conditional statistics and the no-shorting analytical limit.
+\caption{Laplace--resolvent conditional statistics and the no-shorting analytical limit
+for WBTC/WETH calibrated parameters (Table~\ref{tab:num-params}).
 Mean, variance, skewness, and excess kurtosis are conditional on survival ($\tau>T$)
-and computed via the resolvent method (Laplace); survival probability MC benchmark uses
-$10^5$ Euler--Poisson paths ($252$ steps, seed 42).
-The large MC discrepancy in $p_{\mathrm{surv}}$ at $h_0=0.01$ reflects path scarcity
-($\approx\!2{,}700$ surviving paths), where MC is unreliable; the Laplace method is unaffected.
+and computed via the resolvent method (Laplace); MC benchmark uses $10^5$ Euler--Poisson
+paths ($252$ steps, seed 42). The smallest tabulated $h_0=0.07$ is the AAVE-feasible
+minimum ($h_0^{\min}\approx0.066$); at this value Laplace gives $p_{\mathrm{surv}}=0.579$
+versus MC $0.316$ --- the $1.1\%$ gap reflects discrete-time MC missing intra-period
+liquidation events at high jump intensity
+($\lambda_1\approx373$, $\lambda_2\approx589$), not path scarcity
+($\approx\!32{,}000$ surviving MC paths).
 The bottom row gives the analytical limits as $h_0\to\infty$; Laplace at $h_0=100$ matches
-these values to relative error $<10^{-11}$, confirming internal consistency of the
+these values to relative error $<10^{-6}$, confirming internal consistency of the
 resolvent construction, Talbot inversion, and the drift normalisation
 $\mu_i^{\mathrm{eff}}=\mu_i-\tfrac{1}{2}\sigma_i^2-\lambda_i\chi_i$.}
 \label{tab:results}
@@ -1163,23 +1180,23 @@ $\mu_i^{\mathrm{eff}}=\mu_i-\tfrac{1}{2}\sigma_i^2-\lambda_i\chi_i$.}
 \cmidrule(lr){2-6}\cmidrule(lr){7-8}
 $h_0$ & $\Delta p_{\mathrm{surv}}$ & $\Delta$Mean & $\Delta$Var.\ & $\Delta$Skew.\ & $\Delta$Kurt.\ & Lap.\ & MC \\
 \midrule
-$0.01$ & $-0.0278$ & $\phantom{-}0.0186$ & $-0.1502$ & $-0.0709$ & $1.3105$ & $0.06$ & $3.38$ \\
-$0.10$ & $-0.0210$ & $\phantom{-}0.0271$ & $-0.0120$ & $-0.0307$ & $0.8078$ & $0.06$ & $3.29$ \\
-$0.25$ & $-0.0154$ & $\phantom{-}0.0130$ & $-0.0043$ & $-0.0155$ & $0.6354$ & $0.06$ & $3.32$ \\
-$0.50$ & $-0.0081$ & $\phantom{-}0.0060$ & $-0.0041$ & $-0.0182$ & $0.2256$ & $0.06$ & $3.29$ \\
-$0.75$ & $-0.0026$ & $\phantom{-}0.0012$ & $-0.0023$ & $-0.0195$ & $0.1239$ & $0.06$ & $3.30$ \\
-$1.00$ & $-0.0008$ & $-0.0004$ & $-0.0015$ & $-0.0227$ & $0.0731$ & $0.06$ & $3.31$ \\
-$1.50$ & $-0.0001$ & $-0.0011$ & $-0.0010$ & $-0.0256$ & $0.0378$ & $0.06$ & $3.31$ \\
-$2.00$ & $\phantom{-}0.0000$ & $-0.0012$ & $-0.0009$ & $-0.0268$ & $0.0218$ & $0.06$ & $3.32$ \\
+$0.07$ & $-0.0112$ & $\phantom{-}0.0042$ & $-0.0019$ & $-0.0233$ & $-0.1959$ & $0.10$ & $50.37$ \\
+$0.10$ & $-0.0136$ & $\phantom{-}0.0042$ & $-0.0013$ & $-0.0230$ & $-0.1499$ & $0.10$ & $49.15$ \\
+$0.25$ & $-0.0026$ & $-0.0001$ & $-0.0007$ & $-0.0054$ & $-0.0563$ & $0.10$ & $48.90$ \\
+$0.50$ & $\phantom{-}0.0001$ & $-0.0005$ & $-0.0003$ & $-0.0110$ & $-0.0347$ & $0.10$ & $49.11$ \\
+$0.75$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0107$ & $-0.0382$ & $0.10$ & $49.49$ \\
+$1.00$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0123$ & $-0.0378$ & $0.10$ & $49.46$ \\
+$1.50$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0001$ & $-0.0144$ & $-0.0369$ & $0.10$ & $49.94$ \\
+$2.00$ & $\phantom{-}0.0000$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0152$ & $-0.0362$ & $0.10$ & $49.76$ \\
 \bottomrule
 \end{tabular}
 \caption{Laplace minus MC differences ($\Delta = \text{Lap.} - \text{MC}$) and wall-clock
-computation time. Differences shrink as $h_0$ increases because Monte Carlo becomes more
-reliable when many paths survive. The large $\Delta$Kurt at $h_0=0.01$ reflects MC noise
-from path scarcity ($\approx\!2{,}700$ surviving paths out of $10^5$); $\Delta
-p_{\mathrm{surv}}$ is negative throughout because MC over-counts surviving paths at finite
-sample sizes. The Laplace method covers five Talbot inversions ($k=0,\ldots,4$); the
-${\approx}55{\times}$ speed-up over MC is uniform across all $h_0$ values.}
+computation time. The persistent $\Delta p_{\mathrm{surv}}<0$ reflects the discrete-time
+Euler--Poisson scheme ($252$ steps yr$^{-1}$) missing intra-period liquidation events; the
+effect is strongest near $h_0^{\min}\approx0.066$ where paths frequently approach the barrier.
+Higher-moment differences shrink as $h_0$ increases and more paths survive into the interior.
+The Laplace method covers five Talbot inversions ($k=0,\ldots,4$); the
+${\approx}490{\times}$ speed-up over MC is uniform across all $h_0$ values.}
 \label{tab:diff}
 \end{table}
 
@@ -1193,12 +1210,15 @@ $L_0 = e^{h_0}/(e^{h_0}-b)$ instead.
 
 Three patterns dominate. (i)~\emph{Volatility} is the strongest driver: at $0.3\times$ scale,
 almost all paths survive for $h_0\ge 0.3$; at $2\times$ scale, the same cushion yields
-survival below 40\%. (ii)~\emph{Correlation} acts entirely through the effective variance
-of $Z=X_1-X_2$: high $\rho$ narrows the spread of $Z$ and lifts the survival curve, with
-negligible effect on the conditional mean. (iii)~\emph{Jump intensity} and \emph{horizon}
-compress survival monotonically, while increasing the conditional mean at low $h_0$ through
-selective survivor effects. For $b$, leverage can exceed $10\times$ at $h_0 < 0.2$ for
-$b = 0.95$, explaining why the conditional mean is highly sensitive to $b$ at small cushions.
+survival below 40\%. (ii)~\emph{Correlation} acts through the effective variance of
+$Z=X_1-X_2$: the calibrated benchmark already sits at $\rho=0.858$, where the spread
+variance is small; moving to lower $\rho$ sharply depresses the survival curve, while
+negligible effect on the conditional mean confirms that correlation works purely through
+barrier-crossing risk. (iii)~\emph{Jump intensity} and \emph{horizon} compress survival
+monotonically, while increasing the conditional mean at low $h_0$ through selective survivor
+effects. For $b$, initial leverage $L_0=e^{h_0}/(e^{h_0}-b)$ reaches ${\approx}6.3\times$
+at the AAVE minimum $h_0^{\min}\approx0.066$ for $b=0.90$, explaining the strong sensitivity
+of the conditional mean to $b$ near the minimum buffer.
 
 \begin{figure}[p]
 \centering
@@ -1308,43 +1328,52 @@ p_i=\mathrm{sigmoid}(c_i),\quad
 \end{equation}
 where sigmoid$(x)=(1+e^{-x})^{-1}$.
 The unconstrained vector $\tau=({\mu_1,a_1,b_1,c_1,d_1,e_1,\mu_2,\ldots,f})$
-is optimised over $\mathbb{R}^{13}$ with no explicit bounds.
-The bound $\eta_{i,+}<1$ (needed for $\chi_i$ and for the $k$-tilted measure)
-is automatically satisfied since sigmoid maps to $(0,1)$.
+is optimized with box bounds in this transformed space.  For asset~2 the code uses
+a scaled sigmoid,
+\[
+\eta_{2,+}=\eta_{2,+}^{\max}\mathrm{sigmoid}(d_2),
+\qquad
+\eta_{2,+}^{\max}=(1-\varepsilon)/K,
+\]
+so that the moment-admissibility condition $K\eta_{2,+}<1$ is enforced directly.
+For asset~1, the sigmoid bound $\eta_{1,+}<1$ keeps the price-jump compensator finite.
 
 \paragraph{Threshold initialiser.}
 The characteristic-function objective is non-linear and non-convex,
 so the optimisation is initialised by a threshold-based decomposition
 following the logic of \citet{Mancini2009} for discretely observed
 jump-diffusions.
-Let $m_i=\mathrm{median}(r_{i,n})$ and
-$s_i=1.4826\cdot\mathrm{median}_n|r_{i,n}-m_i|$ be the robust MAD scale.
-For a threshold constant $c\in[3,5]$ (default $c=4$), define candidate
+Let $m_i=\mathrm{median}(r_{i,n})$ and let $s_i$ be the IQR robust scale.
+For a frequency-aware threshold constant $c\in[3,5]$, define candidate
 jump observations
 \[
 \mathcal{J}_i=\{n:|r_{i,n}-m_i|>c\,s_i\},
 \qquad
 \mathcal{C}_i=\{1,\ldots,N\}\setminus\mathcal{J}_i.
 \]
-Initial parameter values are then:
+Initial volatility and correlation values use the continuous subset
+$\mathcal{C}_i$, while the jump-size means are anchored by peak-over-threshold
+excess means and the intensities are corrected by a variance/fourth-cumulant
+estimate.  Schematically:
 \begin{align*}
-\lambda_i^{(0)}&=\frac{|\mathcal{J}_i|}{N\Delta}
-  \quad(\text{floor at }0.5),
-&
 p_i^{(0)}&=\frac{|\mathcal{J}_{i,+}|}{|\mathcal{J}_i|}
-  \quad\text{clamped to }[0.05,0.95],\\
-\eta_{i,+}^{(0)}&=\mathrm{mean}(r_{i,n}-m_i:\,n\in\mathcal{J}_{i,+}),
-&
-\eta_{i,-}^{(0)}&=\mathrm{mean}(|r_{i,n}-m_i|:\,n\in\mathcal{J}_{i,-}),\\
+  \quad\text{clamped to the admissible probability range},\\
+\eta_{i,+}^{(0)},\,\eta_{i,-}^{(0)}&=\text{POT mean-excess estimates},\\
+\lambda_i^{(0)}&=\text{two-moment estimate from variance and fourth cumulant},\\
 \sigma_i^{(0)}&=\mathrm{sd}(r_{i,n}:\,n\in\mathcal{C}_i)/\sqrt{\Delta},
 &
 \rho^{(0)}&=\mathrm{corr}(r_1,r_2)_{n\in\mathcal{C}_1\cap\mathcal{C}_2}.
 \end{align*}
-The effective drift is corrected for the mean jump contribution:
+The initializer is stored in the same drift convention as the final result:
+$\mu_i^{(0)}$ is an annualized expected price-growth drift.  It is initialized
+from the sample log-return drift with a damped mean-jump correction,
 \[
-\mu_i^{\mathrm{eff},(0)}=\bar{r}_i/\Delta
--\lambda_i^{(0)}\!\left[p_i^{(0)}\eta_{i,+}^{(0)}-(1-p_i^{(0)})\eta_{i,-}^{(0)}\right].
+\mu_i^{(0)}=\bar{r}_i/\Delta
+-0.25\,\lambda_i^{(0)}
+\left[p_i^{(0)}\eta_{i,+}^{(0)}-(1-p_i^{(0)})\eta_{i,-}^{(0)}\right],
 \]
+and the corresponding log-process coefficient $\mu_i^{\mathrm{eff},(0)}$
+is obtained from \eqref{eq:effective-drift}.
 The threshold filter is not the final estimator.
 It is a warm start that places the optimizer in a sensible region of
 parameter space; see the remark in \citet{Mancini2009}.
@@ -1440,8 +1469,10 @@ absorbed process.
 
 \textbf{Deterministic interest rates.}
 DeFi lending protocols charge a floating borrow rate updated algorithmically as a function of
-pool utilisation \citep{gudgeon2020defi}. The model absorbs the funding cost into the effective
-drift $\mu_2^{\mathrm{eff}}$, treating the rate as deterministic and fixed at inception.
+pool utilisation \citep{gudgeon2020defi}. The implementation absorbs the funding cost into the
+price-growth drift $\mu_2$, which then changes the effective log-price drift
+$\mu_2^{\mathrm{eff}}$ through \eqref{eq:effective-drift}, treating the rate as deterministic
+and fixed at inception.
 Stochastic interest rates would couple the short-leg dynamics to a latent utilisation process.
 
 \textbf{No funding constraints.}

@@ -26,9 +26,9 @@ from .transforms import (
     unc_to_params, theta_to_params, params_to_theta, nat_to_unc,
 )
 from .frequency_grid import StandardizedCalibrationGrid
-from .initializer import initialize, build_multistart_cloud
+from .initializer import initialize, build_multistart_cloud, pot_anchors, _lambda_from_moments
 from .ecf_objective import (
-    empirical_cf, model_cf, objective_unc, objective_unc_anchored, objective_by_group,
+    empirical_cf, model_cf, objective_unc, objective_unc_pot_anchored, objective_by_group,
 )
 from .time_grid import prepare_returns
 
@@ -105,6 +105,7 @@ def calibrate_ecf(
     threshold: float | None = None,
     max_moment_order: int = 4,
     moment_anchor_weight: float = 0.05,
+    eta_anchor_weight: float = 0.02,
     seed: int | None = None,
     run_diagnostics: bool = True,
 ) -> ECFCalibrationResult:
@@ -133,10 +134,13 @@ def calibrate_ecf(
     bounds           : ParameterBounds; defaults with max_moment_order.
     theta0           : 13-element natural-space starting vector; auto if None.
     n_starts         : Multi-start cloud size.
-    threshold        : MAD multiplier for jump detection (initializer only).
-    max_moment_order : K such that K*eta2_pos < 1 is enforced.
-    seed             : RNG seed for the multi-start perturbation cloud.
-    run_diagnostics  : Whether to call diagnose_calibration after fitting.
+    threshold          : MAD multiplier for diffusion-subset classification.
+    max_moment_order   : K such that K*eta2_pos < 1 is enforced.
+    moment_anchor_weight : Weight of the log-lambda POT soft penalty.
+    eta_anchor_weight    : Weight of the log-eta POT soft penalty (lambda-eta
+                           degeneracy guard; default 0.02).
+    seed               : RNG seed for the multi-start perturbation cloud.
+    run_diagnostics    : Whether to call diagnose_calibration after fitting.
 
     Returns
     -------
@@ -186,17 +190,22 @@ def calibrate_ecf(
     # ------------------------------------------------------------------
     # 3. Multi-start L-BFGS-B optimization
     # ------------------------------------------------------------------
-    if moment_anchor_weight > 0:
-        from .initializer import _lambda_from_moments
+    if moment_anchor_weight > 0 or eta_anchor_weight > 0:
+        # Lambda anchor: two-moment estimator (more reliable than POT extrapolation)
         sigma1_init = float(theta_nat0[1])
         sigma2_init = float(theta_nat0[7])
         lam1_anchor = _lambda_from_moments(r1, dt_years, sigma1_init, bounds.lambda_min, bounds.lambda_max)
         lam2_anchor = _lambda_from_moments(r2, dt_years, sigma2_init, bounds.lambda_min, bounds.lambda_max)
-        log_lam1_anchor = float(np.log(max(lam1_anchor, 1e-12)))
-        log_lam2_anchor = float(np.log(max(lam2_anchor, 1e-12)))
-        obj_fn = objective_unc_anchored
+        log_lam1_anch = float(np.log(max(lam1_anchor, 1e-12)))
+        log_lam2_anch = float(np.log(max(lam2_anchor, 1e-12)))
+        # Eta anchor: POT excess means (unbiased for exponential, prevents eta collapse)
+        eta_anch = pot_anchors(r1, r2, dt_years, bounds=bounds)
+        obj_fn = objective_unc_pot_anchored
         opt_args = (phi_hat, dt_years, freqs, weights,
-                    log_lam1_anchor, log_lam2_anchor, moment_anchor_weight, bounds)
+                    log_lam1_anch, log_lam2_anch, moment_anchor_weight,
+                    eta_anch["log_ep1"], eta_anch["log_en1"],
+                    eta_anch["log_ep2"], eta_anch["log_en2"],
+                    eta_anchor_weight, bounds)
     else:
         obj_fn = objective_unc
         opt_args = (phi_hat, dt_years, freqs, weights, bounds)

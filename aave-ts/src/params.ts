@@ -3,12 +3,14 @@ import { AaveV3Ethereum } from "@bgd-labs/aave-address-book";
 export type AssetSymbol = keyof typeof AaveV3Ethereum.ASSETS;
 export type FetchMode = "markets" | "history" | "both";
 export type OutputFormat = "table" | "json";
-export type Frequency = "hourly" | "6h" | "12h" | "daily";
+export type Frequency = "hourly" | "4h" | "6h" | "8h" | "12h" | "daily";
 
 // Ethereum averages ~12s per block → blocks per sampling interval
 export const FREQUENCY_BLOCKS: Record<Frequency, number> = {
   hourly: 300,   // 3_600s / 12s
+  "4h":   1_200, // 14_400s / 12s
   "6h":   1_800, // 21_600s / 12s
+  "8h":   2_400, // 28_800s / 12s
   "12h":  3_600, // 43_200s / 12s
   daily:  7_200, // 86_400s / 12s
 };
@@ -55,8 +57,8 @@ export class OrchestratorParams {
       throw new Error(`Invalid mode "${this.mode}". Must be: ${validModes.join(" | ")}`);
     }
 
-    if (this.days < 1 || this.days > 365) {
-      throw new Error(`days must be 1–365, got ${this.days}`);
+    if (this.days < 0 || this.days > 365) {
+      throw new Error(`days must be 0–365, got ${this.days}`);
     }
 
     if (!(this.frequency in FREQUENCY_BLOCKS)) {
@@ -78,12 +80,17 @@ export class OrchestratorParams {
       }
     }
 
+    const duplicateAssets = this.assets.filter((asset, i) => this.assets.indexOf(asset) !== i);
+    if (duplicateAssets.length > 0) {
+      throw new Error(`Duplicate assets are not allowed: ${Array.from(new Set(duplicateAssets)).join(", ")}`);
+    }
+
     if (this.mode !== "markets" && this.assets.length === 0) {
       throw new Error(`At least one asset is required for mode "${this.mode}"`);
     }
   }
 
-  // Parses: --mode=history --assets=USDC,WETH --days=60 --frequency=6h --concurrency=5 --no-persist --out-dir=./data --chain=ethereum --output=json
+  // Parses: --mode=history --assets=USDC,WETH --days=60 --frequency=6h --concurrency=1 --no-persist --out-dir=./data --chain=ethereum --output=json
   static fromCLI(argv: string[] = process.argv.slice(2)): OrchestratorParams {
     const parsed: Record<string, string> = {};
     const flags = new Set<string>();

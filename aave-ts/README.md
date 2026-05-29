@@ -22,18 +22,18 @@ Free RPC options: [Infura](https://infura.io), [Alchemy](https://alchemy.com), o
 All data fetching goes through `src/run.ts` via `npm run run`:
 
 ```bash
-npm run run -- --mode=<markets|history|both> --assets=<SYMBOL,...> --days=<N> --frequency=<hourly|6h|12h|daily> --output=<table|json>
+npm run run -- --mode=<markets|history|both> --assets=<SYMBOL,...> --days=<N> --frequency=<hourly|4h|6h|8h|12h|daily> --output=<table|json>
 ```
 
 | Parameter | Default | Description |
 | --- | --- | --- |
 | `--mode` | `both` | What to fetch: `markets`, `history`, or `both` |
 | `--assets` | `USDC` | Comma-separated asset symbols (see below for full list) |
-| `--days` | `30` | History window in days (1–365); ignored in `markets` mode |
-| `--frequency` | `daily` | Sampling interval: `hourly`, `6h`, `12h`, or `daily` |
+| `--days` | `30` | History window in days (0–365); `0` fetches latest-only history and avoids archive RPC calls |
+| `--frequency` | `daily` | Sampling interval: `hourly`, `4h`, `6h`, `8h`, `12h`, or `daily` |
 | `--concurrency` | `1` | Max simultaneous RPC requests (1–50); raise if fetching many assets |
-| `--no-persist` | *(off)* | Disable saving results to Parquet (persistence is on by default) |
-| `--out-dir` | `./data/AAVE` | Directory for Parquet files |
+| `--no-persist` | *(off)* | Disable saving history results to Parquet (history persistence is on by default) |
+| `--out-dir` | `./data/AAVE` | Directory for Parquet files and `manifest.csv` |
 | `--chain` | `ethereum` | Chain name embedded in the filename |
 | `--output` | `table` | Print a formatted table or raw `json` to stdout |
 
@@ -43,7 +43,9 @@ npm run run -- --mode=<markets|history|both> --assets=<SYMBOL,...> --days=<N> --
 | --- | --- | --- | --- |
 | `daily` | 7 200 | 1 | 31 |
 | `12h` | 3 600 | 2 | 61 |
+| `8h` | 2 400 | 3 | 91 |
 | `6h` | 1 800 | 4 | 121 |
+| `4h` | 1 200 | 6 | 181 |
 | `hourly` | 300 | 24 | 721 |
 
 Each sample makes 3 parallel RPC calls (reserve data, oracle price, block). Higher frequency multiplies that cost. Infura's free tier (100k requests/day) comfortably covers daily and 6h; hourly over many assets or long windows may approach the limit.
@@ -59,6 +61,9 @@ npm run fetch:history
 
 # 7-day hourly history for USDC
 npm run run -- --mode=history --assets=USDC --days=7 --frequency=hourly
+
+# Latest-only aligned rows for WETH/WBTC on non-archive/free-tier RPCs
+npm run run -- --mode=history --assets=WETH,WBTC --days=0 --frequency=6h
 
 # Both market snapshot + 6h history, filtered to USDC and WETH
 npm run run -- --mode=both --assets=USDC,WETH --days=30 --frequency=6h
@@ -92,7 +97,7 @@ Datetime                  Price     Supplied USD     Borrowed USD  Supply APR%  
 ...
 2026-05-18T19:48         $1.0001    $1,845,200,000     $914,800,000      3.3000%         3.9928%
 
-Saved USDC: ./data/AAVE/USDC_AAVEv3_ethereum_6h_rates.parquet (+9 new, 9 total)
+Saved USDC: ./data/AAVE/hist_a1b2c3d4e5f6.parquet (id=hist_a1b2c3d4e5f6, rows=9, manifest=./data/AAVE/manifest.csv)
 ```
 
 ### Sample output — JSON mode
@@ -124,7 +129,28 @@ Saved USDC: ./data/AAVE/USDC_AAVEv3_ethereum_6h_rates.parquet (+9 new, 9 total)
 
 ## Parquet schema
 
-Each history row persisted to `./data/AAVE/<SYMBOL>_AAVEv3_<chain>_<frequency>_rates.parquet` contains:
+Each history fetch is persisted to a compact ID-addressed Parquet file:
+
+```text
+./data/AAVE/hist_<hash>.parquet
+```
+
+The same run also appends one row to `./data/AAVE/manifest.csv`, which maps each Parquet ID to the fetch parameters and realized range:
+
+| Manifest column | Description |
+| --- | --- |
+| `id` | Stable file stem for the Parquet artifact |
+| `parquet_file` | Parquet filename in `--out-dir` |
+| `fetched_at` | UTC time the orchestrator run started |
+| `symbol`, `chain`, `asset_address` | Aave market identity |
+| `frequency`, `blocks_per_sample`, `requested_days` | Requested sampling parameters |
+| `scheduled_latest_block`, `scheduled_sample_count` | Shared block schedule metadata for multi-asset history runs |
+| `sample_count` | Number of rows written |
+| `start_datetime`, `end_datetime` | Realized timestamp range from sampled blocks |
+| `start_block`, `end_block`, `min_block`, `max_block` | Realized block range |
+| `rpc_host`, `rpc_url_hash` | RPC endpoint host and short hash, without storing API-key-bearing URLs |
+
+Each history row persisted to the Parquet file contains:
 
 | Column | Type | Description |
 | --- | --- | --- |
@@ -139,7 +165,7 @@ Each history row persisted to `./data/AAVE/<SYMBOL>_AAVEv3_<chain>_<frequency>_r
 | `variable_borrow_apr` | double | Annualised variable borrow APR % |
 | `stable_borrow_apr` | double | Annualised stable borrow APR % (deprecated in Aave v3, usually 0) |
 
-Rows are deduplicated by `datetime` and sorted chronologically on each write. **Existing files must be deleted if you ran a previous version** — the old schema (`supplyApy`, `borrowApy`) is incompatible.
+Rows are sorted chronologically on each write. Persistence never overwrites an existing Parquet file; every successful history fetch gets a new ID and a new manifest row. **Existing files must be deleted if you ran a previous version** — the old schema (`supplyApy`, `borrowApy`) is incompatible.
 
 ## Available assets
 
@@ -153,15 +179,16 @@ src/
   orchestrator.ts Orchestrator class — dispatches fetchers and persistence in parallel
   fetchMarkets.ts fetchMarkets() — reads live data from UiPoolDataProvider contract
   fetchHistory.ts fetchHistory() — reads historical blocks via PoolDataProvider
-  persist.ts      persistHistory() — merges and writes HistoryRows to Parquet
+  persist.ts      persistHistory() — writes ID-addressed HistoryRows to Parquet and updates manifest.csv
   run.ts          CLI entry point — parses args, runs orchestrator, prints output
 data/AAVE/
-  USDC_AAVEv3_ethereum_daily_rates.parquet
-  WETH_AAVEv3_ethereum_6h_rates.parquet
+  manifest.csv
+  hist_a1b2c3d4e5f6.parquet
+  hist_f6e5d4c3b2a1.parquet
   ...
 ```
 
-`markets` and `history` fetches run concurrently. When multiple assets are requested in `history` mode, all assets are also fetched in parallel.
+`markets` and `history` fetches run concurrently. When multiple assets are requested in `history` mode, all assets are also fetched in parallel. Persistence applies to history results; `markets` mode is a live snapshot and is printed but not written unless paired with history via `both`.
 
 ### Using the orchestrator programmatically
 

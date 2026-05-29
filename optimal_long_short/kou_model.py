@@ -16,6 +16,14 @@ class BivariateKouModel:
                     + lam1*(phi_J1(u) - 1)
                     + lam2*(phi_J2(v) - 1),
 
+    with ``mu_i`` in that display equal to ``params.effective_mu_i``.  The
+    saved ``KouParams.mu_i`` fields use the price-growth convention:
+
+        E[exp(X_i(t))] = exp(KouParams.mu_i * t).
+
+    ``KouParams`` derives the log-process drift used here as
+    ``effective_mu_i = mu_i - 0.5*sigma_i^2 - lambda_i*E[exp(J_i)-1]``.
+
     where the Kou characteristic function of asset i's jump is
 
         phi_Ji(u) = p_i * eta_i_pos / (eta_i_pos - i*u)
@@ -47,6 +55,13 @@ class BivariateKouModel:
         Bivariate Lévy-Khintchine exponent Psi(u, v) such that
 
             E[exp(i*(u*X1_t + v*X2_t))] = exp(t * Psi(u, v)).
+
+        Drift convention
+        ----------------
+        ``KouParams.mu1`` and ``KouParams.mu2`` are annualized expected
+        price-growth rates.  This exponent uses ``effective_mu1`` and
+        ``effective_mu2``, the corresponding log-process drifts after the
+        Ito and jump-price compensators have been removed.
 
         Parameters
         ----------
@@ -158,8 +173,9 @@ class KouZTiltedDynamics:
 
             mu_Z^(k) = (mu1^eff - mu2^eff) - k*(sigma2^2 - rho*sigma1*sigma2),
 
-        where mu_i^eff = mu_i - lambda_i*alpha_i is the Brownian drift after
-        subtracting the jump compensator alpha_i = E[e^{J_i} - 1].
+        where ``mu_i^eff`` is the log-process drift from ``KouParams`` after
+        subtracting both the Ito term and the jump-price compensator from the
+        annualized price-growth drift ``mu_i``.
         """
         p = self.params
         return (p.effective_mu1 - p.effective_mu2) - self.k * (p.sigma2**2 - p.rho * p.sigma1 * p.sigma2)

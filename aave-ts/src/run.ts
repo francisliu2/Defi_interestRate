@@ -44,7 +44,8 @@ async function main(): Promise<void> {
     params = OrchestratorParams.fromCLI();
   } catch (err) {
     console.error(`Error: ${(err as Error).message}`);
-    console.error(`Usage: tsx src/run.ts --mode=<markets|history|both> --assets=USDC,WETH --days=30 --frequency=<hourly|6h|12h|daily> --concurrency=5 --output=<table|json>`);
+    console.error(`Usage: tsx src/run.ts --mode=<markets|history|both> --assets=USDC,WETH --days=30 --frequency=<hourly|4h|6h|8h|12h|daily> --concurrency=1 --output=<table|json>`);
+    console.error(`Tip: use --days=0 for latest-only history on non-archive RPC endpoints.`);
     process.exit(1);
   }
 
@@ -67,9 +68,14 @@ async function main(): Promise<void> {
   if (result.persisted) {
     console.log();
     for (const [symbol, r] of Object.entries(result.persisted) as [string, PersistResult][]) {
-      console.log(`Saved ${symbol}: ${r.filepath} (+${r.addedRows} new, ${r.totalRows} total)`);
+      console.log(
+        `Saved ${symbol}: ${r.filepath} (id=${r.id}, rows=${r.totalRows}, manifest=${r.manifestPath})`
+      );
     }
   }
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(`Error: ${(err as Error).message}`);
+  process.exit(1);
+});

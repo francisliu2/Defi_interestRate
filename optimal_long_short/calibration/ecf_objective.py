@@ -85,42 +85,56 @@ def objective_unc(
     return val / w_sum if w_sum > 0 else 1e100
 
 
-def objective_unc_anchored(
+def objective_unc_pot_anchored(
     tau: np.ndarray,
     phi_hat: np.ndarray,
     dt: float,
     freqs: np.ndarray,
     weights: np.ndarray,
-    log_lam1_anchor: float,
-    log_lam2_anchor: float,
-    anchor_weight: float,
+    log_lam1_anch: float,
+    log_lam2_anch: float,
+    lam_anchor_weight: float,
+    log_ep1_anch: float,
+    log_en1_anch: float,
+    log_ep2_anch: float,
+    log_en2_anch: float,
+    eta_anchor_weight: float,
     bounds: ParameterBounds = _DEFAULT_BOUNDS,
 ) -> float:
     """
-    ECF objective augmented with a soft log-scale penalty on lambda.
+    ECF objective with soft log-scale penalties on lambda and eta from POT.
 
-    The penalty keeps lambda near the two-moment (variance + 4th cumulant)
-    estimate, which is O(1) accurate even when the ECF is flat in the
-    lambda direction — a common failure mode when per-period jump probability
-    is small (lambda * dt << 1).
+    Anchors lambda and the jump-size means near their POT estimates in
+    log-scale, blocking the high-lambda / small-eta identification degeneracy
+    while still allowing the ECF to move parameters away from the prior when
+    the CF evidence is strong.
 
-    Penalty term:  anchor_weight * [(log lam1 - log_lam1_anchor)^2
-                                   + (log lam2 - log_lam2_anchor)^2]
-
-    The anchor weight should be O(Q_ECF / 1) so the penalty is comparable
-    in scale to the ECF objective when lambda is off by more than one
-    log-unit, but does not dominate when lambda is near the anchor.
+    Penalty = lam_anchor_weight * [(log lam1 - log_lam1_anch)^2
+                                  + (log lam2 - log_lam2_anch)^2]
+            + eta_anchor_weight * [(log ep1 - log_ep1_anch)^2
+                                  + (log en1 - log_en1_anch)^2
+                                  + (log ep2 - log_ep2_anch)^2
+                                  + (log en2 - log_en2_anch)^2]
     """
     ecf = objective_unc(tau, phi_hat, dt, freqs, weights, bounds)
     try:
         theta = unc_to_nat(tau, bounds)
-        log_lam1 = np.log(max(theta[2], 1e-12))
-        log_lam2 = np.log(max(theta[8], 1e-12))
+        log_lam1 = np.log(max(theta[2],  1e-12))
+        log_lam2 = np.log(max(theta[8],  1e-12))
+        log_ep1  = np.log(max(theta[4],  1e-12))
+        log_en1  = np.log(max(theta[5],  1e-12))
+        log_ep2  = np.log(max(theta[10], 1e-12))
+        log_en2  = np.log(max(theta[11], 1e-12))
     except Exception:
         return ecf + 1e100
-    penalty = anchor_weight * ((log_lam1 - log_lam1_anchor) ** 2
-                               + (log_lam2 - log_lam2_anchor) ** 2)
-    val = ecf + float(penalty)
+    lam_pen = lam_anchor_weight * (
+        (log_lam1 - log_lam1_anch) ** 2 + (log_lam2 - log_lam2_anch) ** 2
+    )
+    eta_pen = eta_anchor_weight * (
+        (log_ep1 - log_ep1_anch) ** 2 + (log_en1 - log_en1_anch) ** 2
+        + (log_ep2 - log_ep2_anch) ** 2 + (log_en2 - log_en2_anch) ** 2
+    )
+    val = ecf + float(lam_pen) + float(eta_pen)
     return val if np.isfinite(val) else 1e100
 
 

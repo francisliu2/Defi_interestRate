@@ -1,25 +1,21 @@
 """
-MAD-based threshold initializer and structured multi-start cloud for ECF
+Threshold/POT initializer and structured multi-start cloud for ECF
 calibration of the bivariate Kou model.
 
 Two estimation modes are combined to produce the starting parameter vector:
 
 Threshold filter (Mancini 2009)
-    Classifies returns as jump or diffusion using a robust MAD scale.
-    Gives good estimates of p, sigma, and rho but *underestimates* lambda
-    because only the largest jumps exceed the cut point.
+    Classifies returns as jump or diffusion using a robust IQR scale.
+    Used exclusively to identify the diffusion subset for estimating sigma
+    and rho; not used for jump parameters.
 
-Two-moment lambda correction
-    For a compound Poisson process:
-        Var(r)/dt  = sigma^2 + lambda * M2,   M2 = p*2*ep^2 + (1-p)*2*en^2
-        kappa4(r)/dt = lambda * M4,            M4 = p*24*ep^4 + (1-p)*24*en^4
-    Dividing eliminates lambda and gives an explicit equation for a symmetric
-    jump scale eta; substituting back yields lambda.  This estimator uses all
-    returns (not just flagged outliers) and avoids the truncation bias that
-    makes the threshold estimate 3-4x too low for daily crypto data.
-
-    To handle asymmetric jumps, the threshold filter is used to estimate the
-    ratio ep/en, and the two-moment system solves for the effective scale.
+POT-based jump estimation (Peak-Over-Threshold)
+    Sets a high quantile of the positive/negative return pool as the
+    exceedance threshold u.  By the memoryless property of the exponential
+    distribution, mean(X - u | X > u) = eta regardless of u, giving an
+    unbiased estimate of the jump-size mean.  Exceedance intensity is
+    extrapolated to full jump intensity via P(J > u) = exp(-u / eta),
+    avoiding the truncation bias of simple jump-counting methods.
 
 The multi-start cloud uses four scenario groups (A–D) to protect against the
 jump-diffusion identification problem (many small jumps vs. high diffusion).
@@ -74,45 +70,109 @@ def _lambda_from_moments(
     """
     Two-moment lambda estimate from variance and 4th cumulant.
 
-    For a compound Poisson process with symmetric double-exponential jumps
-    (mean eta, all moments exist):
-
-        V2  = lambda * 2 * eta^2    (annualized jump variance)
-        K4  = lambda * 24 * eta^4   (annualized 4th cumulant)
-
-    Eliminating eta gives the closed-form:  lambda = 6 * V2^2 / K4
-
-    This formula uses all N returns and avoids the truncation bias of the
-    threshold filter, which detects only the largest jumps and thereby
-    inflates the apparent jump means, causing lambda to be 3-5× too low.
-
-    For asymmetric jumps the formula is still approximately correct (the
-    symmetric moment ratios change by at most ~30% for typical crypto
-    parameters), and is always orders of magnitude better than the
-    threshold-based estimate when true lambda is large.
-
-    Parameters
-    ----------
-    r          : (N,) per-period log-return array.
-    dt         : Observation interval in years.
-    sigma_init : Diffusion volatility estimate from threshold filter.
-
-    Returns
-    -------
-    Lambda estimate (annualized).
+    For a compound Poisson process: V2 = lambda * 2*eta^2, K4 = lambda * 24*eta^4.
+    Dividing: lambda = 6 * V2^2 / K4.  Uses all N returns, avoiding the truncation
+    bias of threshold counting.
     """
     kappa4 = float(np.mean((r - r.mean()) ** 4) - 3.0 * np.var(r) ** 2)
     if kappa4 <= 0:
         return lambda_min
-
     V2 = float(np.var(r) / dt - sigma_init ** 2)
     K4 = kappa4 / dt
-
     if V2 <= 0 or K4 <= 0:
         return lambda_min
+    return float(np.clip(6.0 * V2 ** 2 / K4, lambda_min, lambda_max))
 
-    lam = 6.0 * V2 ** 2 / K4
-    return float(np.clip(lam, lambda_min, lambda_max))
+
+def pot_init_one_asset(
+    r: np.ndarray,
+    dt: float,
+    q_pos: float = 0.99,
+    q_neg: float = 0.99,
+    bounds: ParameterBounds = _DEFAULT_BOUNDS,
+) -> tuple[float, float, float, float]:
+    """
+    POT-style jump parameter estimator for one marginal Kou process.
+
+    Computes the exceedance threshold at quantile q_pos / q_neg of the
+    positive and negative return pools respectively, estimates jump-size
+    means from the mean excess above each threshold (unbiased for
+    exponential by the memoryless property), then extrapolates the
+    exceedance rate to the full jump intensity component using
+    P(J > u) = exp(-u / eta).
+
+    Returns
+    -------
+    lam, p, eta_pos, eta_neg  — all clipped to bounds.
+    """
+    r = np.asarray(r, dtype=float)
+    N = len(r)
+
+    x = r - np.median(r)
+    pos = x[x > 0]
+    neg = -x[x < 0]
+
+    if len(pos) < 10 or len(neg) < 10:
+        return 2.0, 0.5, 0.05, 0.05
+
+    u_pos = float(np.quantile(pos, q_pos))
+    u_neg = float(np.quantile(neg, q_neg))
+
+    exc_pos = pos[pos > u_pos] - u_pos
+    exc_neg = neg[neg > u_neg] - u_neg
+
+    n_pos = len(exc_pos)
+    n_neg = len(exc_neg)
+
+    eta_pos = float(np.mean(exc_pos)) if n_pos > 0 else 0.05
+    eta_neg = float(np.mean(exc_neg)) if n_neg > 0 else 0.05
+    eta_pos = float(np.clip(eta_pos, bounds.eta_pos1_min, bounds.eta_pos1_max))
+    eta_neg = float(np.clip(eta_neg, bounds.eta_neg_min, bounds.eta_neg_max))
+
+    lam_pos_exc = n_pos / (N * dt)
+    lam_neg_exc = n_neg / (N * dt)
+    lam_pos = lam_pos_exc * float(np.exp(min(u_pos / eta_pos, 20.0))) if n_pos > 0 else 0.0
+    lam_neg = lam_neg_exc * float(np.exp(min(u_neg / eta_neg, 20.0))) if n_neg > 0 else 0.0
+
+    lam = float(np.clip(lam_pos + lam_neg, bounds.lambda_min, bounds.lambda_max))
+    p = lam_pos / (lam_pos + lam_neg) if (lam_pos + lam_neg) > 0 else 0.5
+    p = float(np.clip(p, bounds.p_min, bounds.p_max))
+
+    return lam, p, eta_pos, eta_neg
+
+
+def pot_anchors(
+    r1: np.ndarray,
+    r2: np.ndarray,
+    dt: float,
+    q_pos: float = 0.99,
+    q_neg: float = 0.99,
+    bounds: ParameterBounds = _DEFAULT_BOUNDS,
+) -> dict[str, float]:
+    """
+    POT-based log-scale anchors for jump-size means (both assets).
+
+    The excess-mean estimator is unbiased for the exponential distribution
+    regardless of threshold.  Used as soft priors in the ECF objective to
+    prevent the high-lambda / small-eta identification degeneracy.
+
+    Note: lambda anchors are computed separately via the two-moment estimator,
+    which is more reliable than POT extrapolation when lambda*dt is small.
+
+    Returns
+    -------
+    dict with keys:
+      "log_ep1", "log_en1"   log(eta_pos/neg) anchors for asset 1
+      "log_ep2", "log_en2"   log(eta_pos/neg) anchors for asset 2
+    """
+    _, _, ep1, en1 = pot_init_one_asset(r1, dt, q_pos, q_neg, bounds)
+    _, _, ep2, en2 = pot_init_one_asset(r2, dt, q_pos, q_neg, bounds)
+    return {
+        "log_ep1": float(np.log(max(ep1, 1e-12))),
+        "log_en1": float(np.log(max(en1, 1e-12))),
+        "log_ep2": float(np.log(max(ep2, 1e-12))),
+        "log_en2": float(np.log(max(en2, 1e-12))),
+    }
 
 
 def initialize(
@@ -144,7 +204,6 @@ def initialize(
     if threshold is None:
         threshold = _dt_to_threshold(dt)
 
-    N = len(r1)
     m1, m2 = np.median(r1), np.median(r2)
     s1 = _robust_scale(r1)
     s2 = _robust_scale(r2)
@@ -152,14 +211,9 @@ def initialize(
     mask_j1 = np.abs(r1 - m1) > threshold * s1
     mask_j2 = np.abs(r2 - m2) > threshold * s2
     mask_c1, mask_c2 = ~mask_j1, ~mask_j2
-
     n_j1, n_j2 = int(mask_j1.sum()), int(mask_j2.sum())
 
-    # Threshold-based lambda (biased low; corrected below)
-    lam1_thresh = float(np.clip(n_j1 / max(N * dt, 1e-12), bounds.lambda_min, bounds.lambda_max))
-    lam2_thresh = float(np.clip(n_j2 / max(N * dt, 1e-12), bounds.lambda_min, bounds.lambda_max))
-
-    # Jump direction probabilities
+    # Jump direction probability from threshold filter
     p1 = float(np.clip(
         (mask_j1 & (r1 - m1 > 0)).sum() / max(n_j1, 1), bounds.p_min, bounds.p_max
     ))
@@ -167,30 +221,10 @@ def initialize(
         (mask_j2 & (r2 - m2 > 0)).sum() / max(n_j2, 1), bounds.p_min, bounds.p_max
     ))
 
-    # Default jump size: 2 × per-period robust scale (frequency-aware floor)
-    def_eta1 = max(2.0 * s1, 1e-4)
-    def_eta2 = max(2.0 * s2, 1e-4)
-
-    def _mean_or(arr: np.ndarray, mask: np.ndarray, default: float) -> float:
-        return float(np.mean(arr[mask])) if mask.any() else default
-
-    eta1_pos = float(np.clip(
-        _mean_or(r1 - m1,         mask_j1 & (r1 - m1 > 0), def_eta1),
-        bounds.eta_pos1_min, bounds.eta_pos1_max,
-    ))
-    eta1_neg = float(np.clip(
-        _mean_or(np.abs(r1 - m1), mask_j1 & (r1 - m1 < 0), def_eta1),
-        bounds.eta_neg_min, bounds.eta_neg_max,
-    ))
-    eta2_max = bounds.eta_pos2_max
-    eta2_pos = float(np.clip(
-        _mean_or(r2 - m2,         mask_j2 & (r2 - m2 > 0), def_eta2),
-        bounds.eta_pos2_min, eta2_max,
-    ))
-    eta2_neg = float(np.clip(
-        _mean_or(np.abs(r2 - m2), mask_j2 & (r2 - m2 < 0), def_eta2),
-        bounds.eta_neg_min, bounds.eta_neg_max,
-    ))
+    # POT excess means for jump-size parameters (unbiased exponential estimator)
+    _, _, eta1_pos, eta1_neg = pot_init_one_asset(r1, dt, bounds=bounds)
+    _, _, eta2_pos, eta2_neg = pot_init_one_asset(r2, dt, bounds=bounds)
+    eta2_pos = float(np.clip(eta2_pos, bounds.eta_pos2_min, bounds.eta_pos2_max))
 
     # Annualized diffusion volatility from non-jump returns
     def _std_or(arr: np.ndarray, mask: np.ndarray, fallback: float) -> float:
@@ -203,23 +237,15 @@ def initialize(
         _std_or(r2, mask_c2, s2) / np.sqrt(dt), bounds.sigma_min, bounds.sigma_max
     ))
 
-    # Two-moment corrected lambda (replaces the biased threshold estimate)
+    # Two-moment corrected lambda (avoids truncation bias of threshold counting)
     lam1 = _lambda_from_moments(r1, dt, sigma1, bounds.lambda_min, bounds.lambda_max)
     lam2 = _lambda_from_moments(r2, dt, sigma2, bounds.lambda_min, bounds.lambda_max)
 
-    # Price-growth drift: mu_i = mean(r)/dt + 0.5*sigma_i^2 + lam_i*chi_i
-    # Derivation: E[r_t]/dt = mu_i - 0.5*sigma_i^2 - lam_i*chi_i + lam_i*E[J_i],
-    # and the lam*E[J] term cancels exactly leaving mu_i = mean(r)/dt + 0.5*sigma^2 + lam*chi.
-    chi1 = p1 / (1.0 - eta1_pos) + (1.0 - p1) / (1.0 + eta1_neg) - 1.0
-    chi2 = p2 / (1.0 - eta2_pos) + (1.0 - p2) / (1.0 + eta2_neg) - 1.0
-    mu1 = float(np.clip(
-        np.mean(r1) / dt + 0.5 * sigma1 ** 2 + lam1 * chi1,
-        bounds.mu_min, bounds.mu_max,
-    ))
-    mu2 = float(np.clip(
-        np.mean(r2) / dt + 0.5 * sigma2 ** 2 + lam2 * chi2,
-        bounds.mu_min, bounds.mu_max,
-    ))
+    # Drift: shrink the jump-mean correction by 0.25 to avoid amplifying eta bias.
+    Ej1 = p1 * eta1_pos - (1.0 - p1) * eta1_neg
+    Ej2 = p2 * eta2_pos - (1.0 - p2) * eta2_neg
+    mu1 = float(np.clip(np.mean(r1) / dt - 0.25 * lam1 * Ej1, bounds.mu_min, bounds.mu_max))
+    mu2 = float(np.clip(np.mean(r2) / dt - 0.25 * lam2 * Ej2, bounds.mu_min, bounds.mu_max))
 
     # Brownian correlation from simultaneous non-jump pairs
     mask_c12 = mask_c1 & mask_c2
@@ -242,6 +268,10 @@ _SCENARIOS: list[dict] = [
     {"sigma": 0.8, "lam": 3.0, "eta": 0.6},  # D: very-high-jump
 ]
 
+# Ridge scales for lambda-eta traversal: scale lambda by c, eta by 1/sqrt(c).
+# This preserves lambda*E[J^2] (jump variance) while exploring the identification ridge.
+_RIDGE_SCALES: np.ndarray = np.array([0.1, 0.25, 0.5, 2.0, 4.0, 8.0])
+
 
 def build_multistart_cloud(
     theta_nat: np.ndarray,
@@ -252,10 +282,14 @@ def build_multistart_cloud(
     """
     Build a (n_starts, 13) array of unconstrained starting points.
 
-    Starts cycle through four scenario groups (A–D above) with random
-    multiplicative perturbations on scale/lambda/eta and additive
-    perturbations on probabilities and correlation.  The first row is
-    always the unperturbed initializer point.
+    Layout:
+      [0]       unperturbed initializer point
+      [1..R]    ridge-traversing starts (scale lambda by c, eta by 1/sqrt(c))
+      [R+1..]   scenario-based random starts cycling through A–D
+
+    The ridge starts systematically explore the lambda-eta identification
+    valley along which lambda*E[J^2] is approximately constant, preventing
+    the optimizer from being trapped near the initializer's lambda value.
     """
     starts = np.empty((n_starts, 13))
     starts[0] = nat_to_unc(theta_nat, bounds)
@@ -263,8 +297,24 @@ def build_multistart_cloud(
     eta2_max = bounds.eta_pos2_max
     mu1, s1, l1, p1, ep1, en1, mu2, s2, l2, p2, ep2, en2, rho = theta_nat
 
-    for i in range(1, n_starts):
-        sc = _SCENARIOS[i % len(_SCENARIOS)]
+    # Ridge-traversing starts
+    n_ridge = min(len(_RIDGE_SCALES), n_starts - 1)
+    for i, c in enumerate(_RIDGE_SCALES[:n_ridge]):
+        sq = float(np.sqrt(c))
+        l1_r  = float(np.clip(l1  * c,   bounds.lambda_min,  bounds.lambda_max))
+        l2_r  = float(np.clip(l2  * c,   bounds.lambda_min,  bounds.lambda_max))
+        ep1_r = float(np.clip(ep1 / sq,  bounds.eta_pos1_min, bounds.eta_pos1_max))
+        en1_r = float(np.clip(en1 / sq,  bounds.eta_neg_min,  bounds.eta_neg_max))
+        ep2_r = float(np.clip(ep2 / sq,  bounds.eta_pos2_min, eta2_max))
+        en2_r = float(np.clip(en2 / sq,  bounds.eta_neg_min,  bounds.eta_neg_max))
+        starts[i + 1] = nat_to_unc(np.array([
+            mu1, s1, l1_r, p1, ep1_r, en1_r,
+            mu2, s2, l2_r, p2, ep2_r, en2_r, rho,
+        ]), bounds)
+
+    # Scenario-based random starts for the remainder
+    for i in range(n_ridge + 1, n_starts):
+        sc = _SCENARIOS[(i - n_ridge - 1) % len(_SCENARIOS)]
         noise = rng.uniform(-0.3, 0.3, size=8)
 
         s1_p  = float(np.clip(s1  * sc["sigma"] * np.exp(noise[0]), bounds.sigma_min,   bounds.sigma_max))
