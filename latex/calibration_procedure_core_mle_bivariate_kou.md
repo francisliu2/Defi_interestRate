@@ -26,7 +26,7 @@ The bivariate Kou specification is
 $$
 dX_{i,t}
 =
-\mu_i^{\mathrm{eff}}dt
+\mu_i^Xdt
 +
 \sigma_i dB_{i,t}
 +
@@ -56,7 +56,7 @@ $$
 \theta^P
 =
 \left(
-\mu_1^{\mathrm{eff}},\mu_2^{\mathrm{eff}},
+\mu_1^X,\mu_2^X,
 \sigma_1,\sigma_2,\rho,
 \lambda_1,\lambda_2,
 p_1,p_2,
@@ -70,7 +70,7 @@ The expected price-growth drift can be recovered after estimation through
 $$
 \mu_i
 =
-\mu_i^{\mathrm{eff}}
+\mu_i^X
 +
 \frac12\sigma_i^2
 +
@@ -207,7 +207,7 @@ $$
 
 If too few tail observations are available for one side of the distribution, replace the corresponding initial value by a conservative small positive value and rely on the likelihood optimization to refine it. The final estimate is still determined by MLE, not by the threshold classification.
 
-Initialize $\mu_i^{\mathrm{eff}}$ from the sample mean after subtracting the preliminary jump contribution, or simply initialize it from the average return divided by $\Delta$. Drift is weakly identified at short horizons, so the likelihood should not be forced to fit the data primarily through $\mu_i^{\mathrm{eff}}$.
+Initialize $\mu_i^X$ from the sample mean after subtracting the preliminary jump contribution, or simply initialize it from the average return divided by $\Delta$. Drift is weakly identified at short horizons, so the likelihood should not be forced to fit the data primarily through $\mu_i^X$.
 
 ---
 
@@ -303,14 +303,14 @@ If the model is reported in terms of expected price-growth drifts, recover
 $$
 \widehat\mu_i
 =
-\widehat\mu_i^{\mathrm{eff}}
+\widehat\mu_i^X
 +
 \frac12\widehat\sigma_i^2
 +
 \widehat\lambda_i\widehat\chi_i.
 $$
 
-The liquidation engine should use $\widehat\mu_i^{\mathrm{eff}}$, not the uncompensated expected-growth drift.
+The liquidation engine should use $\widehat\mu_i^X$, not the uncompensated expected-growth drift.
 
 ---
 

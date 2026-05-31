@@ -467,7 +467,7 @@ We assume under $\P$ that each log-price satisfies the SDE
 \begin{equation}\label{eq:log-price-sde}
 \diff X_{i,t}
 =
-\mu_i^{\mathrm{eff}}\,\diff t
+\mu_i^X\,\diff t
 +
 \sigma_i\,\diff B_{i,t}
 +
@@ -516,18 +516,18 @@ M_i(1)-1
 =
 \frac{p_i}{1-\eta_{i,+}}+\frac{1-p_i}{1+\eta_{i,-}}-1.
 \end{equation}
-Since $\E_\P[e^{X_{i,t}}]=\exp(t[\mu_i^{\mathrm{eff}}+\tfrac12\sigma_i^2+\lambda_i\chi_i])$,
+Since $\E_\P[e^{X_{i,t}}]=\exp(t[\mu_i^X+\tfrac12\sigma_i^2+\lambda_i\chi_i])$,
 matching to $e^{\mu_i t}$ gives the log-price drift coefficient
-\begin{equation}\label{eq:effective-drift}
-\mu_i^{\mathrm{eff}} := \mu_i - \tfrac12\sigma_i^2 - \lambda_i\chi_i.
+\begin{equation}\label{eq:muX-drift}
+\mu_i^X := \mu_i - \tfrac12\sigma_i^2 - \lambda_i\chi_i.
 \end{equation}
-All analytical and numerical objects in the sequel use $\mu_i^{\mathrm{eff}}$.
+All analytical and numerical objects in the sequel use $\mu_i^X$.
 
 The bivariate process $(X_1,X_2)$ is a L\'evy process with joint characteristic exponent
 \begin{equation}\label{eq:Psi}
 \begin{aligned}
 \Psi(u,v)
-&:= i(\mu_1^{\mathrm{eff}} u+\mu_2^{\mathrm{eff}} v)
+&:= i(\mu_1^X u+\mu_2^X v)
 -\tfrac12\Big(\sigma_1^2u^2+\sigma_2^2v^2+2\rho\sigma_1\sigma_2uv\Big)\\
 &\quad +\lambda_1\big(\varphi_{J_1}(u)-1\big)
 +\lambda_2\big(\varphi_{J_2}(v)-1\big),
@@ -552,8 +552,8 @@ $p_i$ & $i=1,2$ & Probability that a jump in $X_i$ is upward & $p_i\in(0,1)$ \\
 $\eta_{i,+}$ & $i=1,2$ & Mean size of upward jumps in $X_i$ & $0<\eta_{i,+}<1$ \\
 $\eta_{i,-}$ & $i=1,2$ & Mean size of downward jumps in $X_i$ & $\eta_{i,-}>0$ \\
 \hline
-$\chi_i$ & $i=1,2$ & Price-jump compensator $M_i(1)-1=\E[e^{J_i}-1]$; enters $\mu_i^{\mathrm{eff}}$ via \eqref{eq:effective-drift} & \\
-$\mu_i^{\mathrm{eff}}$ & $i=1,2$ & Actual drift coefficient in the log-price SDE \eqref{eq:log-price-sde} & \\
+$\chi_i$ & $i=1,2$ & Price-jump compensator $M_i(1)-1=\E[e^{J_i}-1]$; enters $\mu_i^X$ via \eqref{eq:muX-drift} & \\
+$\mu_i^X$ & $i=1,2$ & Actual drift coefficient in the log-price SDE \eqref{eq:log-price-sde} & \\
 $\Psi(u,v)$ & --- & Joint characteristic exponent; $e^{T\Psi(0,-ik)}=\E[e^{kX_{2,T}}]$ appears in the moment formula & \\
 \hline
 $S_{i,0}$ & $i=1,2$ & Initial price of asset $i$ & $S_{i,0}>0$ \\
@@ -601,7 +601,7 @@ where
 \[
 \sigma_Z^2:=\sigma_1^2+\sigma_2^2-2\rho\sigma_1\sigma_2\ge 0,
 \qquad
-\mu_Z^{(k)}:=(\mu_1^{\mathrm{eff}}-\mu_2^{\mathrm{eff}})-k(\sigma_2^2-\rho\sigma_1\sigma_2).
+\mu_Z^{(k)}:=(\mu_1^X-\mu_2^X)-k(\sigma_2^2-\rho\sigma_1\sigma_2).
 \]
 In particular, the generator satisfies
 \begin{equation}\label{eq:generator-eigen}
@@ -675,7 +675,7 @@ $\P^{(k)}$ & $\diff\P^{(k)}/\diff\P\propto e^{kX_{2,t}}$ & Measure under which m
 $k$ & Non-negative integer, $k\eta_{2,+}<1$ & Tilting order; $k\ge 1$ for moments, $k=0$ for survival probability \\
 $\psi_Z^{(k)}(s)$ & L\'evy exponent of $Z$ under $\P^{(k)}$ & Characteristic root equation $\psi_Z^{(k)}(\gamma)=q$ governs the resolvent \\
 $\sigma_Z^2$ & $\sigma_1^2+\sigma_2^2-2\rho\sigma_1\sigma_2$ & Variance of the Brownian part of $Z$; appears in $\psi_Z^{(k)}$ \\
-$\mu_Z^{(k)}$ & $(\mu_1^{\mathrm{eff}}-\mu_2^{\mathrm{eff}})-k(\sigma_2^2-\rho\sigma_1\sigma_2)$ & Drift of $Z$ under $\P^{(k)}$; appears in $\psi_Z^{(k)}$ \\
+$\mu_Z^{(k)}$ & $(\mu_1^X-\mu_2^X)-k(\sigma_2^2-\rho\sigma_1\sigma_2)$ & Drift of $Z$ under $\P^{(k)}$; appears in $\psi_Z^{(k)}$ \\
 $\mathcal{L}^{(k)}$ & Generator of $Z$ under $\P^{(k)}$ & $\mathcal{L}^{(k)}e^{sz}=\psi_Z^{(k)}(s)e^{sz}$; used in the resolvent PIDE \\
 $r_{j,\pm}^{(k)}$ & Phase rates (see above) & Exponential rates of the jump components of $Z$ under $\P^{(k)}$ \\
 $K_{j,\pm}^{(k)}$ & Phase operators (see above) & Convert jump integrals to scalars on exponential ansatz \\
@@ -781,7 +781,7 @@ becomes impossible and the portfolio converges to a unit long position in asset~
 \lim_{h_0\to\infty}\E[\Pi_T^k]=\E[e^{kX_{1,T}}]=e^{T\Psi(-ik,0)},
 \]
 which provides a useful diagnostic: the formula for $\E[\Pi_T^k]$ must satisfy this limit exactly.
-The $k=1$ case gives $e^{\mu_1 T}$ by the drift normalisation \eqref{eq:effective-drift}.
+The $k=1$ case gives $e^{\mu_1 T}$ by the drift normalisation \eqref{eq:muX-drift}.
 \end{remark}
 
 The remainder of the analysis is devoted to computing $m_k(T;h_0)$ for all admissible $k\ge 1$
@@ -1073,6 +1073,10 @@ WBTC and WETH have distinct downward phase rates
 $r_{1,-}^{(0)}=1/\eta_{1,-}\neq r_{2,-}^{(0)}=1/\eta_{2,+}$, so the barrier matrix
 $\mathbf{M}_{\mathrm{bar}}^{(k)}$ is non-singular for all admissible $k$
 (here $k_{\max}=\lfloor 1/\eta_{2,+}\rfloor - 1 = 79$).
+Because the first moment is weakly identified in high-frequency ECF matching,
+the fitted $\mu_i$ values in Table~\ref{tab:num-params} should be read as model
+price-growth normalizers rather than directional forecasts; user views can replace
+them in downstream moment and liquidation calculations.
 
 \begin{table}[h]
 \centering
@@ -1081,8 +1085,11 @@ $\mathbf{M}_{\mathrm{bar}}^{(k)}$ is non-singular for all admissible $k$
 \toprule
 Group & Parameter & WBTC & WETH \\
 \midrule
-\multirow{6}{*}{Kou}
- & Expected price growth $\mu_i$ & $0.487$ & $1.200$ \\
+\multirow{9}{*}{Kou}
+ & ECF price-growth normalizer $\mu_i$ & $0.487$ & $1.200$ \\
+ & Log-price drift $\mu_i^X$ & $-0.305$ & $0.257$ \\
+ & Model log-return drift $\E[\diff X_i]/\diff t$ & $0.425$ & $1.111$ \\
+ & Empirical de-meaned log drift & $0.352$ & $0.606$ \\
  & Diffusion volatility $\sigma_i$ & $0.241$ & $0.307$ \\
  & Jump intensity $\lambda_i$ & $372.95$ & $588.95$ \\
  & Upward-jump probability $p_i$ & $0.508$ & $0.357$ \\
@@ -1107,12 +1114,15 @@ estimated under the broad calibration bound $\lambda_{\max}=5000$.
 AAVE liquidation threshold $b=0.78$; maximum origination LTV $0.73$ gives
 $h_0^{\min}\approx0.066$. Derived quantities:
 $\chi_1+\tfrac12\sigma_1^2\approx0.793$, $\chi_2+\tfrac12\sigma_2^2\approx0.943$,
-$\mu_1^{\mathrm{eff}}\approx-0.305$, $\mu_2^{\mathrm{eff}}\approx0.257$.
+$\mu_1^X\approx-0.305$, $\mu_2^X\approx0.257$. The empirical de-meaned
+price-growth normalizers are $0.432$ (WBTC) and $0.755$ (WETH), so the fitted
+WETH $\mu_2$ is a weakly identified ECF normalizer rather than a robust return forecast.
 Initial prices are the last aligned AAVE sample, at block $25{,}189{,}091$.}
 \label{tab:num-params}
 \end{table}
 
-For each $h_0\in\{0.07,0.10,0.25,0.50,0.75,1.00,1.50,2.00\}$ we report the survival
+For each initial health factor $H_0=e^{h_0}$, with
+$h_0\in\{0.07,0.10,0.25,0.50,0.75,1.00,1.50,2.00\}$, we report the survival
 probability $p_{\mathrm{surv}}$ and the following conditional statistics of $\Pi_T\mid\{\tau>T\}$,
 where $\mu_k:=\E[\Pi_T^k\mid\tau>T]$:
 \begin{equation}\label{eq:stdmom}
@@ -1136,22 +1146,22 @@ Table~\ref{tab:results} reports all statistics together with these analytical li
 \begin{table}[ht]
 \centering\small
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{c cc cccc}
+\begin{tabular}{cc cc cccc}
 \toprule
-& \multicolumn{2}{c}{$p_{\mathrm{surv}}$} & & & & \\
-\cmidrule(lr){2-3}
-$h_0$ & Lap. & MC & Mean & Variance & Skewness & Ex.\ Kurt. \\
+& & \multicolumn{2}{c}{$p_{\mathrm{surv}}$} & & & & \\
+\cmidrule(lr){3-4}
+$h_0$ & $H_0$ & Lap. & MC & Mean & Variance & Skewness & Ex.\ Kurt. \\
 \midrule
-$0.07$ & $0.3051$ & $0.3163$ & $1.2581$ & $0.0753$ & $0.8767$ & $1.0996$ \\
-$0.10$ & $0.4615$ & $0.4750$ & $1.1633$ & $0.0672$ & $0.8525$ & $1.0083$ \\
-$0.25$ & $0.9129$ & $0.9156$ & $0.9847$ & $0.0545$ & $0.5676$ & $0.3668$ \\
-$0.50$ & $0.9996$ & $0.9995$ & $0.9845$ & $0.0350$ & $0.3132$ & $0.3565$ \\
-$0.75$ & $1.0000$ & $1.0000$ & $1.0043$ & $0.0236$ & $0.3791$ & $0.4093$ \\
-$1.00$ & $1.0000$ & $1.0000$ & $1.0158$ & $0.0186$ & $0.4158$ & $0.4234$ \\
-$1.50$ & $1.0000$ & $1.0000$ & $1.0280$ & $0.0145$ & $0.4318$ & $0.4187$ \\
-$2.00$ & $1.0000$ & $1.0000$ & $1.0339$ & $0.0130$ & $0.4263$ & $0.4017$ \\
+$0.07$ & $1.07$ & $0.3051$ & $0.3163$ & $1.2581$ & $0.0753$ & $0.8767$ & $1.0996$ \\
+$0.10$ & $1.11$ & $0.4615$ & $0.4750$ & $1.1633$ & $0.0672$ & $0.8525$ & $1.0083$ \\
+$0.25$ & $1.28$ & $0.9129$ & $0.9156$ & $0.9847$ & $0.0545$ & $0.5676$ & $0.3668$ \\
+$0.50$ & $1.65$ & $0.9996$ & $0.9995$ & $0.9845$ & $0.0350$ & $0.3132$ & $0.3565$ \\
+$0.75$ & $2.12$ & $1.0000$ & $1.0000$ & $1.0043$ & $0.0236$ & $0.3791$ & $0.4093$ \\
+$1.00$ & $2.72$ & $1.0000$ & $1.0000$ & $1.0158$ & $0.0186$ & $0.4158$ & $0.4234$ \\
+$1.50$ & $4.48$ & $1.0000$ & $1.0000$ & $1.0280$ & $0.0145$ & $0.4318$ & $0.4187$ \\
+$2.00$ & $7.39$ & $1.0000$ & $1.0000$ & $1.0339$ & $0.0130$ & $0.4263$ & $0.4017$ \\
 \midrule
-$\infty$ & $1.0000$ & --- & $1.0414$ & $0.0114$ & $0.4052$ & $0.3612$ \\
+$\infty$ & $\infty$ & $1.0000$ & --- & $1.0414$ & $0.0114$ & $0.4052$ & $0.3612$ \\
 \bottomrule
 \end{tabular}
 \caption{Laplace--resolvent conditional statistics and the no-shorting analytical limit
@@ -1159,7 +1169,8 @@ for WBTC/WETH calibrated parameters (Table~\ref{tab:num-params}).
 Mean, variance, skewness, and excess kurtosis are conditional on survival ($\tau>T$)
 and computed via the resolvent method (Laplace); MC benchmark uses $10^5$ Euler--Poisson
 paths ($252$ steps, seed 42). The smallest tabulated $h_0=0.07$ is the AAVE-feasible
-minimum ($h_0^{\min}\approx0.066$); at this value Laplace gives $p_{\mathrm{surv}}=0.579$
+minimum ($h_0^{\min}\approx0.066$, $H_0^{\min}\approx1.068$); at this value
+Laplace gives $p_{\mathrm{surv}}=0.305$
 versus MC $0.316$ --- the $1.1\%$ gap reflects discrete-time MC missing intra-period
 liquidation events at high jump intensity
 ($\lambda_1\approx373$, $\lambda_2\approx589$), not path scarcity
@@ -1167,68 +1178,68 @@ liquidation events at high jump intensity
 The bottom row gives the analytical limits as $h_0\to\infty$; Laplace at $h_0=100$ matches
 these values to relative error $<10^{-6}$, confirming internal consistency of the
 resolvent construction, Talbot inversion, and the drift normalisation
-$\mu_i^{\mathrm{eff}}=\mu_i-\tfrac{1}{2}\sigma_i^2-\lambda_i\chi_i$.}
+$\mu_i^X=\mu_i-\tfrac{1}{2}\sigma_i^2-\lambda_i\chi_i$.}
 \label{tab:results}
 \end{table}
 
 \begin{table}[ht]
 \centering\small
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{c rrrrr rr}
+\begin{tabular}{cc rrrrr rr}
 \toprule
-& \multicolumn{5}{c}{Laplace $-$ MC} & \multicolumn{2}{c}{CPU time (s)} \\
-\cmidrule(lr){2-6}\cmidrule(lr){7-8}
-$h_0$ & $\Delta p_{\mathrm{surv}}$ & $\Delta$Mean & $\Delta$Var.\ & $\Delta$Skew.\ & $\Delta$Kurt.\ & Lap.\ & MC \\
+& & \multicolumn{5}{c}{Laplace $-$ MC} & \multicolumn{2}{c}{CPU time (s)} \\
+\cmidrule(lr){3-7}\cmidrule(lr){8-9}
+$h_0$ & $H_0$ & $\Delta p_{\mathrm{surv}}$ & $\Delta$Mean & $\Delta$Var.\ & $\Delta$Skew.\ & $\Delta$Kurt.\ & Lap.\ & MC \\
 \midrule
-$0.07$ & $-0.0112$ & $\phantom{-}0.0042$ & $-0.0019$ & $-0.0233$ & $-0.1959$ & $0.10$ & $50.37$ \\
-$0.10$ & $-0.0136$ & $\phantom{-}0.0042$ & $-0.0013$ & $-0.0230$ & $-0.1499$ & $0.10$ & $49.15$ \\
-$0.25$ & $-0.0026$ & $-0.0001$ & $-0.0007$ & $-0.0054$ & $-0.0563$ & $0.10$ & $48.90$ \\
-$0.50$ & $\phantom{-}0.0001$ & $-0.0005$ & $-0.0003$ & $-0.0110$ & $-0.0347$ & $0.10$ & $49.11$ \\
-$0.75$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0107$ & $-0.0382$ & $0.10$ & $49.49$ \\
-$1.00$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0123$ & $-0.0378$ & $0.10$ & $49.46$ \\
-$1.50$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0001$ & $-0.0144$ & $-0.0369$ & $0.10$ & $49.94$ \\
-$2.00$ & $\phantom{-}0.0000$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0152$ & $-0.0362$ & $0.10$ & $49.76$ \\
+$0.07$ & $1.07$ & $-0.0112$ & $\phantom{-}0.0042$ & $-0.0019$ & $-0.0233$ & $-0.1959$ & $0.10$ & $50.37$ \\
+$0.10$ & $1.11$ & $-0.0136$ & $\phantom{-}0.0042$ & $-0.0013$ & $-0.0230$ & $-0.1499$ & $0.10$ & $49.15$ \\
+$0.25$ & $1.28$ & $-0.0026$ & $-0.0001$ & $-0.0007$ & $-0.0054$ & $-0.0563$ & $0.10$ & $48.90$ \\
+$0.50$ & $1.65$ & $\phantom{-}0.0001$ & $-0.0005$ & $-0.0003$ & $-0.0110$ & $-0.0347$ & $0.10$ & $49.11$ \\
+$0.75$ & $2.12$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0107$ & $-0.0382$ & $0.10$ & $49.49$ \\
+$1.00$ & $2.72$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0123$ & $-0.0378$ & $0.10$ & $49.46$ \\
+$1.50$ & $4.48$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0001$ & $-0.0144$ & $-0.0369$ & $0.10$ & $49.94$ \\
+$2.00$ & $7.39$ & $\phantom{-}0.0000$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0152$ & $-0.0362$ & $0.10$ & $49.76$ \\
 \bottomrule
 \end{tabular}
 \caption{Laplace minus MC differences ($\Delta = \text{Lap.} - \text{MC}$) and wall-clock
 computation time. The persistent $\Delta p_{\mathrm{surv}}<0$ reflects the discrete-time
 Euler--Poisson scheme ($252$ steps yr$^{-1}$) missing intra-period liquidation events; the
-effect is strongest near $h_0^{\min}\approx0.066$ where paths frequently approach the barrier.
-Higher-moment differences shrink as $h_0$ increases and more paths survive into the interior.
+effect is strongest near $H_0^{\min}\approx1.068$ where paths frequently approach the barrier.
+Higher-moment differences shrink as $H_0$ increases and more paths survive into the interior.
 The Laplace method covers five Talbot inversions ($k=0,\ldots,4$); the
-${\approx}490{\times}$ speed-up over MC is uniform across all $h_0$ values.}
+${\approx}490{\times}$ speed-up over MC is uniform across all tabulated values.}
 \label{tab:diff}
 \end{table}
 
 \subsection{Parameter sensitivity}\label{sec:sensitivity}
 
 Figure~\ref{fig:sensitivity} shows how $p_{\mathrm{surv}}$ (left column) and the conditional
-mean $\E[\Pi_T\mid\tau>T]$ (right column) vary with $h_0$ as each parameter is swept in turn.
+mean $\E[\Pi_T\mid\tau>T]$ (right column) vary with $H_0$ as each parameter is swept in turn.
 For the collateral factor $b$ (row~e--f), survival probability is independent of $b$ at fixed
-$h_0$ — only the payoff kernel changes — so the left panel shows the initial leverage
-$L_0 = e^{h_0}/(e^{h_0}-b)$ instead.
+$H_0$ — only the payoff kernel changes — so the left panel shows the initial leverage
+$L_0 = H_0/(H_0-b)$ instead.
 
 Three patterns dominate. (i)~\emph{Volatility} is the strongest driver: at $0.3\times$ scale,
-almost all paths survive for $h_0\ge 0.3$; at $2\times$ scale, the same cushion yields
+almost all paths survive for $H_0\gtrsim1.35$; at $2\times$ scale, the same cushion yields
 survival below 40\%. (ii)~\emph{Correlation} acts through the effective variance of
 $Z=X_1-X_2$: the calibrated benchmark already sits at $\rho=0.858$, where the spread
 variance is small; moving to lower $\rho$ sharply depresses the survival curve, while
 negligible effect on the conditional mean confirms that correlation works purely through
 barrier-crossing risk. (iii)~\emph{Jump intensity} and \emph{horizon} compress survival
-monotonically, while increasing the conditional mean at low $h_0$ through selective survivor
-effects. For $b$, initial leverage $L_0=e^{h_0}/(e^{h_0}-b)$ reaches ${\approx}6.3\times$
-at the AAVE minimum $h_0^{\min}\approx0.066$ for $b=0.90$, explaining the strong sensitivity
+monotonically, while increasing the conditional mean at low $H_0$ through selective survivor
+effects. For $b$, initial leverage $L_0=H_0/(H_0-b)$ reaches ${\approx}6.3\times$
+at the AAVE minimum $H_0^{\min}\approx1.068$ for $b=0.90$, explaining the strong sensitivity
 of the conditional mean to $b$ near the minimum buffer.
 
 \begin{figure}[p]
 \centering
 \includegraphics[width=\linewidth]{fig_sensitivity.pdf}
 \caption{Left column: survival probability $p_{\mathrm{surv}}$ (rows~a--d) and initial
-leverage $L_0$ (row~e, log scale) versus $h_0$. Right column: conditional mean
+leverage $L_0$ (row~e, log scale) versus $H_0$. Right column: conditional mean
 $\E[\Pi_T\mid\tau>T]$. Each row varies one parameter; all others fixed at
 Table~\ref{tab:num-params}. Encoding: colour and line style identify parameter values
 (solid/green = benchmark); the heavier line is the baseline.
-Laplace--resolvent, $h_0\in[0.05,2.00]$, 40 points per curve.}
+Laplace--resolvent, $H_0\in[1.068,2.000]$, 40 points per curve.}
 \label{fig:sensitivity}
 \end{figure}
 
@@ -1372,8 +1383,8 @@ from the sample log-return drift with a damped mean-jump correction,
 -0.25\,\lambda_i^{(0)}
 \left[p_i^{(0)}\eta_{i,+}^{(0)}-(1-p_i^{(0)})\eta_{i,-}^{(0)}\right],
 \]
-and the corresponding log-process coefficient $\mu_i^{\mathrm{eff},(0)}$
-is obtained from \eqref{eq:effective-drift}.
+and the corresponding log-process coefficient $\mu_i^{X,(0)}$
+is obtained from \eqref{eq:muX-drift}.
 The threshold filter is not the final estimator.
 It is a warm start that places the optimizer in a sensible region of
 parameter space; see the remark in \citet{Mancini2009}.
@@ -1470,8 +1481,8 @@ absorbed process.
 \textbf{Deterministic interest rates.}
 DeFi lending protocols charge a floating borrow rate updated algorithmically as a function of
 pool utilisation \citep{gudgeon2020defi}. The implementation absorbs the funding cost into the
-price-growth drift $\mu_2$, which then changes the effective log-price drift
-$\mu_2^{\mathrm{eff}}$ through \eqref{eq:effective-drift}, treating the rate as deterministic
+price-growth drift $\mu_2$, which then changes the log-price drift
+$\mu_2^X$ through \eqref{eq:muX-drift}, treating the rate as deterministic
 and fixed at inception.
 Stochastic interest rates would couple the short-leg dynamics to a latent utilisation process.
 
@@ -1488,47 +1499,55 @@ point for position sizing. A natural two-step procedure is the following.
 
 \textbf{Step 1 — survival constraint.}
 Fix a maximum tolerated liquidation probability $\bar{p}$ over the horizon $T$, for example
-$\bar{p}=5\%$. The survival probability $p_{\mathrm{surv}}(h_0)$ is monotonically increasing in
-$h_0$ (Table~\ref{tab:results}): at $h_0=0.50$ survival already exceeds $83\%$ under the
-benchmark parameters. Inverting this map identifies the minimum admissible health buffer
-$\underline{h}_0$ satisfying $p_{\mathrm{liq}}(T,0;\underline{h}_0)\le\bar{p}$. The Laplace
+$\bar{p}=5\%$. The survival probability $p_{\mathrm{surv}}(H_0)$ is monotonically increasing in
+$H_0$ (Table~\ref{tab:results}): at $H_0\approx1.65$ survival is already above $99.9\%$ under the
+benchmark parameters. Inverting this map identifies the minimum admissible health factor
+$\underline{H}_0$ satisfying $p_{\mathrm{liq}}(T,0;\log\underline{H}_0)\le\bar{p}$. The Laplace
 method evaluates $p_{\mathrm{surv}}$ in $\approx60\,\mathrm{ms}$, so the inversion is a fast
 scalar root-find.
 
 \textbf{Step 2 — conditional upside maximisation.}
-Over the feasible set $h_0\ge\underline{h}_0$, maximise the conditional expected payoff, or a
+Over the feasible set $H_0\ge\underline{H}_0$, maximise the conditional expected payoff, or a
 mean--variance functional, using the semi-analytic moments. Because the moments are noise-free
-and differentiable in $h_0$, a standard one-dimensional line search converges in a handful of
+and differentiable in $H_0$ through $h_0=\log H_0$, a standard one-dimensional line search converges in a handful of
 evaluations with no simulation variance.
 
-The output of this procedure is the \emph{optimal initial health buffer} $h_0^\star$: the
+The output of this procedure is the \emph{optimal initial health factor} $H_0^\star$: the
 smallest cushion above the liquidation boundary that simultaneously satisfies the survival
 constraint and maximises conditional performance. The corresponding initial leverage is then
-read off from \eqref{eq:leverage} as $L_0^\star = e^{h_0^\star}/(e^{h_0^\star}-b)$; leverage is
+read off from \eqref{eq:leverage} as $L_0^\star = H_0^\star/(H_0^\star-b)$; leverage is
 a consequence of the health-buffer choice, not the primary control variable.
 
 Figure~\ref{fig:frontier} visualises the full tradeoff in three dimensions.
 The vertical axis is the conditional mean $\E[\Pi_T\mid\tau>T]$; the two horizontal
 axes are the conditional variance $\mathrm{Var}(\Pi_T\mid\tau>T)$ and the liquidation
 probability $p_\ell=1-p_{\mathrm{surv}}$.
-The curve is parametrised by $h_0\in[0.04,2.00]$: as $h_0$ falls the strategy takes
-on more leverage, pushing the curve toward higher variance and higher $p_\ell$, while
-the conditional mean rises.
+The curve is parametrised by $H_0=e^{h_0}$ over the AAVE-feasible range
+$H_0\in[1.068,2.000]$: as $H_0$ falls the strategy takes on more leverage,
+pushing the curve toward higher variance and higher $p_\ell$. The conditional
+mean is mildly U-shaped over this interval: it first falls as leverage increases,
+then rises near the boundary because survival conditioning selects unusually
+favourable paths.
 Projections onto all three coordinate planes are shown as solid grey curves: the floor
 ($z=\text{const}$) gives the variance--liquidation tradeoff; the left wall ($x=\text{const}$)
 gives the liquidation--upside tradeoff; the back wall ($p_\ell=0$) gives the classical
 mean--variance frontier conditional on near-certain survival.
+The lower-left panel reports the increasing efficient branch of the mean--liquidation
+tradeoff, omitting dominated low-risk health factors that would otherwise create a small
+initial dip.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.78\linewidth]{fig_frontier.pdf}
+\includegraphics[width=0.92\linewidth]{fig_frontier.pdf}
 \caption{Mean--variance--liquidation frontier of $\Pi_T\mid\{\tau>T\}$ for the benchmark
 parametrisation.
 Axes: $x=\mathrm{Var}(\Pi_T\mid\tau>T)$, $y=p_\ell=1-p_{\mathrm{surv}}$,
 $z=\mathrm{E}[\Pi_T\mid\tau>T]$ (vertical).
-The curve is parametrised by $h_0\in[0.04,2.00]$; decreasing $h_0$ moves the curve toward
-higher variance, higher $p_\ell$, and higher conditional mean.
-Grey projections on the three coordinate planes recover the pairwise two-dimensional tradeoffs.
+The curve is parametrised by $H_0\in[1.068,2.000]$; decreasing $H_0$ moves the curve toward
+higher variance and higher $p_\ell$, while the conditional mean becomes U-shaped near the
+liquidation boundary.
+Grey projections on the three coordinate planes recover the pairwise two-dimensional tradeoffs;
+panel (a) plots the increasing efficient branch of the mean--liquidation projection.
 Script \texttt{jobs/frontier\_analysis.py}.}
 \label{fig:frontier}
 \end{figure}
@@ -1564,19 +1583,19 @@ $u^2=-s^2$, $v^2=-(k-s)^2$, $uv=-s(k-s)$, and $\varphi_{J_i}(-i\cdot)=M_i(\cdot)
 \begin{equation}\label{eq:Psi-expanded}
 \begin{aligned}
 \Psi(-is,-i(k-s))
-={}&\mu_1^{\mathrm{eff}} s + \mu_2^{\mathrm{eff}}(k-s)
+={}&\mu_1^X s + \mu_2^X(k-s)
 +\tfrac12\sigma_1^2 s^2+\tfrac12\sigma_2^2(k-s)^2+\rho\sigma_1\sigma_2 s(k-s)\\
 &+\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-1).
 \end{aligned}
 \end{equation}
 Setting $s=0$ in \eqref{eq:Psi-expanded} gives
-$\Psi(0,-ik)=\mu_2^{\mathrm{eff}} k + \tfrac12\sigma_2^2 k^2 + \lambda_2(M_2(k)-1)$.
+$\Psi(0,-ik)=\mu_2^X k + \tfrac12\sigma_2^2 k^2 + \lambda_2(M_2(k)-1)$.
 Subtracting and collecting terms by type:
 
 \smallskip
 \noindent\textit{Drift.}
-$\mu_1^{\mathrm{eff}} s + \mu_2^{\mathrm{eff}}(k-s) - \mu_2^{\mathrm{eff}} k
-= (\mu_1^{\mathrm{eff}}-\mu_2^{\mathrm{eff}})s$.
+$\mu_1^X s + \mu_2^X(k-s) - \mu_2^X k
+= (\mu_1^X-\mu_2^X)s$.
 
 \smallskip
 \noindent\textit{Diffusion.}
@@ -1596,7 +1615,7 @@ $\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-1)-\lambda_2(M_2(k)-1)
 
 \smallskip
 Combining, the drift coefficient is
-$\mu_Z^{(k)}:=(\mu_1^{\mathrm{eff}}-\mu_2^{\mathrm{eff}})-k(\sigma_2^2-\rho\sigma_1\sigma_2)$,
+$\mu_Z^{(k)}:=(\mu_1^X-\mu_2^X)-k(\sigma_2^2-\rho\sigma_1\sigma_2)$,
 which establishes \eqref{eq:psiZk}.
 The eigenrelation \eqref{eq:generator-eigen} follows because for any L\'evy process with
 exponent $\psi$, the generator satisfies $\mathcal{L} e^{sz}=\psi(s)\,e^{sz}$, as can be
