@@ -298,11 +298,16 @@ def _initialize(r1: np.ndarray, r2: np.ndarray, dt: float,
     sigma1 = float(np.clip(_std_or(r1, mask_c1, s1) / np.sqrt(dt), 0.01, 4.9))
     sigma2 = float(np.clip(_std_or(r2, mask_c2, s2) / np.sqrt(dt), 0.01, 4.9))
 
-    # Step 7: effective drift corrected for mean jump contribution
+    # Step 7: initialize log-price drift muX, then convert to the saved
+    # price-growth convention mu = muX + 0.5*sigma^2 + lambda*chi.
     Ej1 = p1 * eta1_pos - (1.0 - p1) * eta1_neg
     Ej2 = p2 * eta2_pos - (1.0 - p2) * eta2_neg
-    mu1 = float(np.clip(np.mean(r1) / dt - lam1 * Ej1, -2.5, 2.5))
-    mu2 = float(np.clip(np.mean(r2) / dt - lam2 * Ej2, -2.5, 2.5))
+    chi1 = p1 / (1.0 - eta1_pos) + (1.0 - p1) / (1.0 + eta1_neg) - 1.0
+    chi2 = p2 / (1.0 - eta2_pos) + (1.0 - p2) / (1.0 + eta2_neg) - 1.0
+    muX1 = np.mean(r1) / dt - lam1 * Ej1
+    muX2 = np.mean(r2) / dt - lam2 * Ej2
+    mu1 = float(np.clip(muX1 + 0.5 * sigma1**2 + lam1 * chi1, -2.5, 2.5))
+    mu2 = float(np.clip(muX2 + 0.5 * sigma2**2 + lam2 * chi2, -2.5, 2.5))
 
     # Step 8: Brownian correlation from simultaneous non-jump observations
     mask_c12 = mask_c1 & mask_c2

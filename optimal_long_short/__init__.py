@@ -16,7 +16,7 @@ from optimal_long_short.calibration import (  # noqa: F401
 from optimal_long_short.drift import (  # noqa: F401
     apply_price_drift_view,
     drift_summary,
-    with_effective_drift_view,
+    with_muX_drift_view,
     with_price_drift_view,
 )
 from optimal_long_short.risk_report import h0_liquidation_moment_report  # noqa: F401

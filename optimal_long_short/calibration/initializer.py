@@ -241,11 +241,17 @@ def initialize(
     lam1 = _lambda_from_moments(r1, dt, sigma1, bounds.lambda_min, bounds.lambda_max)
     lam2 = _lambda_from_moments(r2, dt, sigma2, bounds.lambda_min, bounds.lambda_max)
 
-    # Drift: shrink the jump-mean correction by 0.25 to avoid amplifying eta bias.
+    # Drift initializer: first estimate the log-price drift muX, then convert
+    # to the saved price-growth convention mu = muX + 0.5*sigma^2 + lambda*chi.
+    # The jump-mean correction is shrunk to avoid amplifying eta bias.
     Ej1 = p1 * eta1_pos - (1.0 - p1) * eta1_neg
     Ej2 = p2 * eta2_pos - (1.0 - p2) * eta2_neg
-    mu1 = float(np.clip(np.mean(r1) / dt - 0.25 * lam1 * Ej1, bounds.mu_min, bounds.mu_max))
-    mu2 = float(np.clip(np.mean(r2) / dt - 0.25 * lam2 * Ej2, bounds.mu_min, bounds.mu_max))
+    chi1 = p1 / (1.0 - eta1_pos) + (1.0 - p1) / (1.0 + eta1_neg) - 1.0
+    chi2 = p2 / (1.0 - eta2_pos) + (1.0 - p2) / (1.0 + eta2_neg) - 1.0
+    muX1 = np.mean(r1) / dt - 0.25 * lam1 * Ej1
+    muX2 = np.mean(r2) / dt - 0.25 * lam2 * Ej2
+    mu1 = float(np.clip(muX1 + 0.5 * sigma1**2 + lam1 * chi1, bounds.mu_min, bounds.mu_max))
+    mu2 = float(np.clip(muX2 + 0.5 * sigma2**2 + lam2 * chi2, bounds.mu_min, bounds.mu_max))
 
     # Brownian correlation from simultaneous non-jump pairs
     mask_c12 = mask_c1 & mask_c2

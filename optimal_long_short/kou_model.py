@@ -16,13 +16,13 @@ class BivariateKouModel:
                     + lam1*(phi_J1(u) - 1)
                     + lam2*(phi_J2(v) - 1),
 
-    with ``mu_i`` in that display equal to ``params.effective_mu_i``.  The
+    with ``mu_i`` in that display equal to ``params.muX_i``.  The
     saved ``KouParams.mu_i`` fields use the price-growth convention:
 
         E[exp(X_i(t))] = exp(KouParams.mu_i * t).
 
     ``KouParams`` derives the log-process drift used here as
-    ``effective_mu_i = mu_i - 0.5*sigma_i^2 - lambda_i*E[exp(J_i)-1]``.
+    ``muX_i = mu_i - 0.5*sigma_i^2 - lambda_i*E[exp(J_i)-1]``.
 
     where the Kou characteristic function of asset i's jump is
 
@@ -59,8 +59,8 @@ class BivariateKouModel:
         Drift convention
         ----------------
         ``KouParams.mu1`` and ``KouParams.mu2`` are annualized expected
-        price-growth rates.  This exponent uses ``effective_mu1`` and
-        ``effective_mu2``, the corresponding log-process drifts after the
+        price-growth rates.  This exponent uses ``muX1`` and
+        ``muX2``, the corresponding log-process drifts after the
         Ito and jump-price compensators have been removed.
 
         Parameters
@@ -75,7 +75,7 @@ class BivariateKouModel:
         """
         p = self.params
         diffusion = (
-            1j * (p.effective_mu1 * u + p.effective_mu2 * v)
+            1j * (p.muX1 * u + p.muX2 * v)
             - 0.5 * (
                 p.sigma1**2 * u**2
                 + p.sigma2**2 * v**2
@@ -105,7 +105,7 @@ class KouZTiltedDynamics:
 
     where
         sigma_Z^2  = sigma1^2 + sigma2^2 - 2*rho*sigma1*sigma2,
-        mu_Z^(k)   = (mu1^eff - mu2^eff) - k*(sigma2^2 - rho*sigma1*sigma2),
+        mu_Z^(k)   = (mu1^X - mu2^X) - k*(sigma2^2 - rho*sigma1*sigma2),
 
     and M_i(s) = E[e^{s*J_i}] is the MGF of the Kou jump for asset i
     (Sepp 2004 notation, eta_{i,±} are means):
@@ -169,16 +169,16 @@ class KouZTiltedDynamics:
     @property
     def mu_Z(self) -> float:
         """
-        Effective drift of Z under P^(2,k):
+        muX drift of Z under P^(2,k):
 
-            mu_Z^(k) = (mu1^eff - mu2^eff) - k*(sigma2^2 - rho*sigma1*sigma2),
+            mu_Z^(k) = (mu1^X - mu2^X) - k*(sigma2^2 - rho*sigma1*sigma2),
 
-        where ``mu_i^eff`` is the log-process drift from ``KouParams`` after
+        where ``mu_i^X`` is the log-process drift from ``KouParams`` after
         subtracting both the Ito term and the jump-price compensator from the
         annualized price-growth drift ``mu_i``.
         """
         p = self.params
-        return (p.effective_mu1 - p.effective_mu2) - self.k * (p.sigma2**2 - p.rho * p.sigma1 * p.sigma2)
+        return (p.muX1 - p.muX2) - self.k * (p.sigma2**2 - p.rho * p.sigma1 * p.sigma2)
 
     # ------------------------------------------------------------------
     # Phase rates  r_{j,±}^(k)  (Kou jump rates of Z under P^(2,k))

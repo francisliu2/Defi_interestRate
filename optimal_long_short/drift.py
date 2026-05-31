@@ -6,13 +6,13 @@ The package uses one convention throughout:
 rates, meaning ``E[exp(X_i(t))] = exp(mu_i t)``.
 
 The characteristic function, moment resolvent, and Monte Carlo simulator use
-the derived log-process drifts ``effective_mu1`` and ``effective_mu2``:
+the derived log-process drifts ``muX1`` and ``muX2``:
 
-``effective_mu_i = mu_i - 0.5*sigma_i^2 - lambda_i*E[exp(J_i)-1]``.
+``muX_i = mu_i - 0.5*sigma_i^2 - lambda_i*E[exp(J_i)-1]``.
 
 User views should normally be expressed on the price-growth drift ``mu``.
 If a view is naturally stated as a log-process drift, use
-``with_effective_drift_view`` to convert it safely.
+``with_muX_drift_view`` to convert it safely.
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ from optimal_long_short.model_params import KouParams
 
 
 PRICE_GROWTH_DRIFT = "price_growth_mu"
-EFFECTIVE_LOG_DRIFT = "effective_log_process_mu"
+MUX_LOG_DRIFT = "log_process_muX"
 
 
 def _copy_with(params: KouParams, **updates: float) -> KouParams:
@@ -31,7 +31,7 @@ def _copy_with(params: KouParams, **updates: float) -> KouParams:
     base = {
         k: v
         for k, v in dataclasses.asdict(params).items()
-        if k not in {"jump_compensator1", "jump_compensator2", "effective_mu1", "effective_mu2"}
+        if k not in {"jump_compensator1", "jump_compensator2", "muX1", "muX2"}
     }
     base.update(updates)
     return KouParams(**base)
@@ -61,7 +61,7 @@ def with_price_drift_view(
     Returns
     -------
     KouParams
-        A copy with only ``mu1`` and/or ``mu2`` changed.  Effective drifts are
+        A copy with only ``mu1`` and/or ``mu2`` changed.  muX drifts are
         recomputed automatically.
     """
     next_mu1 = (params.mu1 if mu1 is None else float(mu1)) + float(delta_mu1)
@@ -69,30 +69,30 @@ def with_price_drift_view(
     return _copy_with(params, mu1=next_mu1, mu2=next_mu2)
 
 
-def with_effective_drift_view(
+def with_muX_drift_view(
     params: KouParams,
     *,
-    effective_mu1: float | None = None,
-    effective_mu2: float | None = None,
-    delta_effective_mu1: float = 0.0,
-    delta_effective_mu2: float = 0.0,
+    muX1: float | None = None,
+    muX2: float | None = None,
+    delta_muX1: float = 0.0,
+    delta_muX2: float = 0.0,
 ) -> KouParams:
     """
     Apply a user view stated on the log-process drift.
 
-    This converts the requested effective drift back into the saved
+    This converts the requested muX drift back into the saved
     price-growth ``mu`` convention by adding the existing compensator.
     """
-    next_eff1 = (
-        params.effective_mu1 if effective_mu1 is None else float(effective_mu1)
-    ) + float(delta_effective_mu1)
-    next_eff2 = (
-        params.effective_mu2 if effective_mu2 is None else float(effective_mu2)
-    ) + float(delta_effective_mu2)
+    next_muX1 = (
+        params.muX1 if muX1 is None else float(muX1)
+    ) + float(delta_muX1)
+    next_muX2 = (
+        params.muX2 if muX2 is None else float(muX2)
+    ) + float(delta_muX2)
     return _copy_with(
         params,
-        mu1=next_eff1 + params.jump_compensator1,
-        mu2=next_eff2 + params.jump_compensator2,
+        mu1=next_muX1 + params.jump_compensator1,
+        mu2=next_muX2 + params.jump_compensator2,
     )
 
 
@@ -124,13 +124,13 @@ def expected_log_return_drift(params: KouParams) -> tuple[float, float]:
     Annualized drift of E[X_i(t)]/t, including mean jump sizes.
 
     This differs from both the saved price-growth drift ``mu_i`` and the
-    log-process drift ``effective_mu_i``.
+    log-process drift ``muX_i``.
     """
     mean_jump1 = params.p1 * params.eta1_pos - (1.0 - params.p1) * params.eta1_neg
     mean_jump2 = params.p2 * params.eta2_pos - (1.0 - params.p2) * params.eta2_neg
     return (
-        params.effective_mu1 + params.lam1 * mean_jump1,
-        params.effective_mu2 + params.lam2 * mean_jump2,
+        params.muX1 + params.lam1 * mean_jump1,
+        params.muX2 + params.lam2 * mean_jump2,
     )
 
 
@@ -139,23 +139,22 @@ def drift_summary(params: KouParams) -> dict[str, dict[str, float] | str]:
     log1, log2 = expected_log_return_drift(params)
     return {
         "saved_mu_convention": PRICE_GROWTH_DRIFT,
-        "effective_mu_convention": EFFECTIVE_LOG_DRIFT,
+        "muX_convention": MUX_LOG_DRIFT,
         "asset1": {
             "mu_price_growth": params.mu1,
             "jump_price_compensator": params.jump_compensator1,
-            "effective_mu_log_process": params.effective_mu1,
+            "muX_log_process": params.muX1,
             "expected_log_return_drift": log1,
         },
         "asset2": {
             "mu_price_growth": params.mu2,
             "jump_price_compensator": params.jump_compensator2,
-            "effective_mu_log_process": params.effective_mu2,
+            "muX_log_process": params.muX2,
             "expected_log_return_drift": log2,
         },
         "spread": {
             "mu_price_growth_1_minus_2": params.mu1 - params.mu2,
-            "effective_mu_1_minus_2": params.effective_mu1 - params.effective_mu2,
+            "muX_1_minus_2": params.muX1 - params.muX2,
             "expected_log_return_drift_1_minus_2": log1 - log2,
         },
     }
-

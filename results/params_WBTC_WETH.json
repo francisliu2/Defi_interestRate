@@ -25,9 +25,9 @@
       }
     },
     "drift_convention": {
-      "params_mu": "Annualized expected price-growth drift: E[exp(X_i(t))] = exp(mu_i * t).",
-      "effective_mu": "Annualized log-process drift used by the characteristic function, moments, and Monte Carlo.",
-      "effective_mu_formula": "effective_mu_i = mu_i - 0.5*sigma_i^2 - lambda_i*(E[exp(J_i)] - 1)",
+      "params_mu": "Annualized model price-growth normalizer: E[exp(X_i(t))] = exp(mu_i * t) for the fitted process. At high frequency this is weakly identified and should not be read as an out-of-sample price forecast.",
+      "muX": "Annualized log-process drift used by the characteristic function, moments, and Monte Carlo.",
+      "muX_formula": "muX_i = mu_i - 0.5*sigma_i^2 - lambda_i*(E[exp(J_i)] - 1)",
       "user_view_recommendation": "Apply user drift views to params.mu1/mu2 unless the view is explicitly a log-process drift.",
       "ewm_demean_note": "Calibration was fitted to log returns minus their EWM mean. The latest EWM mean is reported but not automatically added back to params; treat it as a drift view if desired."
     },
@@ -59,6 +59,55 @@
     "h0_min": 0.06624938554120066,
     "H0_min": 1.0684931506849316
   },
+  "first_moment_diagnostics": {
+    "empirical": {
+      "raw_log_mean_annualized": {
+        "WBTC": 0.4119616459467493,
+        "WETH": 0.0027825429697269404
+      },
+      "demeaned_log_mean_annualized": {
+        "WBTC": 0.35208213657193344,
+        "WETH": 0.6063151335154062
+      },
+      "demeaned_price_growth_mu_annualized": {
+        "WBTC": 0.4320793228645193,
+        "WETH": 0.7553562400605118
+      },
+      "demeaned_simple_return_mean_annualized": {
+        "WBTC": 0.43212194953617167,
+        "WETH": 0.75548652057544
+      }
+    },
+    "model_rate_adjusted": {
+      "mu_price_growth": {
+        "WBTC": 0.4870930574928633,
+        "WETH": 1.1996301252136434
+      },
+      "muX_log_process": {
+        "WBTC": -0.30543139467199093,
+        "WETH": 0.25711666531862876
+      },
+      "expected_log_return_drift": {
+        "WBTC": 0.42450205654407497,
+        "WETH": 1.1109624281978756
+      },
+      "note": "mu_i is the model normalizer for E[exp(X_i(t))], not a directional forecast. Compare against empirical first moments before applying user drift views."
+    },
+    "model_raw_ecf": {
+      "mu_price_growth": {
+        "WBTC": 0.48703746734664033,
+        "WETH": 1.1717748798214114
+      },
+      "muX_log_process": {
+        "WBTC": -0.3054869848182139,
+        "WETH": 0.2292614199263967
+      },
+      "expected_log_return_drift": {
+        "WBTC": 0.424446466397852,
+        "WETH": 1.0831071828056436
+      }
+    }
+  },
   "params": {
     "mu1": 0.4870930574928633,
     "sigma1": 0.2413819896114974,
@@ -75,27 +124,27 @@
     "rho": 0.8575606963691293,
     "jump_compensator1": 0.7925244521648542,
     "jump_compensator2": 0.9425134598950147,
-    "effective_mu1": -0.30543139467199093,
-    "effective_mu2": 0.25711666531862876
+    "muX1": -0.30543139467199093,
+    "muX2": 0.25711666531862876
   },
   "drift_summary": {
     "saved_mu_convention": "price_growth_mu",
-    "effective_mu_convention": "effective_log_process_mu",
+    "muX_convention": "log_process_muX",
     "asset1": {
       "mu_price_growth": 0.4870930574928633,
       "jump_price_compensator": 0.7925244521648542,
-      "effective_mu_log_process": -0.30543139467199093,
+      "muX_log_process": -0.30543139467199093,
       "expected_log_return_drift": 0.42450205654407497
     },
     "asset2": {
       "mu_price_growth": 1.1996301252136434,
       "jump_price_compensator": 0.9425134598950147,
-      "effective_mu_log_process": 0.25711666531862876,
+      "muX_log_process": 0.25711666531862876,
       "expected_log_return_drift": 1.1109624281978756
     },
     "spread": {
       "mu_price_growth_1_minus_2": -0.7125370677207801,
-      "effective_mu_1_minus_2": -0.5625480599906196,
+      "muX_1_minus_2": -0.5625480599906196,
       "expected_log_return_drift_1_minus_2": -0.6864603716538007
     }
   },
@@ -115,27 +164,27 @@
     "rho": 0.8575606963691293,
     "jump_compensator1": 0.7925244521648542,
     "jump_compensator2": 0.9425134598950147,
-    "effective_mu1": -0.3054869848182139,
-    "effective_mu2": 0.2292614199263967
+    "muX1": -0.3054869848182139,
+    "muX2": 0.2292614199263967
   },
   "drift_summary_raw_ecf": {
     "saved_mu_convention": "price_growth_mu",
-    "effective_mu_convention": "effective_log_process_mu",
+    "muX_convention": "log_process_muX",
     "asset1": {
       "mu_price_growth": 0.48703746734664033,
       "jump_price_compensator": 0.7925244521648542,
-      "effective_mu_log_process": -0.3054869848182139,
+      "muX_log_process": -0.3054869848182139,
       "expected_log_return_drift": 0.424446466397852
     },
     "asset2": {
       "mu_price_growth": 1.1717748798214114,
       "jump_price_compensator": 0.9425134598950147,
-      "effective_mu_log_process": 0.2292614199263967,
+      "muX_log_process": 0.2292614199263967,
       "expected_log_return_drift": 1.0831071828056436
     },
     "spread": {
       "mu_price_growth_1_minus_2": -0.684737412474771,
-      "effective_mu_1_minus_2": -0.5347484047446106,
+      "muX_1_minus_2": -0.5347484047446106,
       "expected_log_return_drift_1_minus_2": -0.6586607164077916
     }
   },

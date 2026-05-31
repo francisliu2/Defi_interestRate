@@ -39,7 +39,7 @@ def simulate_kou_returns(
     j1 = _kou_jumps(p.lam1, p.p1, p.eta1_pos, p.eta1_neg)
     j2 = _kou_jumps(p.lam2, p.p2, p.eta2_pos, p.eta2_neg)
 
-    r1 = p.effective_mu1 * dt + p.sigma1 * db1 + j1
-    r2 = p.effective_mu2 * dt + p.sigma2 * db2 + j2
+    r1 = p.muX1 * dt + p.sigma1 * db1 + j1
+    r2 = p.muX2 * dt + p.sigma2 * db2 + j2
     return r1, r2
 

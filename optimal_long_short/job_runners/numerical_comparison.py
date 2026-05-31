@@ -3,7 +3,8 @@ Reproduce the numerical results in Section 7 of the paper.
 
 Computes conditional mean, variance, skewness, and excess kurtosis of Pi_T
 for both the Laplace--resolvent method and Monte Carlo simulation, across a
-range of initial log-health values h0. Also verifies the analytical
+range of initial log-health values h0, reporting H0 = exp(h0) alongside
+them where space allows. Also verifies the analytical
 no-shorting limit at h0 = 100.
 
 Parameters are loaded from results/params_WBTC_WETH.json (produced by
@@ -49,7 +50,7 @@ def main() -> None:
     print(f"Initial prices: WBTC S10={MARKET.S10:.6f}, WETH S20={MARKET.S20:.6f}")
     print(f"Horizon T={T:.6f} yr (1 month = 1/12)")
 
-    H0_GRID    = [round(_CONSTRAINT["h0_min"], 3), 0.10, 0.25, 0.50, 0.75, 1.00, 1.50, 2.00]
+    H0_LOG_GRID = [round(_CONSTRAINT["h0_min"], 3), 0.10, 0.25, 0.50, 0.75, 1.00, 1.50, 2.00]
     H0_NOSHORT = 100.0          # proxy for h0 -> infinity
 
     MC_PATHS = 100_000
@@ -90,30 +91,30 @@ def main() -> None:
     # ── Main computation ──────────────────────────────────────────────────────────
 
     print("Computing Laplace rows ...")
-    lap_rows = {h0: laplace_row(h0) for h0 in H0_GRID}
+    lap_rows = {h0: laplace_row(h0) for h0 in H0_LOG_GRID}
 
     print("Computing Monte Carlo rows ...")
-    mc_rows  = {h0: mc_row(h0)     for h0 in H0_GRID}
+    mc_rows  = {h0: mc_row(h0)     for h0 in H0_LOG_GRID}
 
     # ── Table 1: p_surv, mean, variance ──────────────────────────────────────────
 
-    print("\n" + "=" * 78)
+    print("\n" + "=" * 88)
     print("TABLE 1  —  Survival probability, conditional mean and variance")
-    print("=" * 78)
+    print("=" * 88)
 
     hdr = (
-        f"{'h0':>5}  "
+        f"{'h0':>5}  {'H0':>6}  "
         f"{'pS(Lap)':>9}  {'pS(MC)':>9}  "
         f"{'mu(Lap)':>9}  {'mu(MC)':>9}  "
         f"{'var(Lap)':>9}  {'var(MC)':>9}"
     )
     print(hdr)
-    print("-" * 78)
-    for h0 in H0_GRID:
+    print("-" * 88)
+    for h0 in H0_LOG_GRID:
         pL, mL, vL, _, _, tL = lap_rows[h0]
         pM, mM, vM, _, _, tM = mc_rows[h0]
         print(
-            f"{h0:>5.2f}  "
+            f"{h0:>5.2f}  {np.exp(h0):>6.2f}  "
             f"{pL:>9.5f}  {pM:>9.5f}  "
             f"{mL:>9.5f}  {mM:>9.5f}  "
             f"{vL:>9.5f}  {vM:>9.5f}"
@@ -121,23 +122,23 @@ def main() -> None:
 
     # ── Table 2: skewness, excess kurtosis, CPU time ─────────────────────────────
 
-    print("\n" + "=" * 78)
+    print("\n" + "=" * 88)
     print("TABLE 2  —  Skewness, excess kurtosis, and CPU time")
-    print("=" * 78)
+    print("=" * 88)
 
     hdr2 = (
-        f"{'h0':>5}  "
+        f"{'h0':>5}  {'H0':>6}  "
         f"{'sk(Lap)':>9}  {'sk(MC)':>9}  "
         f"{'kt(Lap)':>9}  {'kt(MC)':>9}  "
         f"{'t_Lap(s)':>10}  {'t_MC(s)':>9}"
     )
     print(hdr2)
-    print("-" * 78)
-    for h0 in H0_GRID:
+    print("-" * 88)
+    for h0 in H0_LOG_GRID:
         pL, mL, vL, sL, kL, tL = lap_rows[h0]
         pM, mM, vM, sM, kM, tM = mc_rows[h0]
         print(
-            f"{h0:>5.2f}  "
+            f"{h0:>5.2f}  {np.exp(h0):>6.2f}  "
             f"{sL:>9.5f}  {sM:>9.5f}  "
             f"{kL:>9.4f}  {kM:>9.4f}  "
             f"{tL:>10.3f}  {tM:>9.3f}"

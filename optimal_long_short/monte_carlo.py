@@ -124,8 +124,8 @@ class MonteCarlo:
         sqrt_1mrho2 = np.sqrt(max(1.0 - rho ** 2, 0.0))
 
         # Log-price drift per step: X_i is the log-price, so no Ito correction needed
-        drift1 = p.effective_mu1 * dt
-        drift2 = p.effective_mu2 * dt
+        drift1 = p.muX1 * dt
+        drift2 = p.muX2 * dt
 
         for _ in range(n_steps):
             # correlated Brownian increments

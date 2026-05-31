@@ -140,14 +140,14 @@ def print_summary(
 
     rows = [
         ("mu1",      init.mu1,           raw.mu1,           adj.mu1),
-        ("eff_mu1",  init.effective_mu1, raw.effective_mu1, adj.effective_mu1),
+        ("muX1",  init.muX1, raw.muX1, adj.muX1),
         ("sigma1",   init.sigma1,        raw.sigma1,        adj.sigma1),
         ("lam1",     init.lam1,          raw.lam1,          adj.lam1),
         ("p1",       init.p1,            raw.p1,            adj.p1),
         ("eta1_pos", init.eta1_pos,      raw.eta1_pos,      adj.eta1_pos),
         ("eta1_neg", init.eta1_neg,      raw.eta1_neg,      adj.eta1_neg),
         ("mu2",      init.mu2,           raw.mu2,           adj.mu2),
-        ("eff_mu2",  init.effective_mu2, raw.effective_mu2, adj.effective_mu2),
+        ("muX2",  init.muX2, raw.muX2, adj.muX2),
         ("sigma2",   init.sigma2,        raw.sigma2,        adj.sigma2),
         ("lam2",     init.lam2,          raw.lam2,          adj.lam2),
         ("p2",       init.p2,            raw.p2,            adj.p2),

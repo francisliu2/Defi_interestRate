@@ -3,8 +3,8 @@ Parameter sensitivity — production figure for the paper.
 
 Layout: 5 rows × 2 columns.
   Rows 1–4  (λ, ρ, σ, T)  left = p_surv,   right = conditional mean
-  Row  5    (b)            left = leverage L0 vs h0,  right = conditional mean
-             (p_surv is independent of b at fixed h0, so we plot L0 instead)
+  Row  5    (b)            left = leverage L0 vs H0,  right = conditional mean
+             (p_surv is independent of b at fixed H0, so we plot L0 instead)
 
 Visual encoding:
   • 4 qualitative colours + 4 line styles (colour-blind and greyscale safe)
@@ -80,9 +80,12 @@ BASE_B = _CONSTRAINT["b"]
 BASE_S10 = _CONSTRAINT.get("S10", 1.0)
 BASE_S20 = _CONSTRAINT.get("S20", 1.0)
 BASE_T = 1.0 / 12.0
-H0_MIN = _CONSTRAINT["h0_min"]
-# Start exactly at the AAVE feasible minimum h0 = log(b / max_ltv).
-H0 = np.linspace(H0_MIN, 2.00, 40)
+H0_LOG_MIN = _CONSTRAINT["h0_min"]
+HEALTH_MIN = np.exp(H0_LOG_MIN)
+# Start exactly at the AAVE feasible minimum H0 = b / max_ltv.
+HEALTH_GRID = np.linspace(HEALTH_MIN, 2.00, 40)
+H0_LOG_GRID = np.log(HEALTH_GRID)
+HEALTH_TICKS = [1.1, 1.25, 1.5, 1.75, 2.0]
 
 
 def _p(**kw):
@@ -93,10 +96,10 @@ def _p(**kw):
 
 # ── Core computation ───────────────────────────────────────────────────────────
 def compute(kou_kw, b, T):
-    """Return (p_surv array, cond_mean array) over H0."""
+    """Return (p_surv array, cond_mean array) over the log-h0 grid."""
     return frontier_moments(
         kou_kw,
-        H0,
+        H0_LOG_GRID,
         b,
         T,
         include_variance=False,
@@ -164,7 +167,8 @@ def main() -> None:
     print("Computing sensitivity curves …")
     print(
         f"Benchmark horizon T={BASE_T:.6f} yr (1 month = 1/12); "
-        f"h0 starts at AAVE feasible min {H0_MIN:.6f}; "
+        f"H0 starts at AAVE feasible min {HEALTH_MIN:.6f} "
+        f"(h0={H0_LOG_MIN:.6f}); "
         f"S10={BASE_S10:.6f}, S20={BASE_S20:.6f}"
     )
     DATA = []
@@ -183,22 +187,22 @@ def main() -> None:
         for i, (lbl, (ps, mu)) in enumerate(variants):
             kw = dict(color=COLORS[i], ls=LS[i], lw=LW[i], label=lbl)
             if row < 4:
-                ax_l.plot(H0, ps, **kw)
-            ax_r.plot(H0, mu, **kw)
+                ax_l.plot(HEALTH_GRID, ps, **kw)
+            ax_r.plot(HEALTH_GRID, mu, **kw)
 
         # ── Row 5 (b): left panel shows leverage L0 instead of p_surv ───────────
         if row == 4:
             for i, b in enumerate(B_VALS):
-                L0  = np.exp(H0) / (np.exp(H0) - b)
+                L0  = HEALTH_GRID / (HEALTH_GRID - b)
                 lbl = SWEEPS[4][1][i][0]
-                ax_l.plot(H0, L0, color=COLORS[i], ls=LS[i], lw=LW[i], label=lbl)
+                ax_l.plot(HEALTH_GRID, L0, color=COLORS[i], ls=LS[i], lw=LW[i], label=lbl)
             ax_l.set_ylabel(r"Initial leverage $L_0$", labelpad=2)
             ax_l.set_yscale("log")
             ax_l.set_ylim(0.9, 15)
             ax_l.yaxis.set_major_formatter(
                 matplotlib.ticker.FuncFormatter(lambda x, _: f"{x:g}"))
             ax_l.text(0.97, 0.97,
-                      r"($p_{\mathrm{surv}}$ independent of $b$ at fixed $h_0$)",
+                      r"($p_{\mathrm{surv}}$ independent of $b$ at fixed $H_0$)",
                       transform=ax_l.transAxes, ha="right", va="top",
                       fontsize=6.0, color="0.45", style="italic")
             # Region labels for leverage panel
@@ -218,7 +222,7 @@ def main() -> None:
             # Liquidation probability threshold lines
             for p_thresh, thresh_lbl in P_SURV_THRESHOLDS:
                 ax_l.axhline(p_thresh, color="0.50", lw=0.8, ls=":", alpha=0.75, zorder=0)
-                ax_l.text(H0[-1] - 0.04, p_thresh + 0.03, thresh_lbl,
+                ax_l.text(HEALTH_GRID[-1] * 0.97, p_thresh + 0.03, thresh_lbl,
                           ha="right", va="bottom", fontsize=5.8, color="0.40",
                           style="italic")
 
@@ -240,9 +244,9 @@ def main() -> None:
 
         # ── Common axis formatting ───────────────────────────────────────────────
         for ax in (ax_l, ax_r):
-            ax.set_xlim(H0[0], H0[-1])
-            ax.set_xticks([0.5, 1.0, 1.5, 2.0])
-            ax.set_xlabel(r"$h_0$  (log health buffer)", labelpad=2)
+            ax.set_xlim(HEALTH_GRID[0], HEALTH_GRID[-1])
+            ax.set_xticks(HEALTH_TICKS)
+            ax.set_xlabel(r"$H_0$  (initial health factor)", labelpad=2)
 
         ax_r.set_ylabel(r"$\mathrm{E}[\Pi_T\mid\tau>T]$", labelpad=2)
 

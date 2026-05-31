@@ -62,9 +62,9 @@ def _simulate_spread_increments(
             total[i] = sz.sum()
         return total
 
-    dr1 = (p.effective_mu1 * dt + p.sigma1 * dB1
+    dr1 = (p.muX1 * dt + p.sigma1 * dB1
            + _kou_jumps(p.lam1, p.p1, p.eta1_pos, p.eta1_neg))
-    dr2 = (p.effective_mu2 * dt + p.sigma2 * dB2
+    dr2 = (p.muX2 * dt + p.sigma2 * dB2
            + _kou_jumps(p.lam2, p.p2, p.eta2_pos, p.eta2_neg))
     return dr1 - dr2
 

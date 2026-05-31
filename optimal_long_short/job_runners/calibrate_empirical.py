@@ -129,14 +129,14 @@ def _print_summary(
     # Parameter table
     rows = [
         ("mu1",       init.mu1,           est.mu1),
-        ("eff_mu1",   init.effective_mu1, est.effective_mu1),
+        ("muX1",   init.muX1, est.muX1),
         ("sigma1",    init.sigma1,        est.sigma1),
         ("lam1",      init.lam1,          est.lam1),
         ("p1",        init.p1,            est.p1),
         ("eta1_pos",  init.eta1_pos,      est.eta1_pos),
         ("eta1_neg",  init.eta1_neg,      est.eta1_neg),
         ("mu2",       init.mu2,           est.mu2),
-        ("eff_mu2",   init.effective_mu2, est.effective_mu2),
+        ("muX2",   init.muX2, est.muX2),
         ("sigma2",    init.sigma2,        est.sigma2),
         ("lam2",      init.lam2,          est.lam2),
         ("p2",        init.p2,            est.p2),
