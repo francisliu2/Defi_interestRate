@@ -120,7 +120,7 @@
 
 \begin{document}
 
-\title{Semi-Analytic Sizing of DeFi Long-Short Positions under Health-Factor Liquidation and Kou Jump-Diffusion Risk}
+\title{Semi-Analytic Integer-Order Moments and Sizing of DeFi Long-Short Positions under Health-Factor Liquidation and Kou Jump-Diffusion Risk}
 
 \maketitle
 
@@ -132,9 +132,13 @@ model scope. Under bivariate Kou double-exponential jump--diffusion dynamics, we
 surviving-path payoff moments to one-dimensional killed expectations of the log
 collateral-to-liability ratio. An exponential change of measure absorbs the short-leg
 price factor, while the exponential jump structure reduces the Laplace-domain resolvent to
-a finite-dimensional linear system. The framework provides fast semi-analytic estimates of
-survival probabilities and conditional payoff moments as functions of the initial log health
-buffer, adapting classical first-passage machinery to the DeFi health-factor payoff setting.
+a finite-dimensional linear system. Crucially, the construction is available for every
+admissible integer moment order $k\ge1$ satisfying $k\eta_{2,+}<1$: changing $k$ changes
+the tilt and forcing term, but not the dimension of the $3\times3$ linear system. The
+framework therefore provides fast semi-analytic estimates of survival probabilities and
+conditional payoff moments of arbitrary admissible integer order as functions of the initial
+log health buffer, adapting classical first-passage machinery to the DeFi health-factor payoff
+setting.
 \end{abstract}
 
 \begin{keywords}
@@ -169,7 +173,9 @@ short-leg price factor into the path-measure density, collapsing what is nominal
 problem to a \emph{univariate} first-exit problem for the log-ratio process under a tilted
 L\'{e}vy measure. Second, because exponential jump sizes are eigenfunctions of the Kou generator,
 the Laplace-domain resolvent of the first-exit problem reduces to a $3\!\times\!3$ linear system —
-the same size regardless of moment order — that is solved in closed form. Time-domain quantities
+the same size for every admissible integer moment order $k$ — that is solved in closed form.
+Thus the method is not restricted to the first two moments used by mean--variance sizing:
+it computes each integer-order raw or conditional moment for which $k\eta_{2,+}<1$. Time-domain quantities
 follow by numerical Laplace inversion via the Talbot contour algorithm \citep{Talbot1979}. The entire
 optimisation therefore reduces to a scalar search over a single parameter, the \emph{initial log
 health factor}, with the conditional expected payoff, its variance, and the liquidation probability
@@ -197,12 +203,16 @@ The paper makes three contributions to the sizing of leveraged DeFi positions.
 First, it establishes the initial log health factor $h_0$ as the natural scalar sizing
 variable: once a unit-initial-value constraint is imposed, the two-dimensional portfolio
 problem collapses to a scalar health-buffer decision, with the raw killed moments
-$\E[\Pi_T^k]$ for all admissible orders $k\eta_{2,+}<1$, and the liquidation
+$\E[\Pi_T^k]$ for every admissible integer order $k\ge1$ satisfying
+$k\eta_{2,+}<1$, and the liquidation
 probability $p_{\mathrm{liq}}(h_0)$, all explicit in $h_0$ alone.
 Second, it delivers those quantities semi-analytically — noise-free, differentiable in
-$h_0$, and ${\approx}55\times$ faster than Monte Carlo — making gradient-based
-optimisation of any criterion of the form $\Phi\!\left(\E[\Pi_T\mid\tau>T],\ldots,\E[\Pi_T^K\mid\tau>T],p_{\mathrm{liq}}\right)$
-practical.
+$h_0$, and ${\approx}55\times$ faster than Monte Carlo. For each admissible integer
+$k$, the calculation requires a new tilt and Laplace inversion but retains the same
+$3\times3$ resolvent system; its algebraic dimension does not grow with $k$. This makes
+gradient-based optimisation of any criterion of the form
+$\Phi\!\left(\E[\Pi_T\mid\tau>T],\ldots,\E[\Pi_T^K\mid\tau>T],p_{\mathrm{liq}}\right)$
+practical for any finite admissible integer $K$.
 Third, it characterises how the optimal buffer trades conditional upside against
 liquidation risk, providing a principled alternative to the ad-hoc collateral ratios
 used in practice.
@@ -216,13 +226,16 @@ Section~\ref{sec:model} specifies the asset dynamics under the Kou model;
 Section~\ref{sec:tilted} introduces the tilted-measure machinery.
 Section~\ref{sec:moments} shows how the change of measure decouples the short-leg factor from the
 barrier problem, reducing each raw killed moment $\E[\Pi_T^k]$ to a one-dimensional killed
-expectation for all admissible orders $k\eta_{2,+}<1$; dividing by $p_{\mathrm{surv}}(h_0)$ yields
+expectation for every integer $k\ge1$ satisfying $k\eta_{2,+}<1$; dividing by
+$p_{\mathrm{surv}}(h_0)$ yields
 the conditional moments entering the general objective \eqref{eq:Phi-general}. Section~\ref{sec:resolvent} derives the respective resolvents.
 Section~\ref{sec:numerical} presents numerical results, comparing the Laplace--resolvent method
 against Monte Carlo simulation across a range of initial log health factor values and verifying the
 analytical no-shorting limit.
-Section~\ref{sec:calibration} describes the empirical characteristic function estimator used to
+Section~\ref{sec:discussion} concludes and discusses the practical interpretation of the results.
+Appendix~\ref{sec:calibration} describes the empirical characteristic function estimator used to
 calibrate the bivariate Kou parameters from observed bivariate log-returns.
+Appendix~\ref{app:proofs} collects the proofs.
 
 % ============================================================
 \section{Problem Setup}\label{sec:setup}
@@ -425,7 +438,10 @@ obtained from the raw killed moments $\E[\Pi_T^k]$ delivered in Section~\ref{sec
 $p_{\mathrm{liq}}(h_0):=1-p_{\mathrm{surv}}(h_0)$, and $f$ is any smooth function.
 The admissible range of moment orders is $k=1,\ldots,K$ with
 $K\eta_{2,+}<1$, a bound determined by the integrability of $e^{kX_{2,T}}$ under the
-exponential tilt (Proposition~\ref{prop:first-two-moments}).
+exponential tilt (Proposition~\ref{prop:integer-moments}).
+Here $K$ is not fixed by the method: any positive integer $K$ satisfying the integrability
+bound may be selected, and the same construction is applied separately at each
+$k\in\{1,\ldots,K\}$.
 This class covers the classical mean--variance criterion \citep{Markowitz1952}, which uses
 $\E[\Pi_T\mid\tau>T]$ and $\E[\Pi_T^2\mid\tau>T]$; higher-moment objectives that penalise skewness or excess kurtosis, which
 use $\E[\Pi_T\mid\tau>T],\ldots,\E[\Pi_T^4\mid\tau>T]$; the conditional Sharpe ratio; and polynomial approximations to
@@ -453,7 +469,8 @@ payoff. We do not refer to $h_0^\star$ as ``optimal leverage'' because leverage 
 quantity \eqref{eq:leverage}; the investor chooses the health buffer and leverage follows.
 
 The remainder of the paper is devoted to computing the building blocks of \eqref{eq:Phi-general}:
-the raw killed moments $\E[\Pi_T^k]$ for all admissible orders $k\eta_{2,+}<1$, and the
+the raw killed moments $\E[\Pi_T^k]$ for every admissible integer $k\ge1$ satisfying
+$k\eta_{2,+}<1$, and the
 survival probability $p_{\mathrm{surv}}(h_0)$, each as an explicit semi-analytic function
 of $h_0$ via the Laplace--resolvent method of Section~\ref{sec:resolvent}.
 The conditional moments $\E[\Pi_T^k\mid\tau>T]$ and liquidation probability $p_{\mathrm{liq}}(h_0)$
@@ -616,7 +633,8 @@ This eigenrelation is the key identity used in Section~\ref{sec:resolvent} to bu
 A superscript $(k)$ indicates evaluation under $\P^{(k)}$. The untilted case $k=0$ recovers the
 original dynamics of $Z$ under $\P$. For $k\ge 1$, the $k$-th moment $\E[\Pi_T^k]$ is computed
 under $\P^{(k)}$; the constraint $k\eta_{2,+}<1$ ensures the tilted measure and the characteristic
-root structure remain well-defined.
+root structure remain well-defined. Throughout, $k$ is an integer. There is no restriction
+to $k=1$ or $k=2$: every positive integer satisfying the integrability condition is covered.
 \end{remark}
 
 For the Kou structure, the tilt transforms the jump rates of $Z$ into the $k$-dependent phase rates
@@ -690,7 +708,8 @@ $j=2$ to that from $X_2$ jumps (sign-reversed because $Z=X_1-X_2$).}
 \section{Moments via Measure Change}\label{sec:moments}
 % ============================================================
 
-Computing $\E_\P[\Pi_T^k]$ directly under $\P$ is intractable: the payoff couples the joint
+Fix any integer $k\ge1$ satisfying $k\eta_{2,+}<1$. Computing
+$\E_\P[\Pi_T^k]$ directly under $\P$ is intractable: the payoff couples the joint
 process $(X_1,X_2)$ to the barrier event $\{\tau>T\}$ in a way that is neither separable nor
 analytically tractable. An exponential change of measure resolves this by tilting the path measure by
 $e^{kX_{2,T}}$, which absorbs the short-leg factor into the density and leaves a purely one-dimensional
@@ -700,6 +719,11 @@ tilted characteristic exponent encodes the full marginal law of $Z$. The $k$-th 
 as the known scalar $e^{T\Psi(0,-ik)}=\E_\P[e^{kX_{2,T}}]$ times the barrier-killed expectation
 $m_k(T;h_0)$ under $\P^{(k)}$, which is computed via the Laplace--resolvent of
 Section~\ref{sec:resolvent}.
+
+The argument below is order-generic. It is applied independently at each desired integer
+$k$, and the resulting resolvent always has a $3\times3$ barrier system. Higher integer
+orders enlarge only the finite forcing sum from $j=0,\ldots,k$; they do not enlarge the
+linear system.
 
 Define
 \[
@@ -719,7 +743,7 @@ From \eqref{eq:payoff-factor},
 \E_{\P^{(k)}}\!\Big[g_k(Z_T;h_0)\,\one_{\{\tau>T\}}\Big].
 \end{equation}
 
-\begin{proposition}[Moments of any order]\label{prop:first-two-moments}
+\begin{proposition}[Every admissible integer-order moment]\label{prop:integer-moments}
 Let $k\ge 1$ be an integer satisfying $k\eta_{2,+}<1$. Define
 \[
 m_k(T;h_0):=\E_{\P^{(k)}}\!\Big[g_k(Z_T;h_0)\,\one_{\{\tau>T\}}\Big].
@@ -729,7 +753,11 @@ Then
 \E[\Pi_T^k]:=\E_{\P}[\Pi_T^k]=\frac{e^{T\Psi(0,-ik)}}{(e^{h_0}-b)^k}\,m_k(T;h_0),
 \]
 where $m_k(T;h_0)=U^{(k)}(T,0;h_0)$ is computed via the Laplace--resolvent method of
-Section~\ref{sec:resolvent}. The maximum admissible order is $k_{\max}=\lfloor 1/\eta_{2,+}\rfloor -1$.
+Section~\ref{sec:resolvent}. Consequently, the method computes $\E[\Pi_T^k]$ for every
+integer
+\[
+k\in\mathcal K:=\{n\in\mathbb N:\ n\eta_{2,+}<1\}.
+\]
 \end{proposition}
 
 Let $p_{\mathrm{surv}}(h_0):=\P(\tau>T)$ and $p_{\mathrm{liq}}(h_0):=1-p_{\mathrm{surv}}(h_0)$.
@@ -784,7 +812,7 @@ which provides a useful diagnostic: the formula for $\E[\Pi_T^k]$ must satisfy t
 The $k=1$ case gives $e^{\mu_1 T}$ by the drift normalisation \eqref{eq:muX-drift}.
 \end{remark}
 
-The remainder of the analysis is devoted to computing $m_k(T;h_0)$ for all admissible $k\ge 1$
+The remainder of the analysis is devoted to computing $m_k(T;h_0)$ for every admissible integer $k\ge 1$
 and $p_{\mathrm{surv}}(h_0)$ via the Laplace--resolvent construction.
 
 % ============================================================
@@ -801,6 +829,8 @@ $z$ alone, with the Laplace parameter acting as a discount rate. The Kou structu
 it further: because exponentials are eigenfunctions of the generator, every integro-differential
 term acts algebraically on an exponential ansatz, and the resolvent collapses to a finite-dimensional
 linear system. Three boundary conditions at the absorbing barrier close the $3\times 3$ system.
+Importantly, this system remains $3\times3$ for every admissible integer $k$; increasing the
+moment order changes its coefficients and the forcing polynomial, not its dimension.
 The survival probability follows by the same architecture at zero tilt ($k=0$). This section derives
 both resolvents in closed form.
 
@@ -1058,8 +1088,10 @@ the survival matrix $\mathbf{M}_{\mathrm{surv}}(q)$ of Proposition~\ref{prop:sur
 \section{Numerical Results}\label{sec:numerical}
 % ============================================================
 
-We validate the Laplace--resolvent method against Monte Carlo (MC) simulation and verify
-the analytical no-shorting limit as $h_0\to\infty$.
+We validate the Laplace--resolvent method against Monte Carlo (MC) simulation for
+$k=0,1,2,3,4$ and verify the analytical no-shorting limit as $h_0\to\infty$.
+These orders illustrate rather than limit the method: the same implementation applies to
+every admissible integer $k$, which under the calibrated parameters includes $k=1,\ldots,79$.
 Time-domain quantities are recovered via the Talbot deformed-contour algorithm
 \citep{Talbot1979}. No Bromwich shift needs to be chosen by hand.
 
@@ -1071,8 +1103,8 @@ APRs (see caption). The AAVE liquidation threshold $b=0.78$ and maximum originat
 $0.73$ impose a minimum feasible log-buffer $h_0^{\min}=\log(0.78/0.73)\approx0.066$.
 WBTC and WETH have distinct downward phase rates
 $r_{1,-}^{(0)}=1/\eta_{1,-}\neq r_{2,-}^{(0)}=1/\eta_{2,+}$, so the barrier matrix
-$\mathbf{M}_{\mathrm{bar}}^{(k)}$ is non-singular for all admissible $k$
-(here $k_{\max}=\lfloor 1/\eta_{2,+}\rfloor - 1 = 79$).
+$\mathbf{M}_{\mathrm{bar}}^{(k)}$ is non-singular for every admissible integer $k$
+(here the calibrated parameters permit integer orders through $k=79$).
 Because the first moment is weakly identified in high-frequency ECF matching,
 the fitted $\mu_i$ values in Table~\ref{tab:num-params} should be read as model
 price-growth normalizers rather than directional forecasts; user views can replace
@@ -1242,6 +1274,58 @@ Table~\ref{tab:num-params}. Encoding: colour and line style identify parameter v
 Laplace--resolvent, $H_0\in[1.068,2.000]$, 40 points per curve.}
 \label{fig:sensitivity}
 \end{figure}
+
+\clearpage
+% ============================================================
+\section{Conclusion and Discussion}\label{sec:discussion}
+% ============================================================
+
+This paper develops a semi-analytic method for sizing a leveraged DeFi long--short position
+subject to health-factor liquidation. The initial log health factor $h_0$ reduces the sizing
+problem to one dimension, while an exponential change of measure reduces each payoff moment
+to a killed expectation of the log-ratio process. Under Kou jump--diffusion dynamics, the
+corresponding Laplace resolvent is obtained from a $3\times3$ linear system.
+
+A central feature is that the construction applies to every admissible integer order
+$k\ge1$ satisfying $k\eta_{2,+}<1$. Higher-order moments require a different tilt and forcing
+polynomial, but do not increase the dimension of the resolvent system. The framework therefore
+supports mean--variance sizing as well as criteria involving skewness, kurtosis, higher-moment
+penalties, or polynomial utility approximations. The numerical results show close agreement
+with Monte Carlo, while the semi-analytic method is substantially faster and free of simulation
+noise.
+
+For practical use, an investor can first choose a maximum liquidation probability and invert
+$p_{\mathrm{liq}}(H_0)$ to obtain a minimum health factor. Within the resulting feasible set,
+the investor then maximises the preferred moment-based objective. The optimal leverage follows
+from the selected health factor through $L_0=H_0/(H_0-b)$. Figure~\ref{fig:frontier}
+summarises this tradeoff between conditional payoff, variance, and liquidation probability.
+
+The model deliberately abstracts from oracle delays, liquidation execution and recovery,
+dynamic collateral adjustments, and stochastic borrowing rates. It should therefore be read
+as an ex-ante liquidation-buffer and sizing tool rather than a complete trading or execution
+model.
+
+Further work may incorporate liquidation recovery, dynamic collateral management, and
+stochastic funding costs.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.92\linewidth]{fig_frontier.pdf}
+\caption{Mean--variance--liquidation frontier of $\Pi_T\mid\{\tau>T\}$ for the benchmark
+parametrisation.
+Axes: $x=\mathrm{Var}(\Pi_T\mid\tau>T)$, $y=p_\ell=1-p_{\mathrm{surv}}$,
+$z=\mathrm{E}[\Pi_T\mid\tau>T]$ (vertical).
+The curve is parametrised by $H_0\in[1.068,2.000]$; decreasing $H_0$ moves the curve toward
+higher variance and higher $p_\ell$, while the conditional mean becomes U-shaped near the
+liquidation boundary.
+Grey projections on the three coordinate planes recover the pairwise two-dimensional tradeoffs;
+panel (a) plots the increasing efficient branch of the mean--liquidation projection.
+Script \texttt{jobs/frontier\_analysis.py}.}
+\label{fig:frontier}
+\end{figure}
+
+\clearpage
+\appendices
 
 % ============================================================
 \section{Empirical Calibration}\label{sec:calibration}
@@ -1440,120 +1524,7 @@ Script \texttt{jobs/calibrate\_kou.py}.}
 \label{fig:ecf-fit}
 \end{figure}
 
-% ============================================================
-\section{Discussion}\label{sec:discussion}
-% ============================================================
-
-\subsection{Model limitations}\label{sec:limitations}
-
-The model yields an exact solution within a deliberately narrow scope. The following maintained
-assumptions represent the primary directions for future work.
-
-\textbf{Instantaneous oracle and price discovery.}
-The health factor $H_t$ in \eqref{eq:health-factor} is computed from protocol price oracles that
-report asset prices with a lag — typically one block (12 seconds on Ethereum mainnet). During
-periods of extreme volatility the oracle price can deviate substantially from the true market
-price, allowing the true health factor to breach one before the protocol detects it, or
-preventing liquidation when the true health factor has in fact recovered. The model treats oracle
-prices as continuous and perfectly synchronised with the underlying asset processes.
-
-\textbf{Zero slippage at liquidation.}
-The absorbing-barrier assumption implies that collateral is liquidated at the mid-price prevailing
-at $\tau$. In practice a keeper must sell the collateral into on-chain liquidity pools, and the
-effective execution price is depressed by slippage on that trade. For large positions this effect
-can be material; \citet{Qin2021} document cases where slippage exceeded the liquidation bonus
-itself.
-
-\textbf{No liquidation bonus recovery.}
-The zero-recovery proxy (Remark~\ref{rem:liquidation}) ignores the keeper's liquidation bonus,
-which reduces the borrower's net recovery. Incorporating an explicit recovery fraction $1-\ell$
-on liquidated paths — where $\ell$ is the protocol bonus rate — would add a second term to
-$\Phi$ in \eqref{eq:Phi} but would not alter the structure of the resolvent, since the bonus
-affects only paths on $\{\tau\le T\}$.
-
-\textbf{Static collateral management.}
-The investor posts an initial collateral position and makes no further adjustments before $T$.
-A sophisticated participant may top up collateral or partially unwind the short leg as $H_t$
-approaches one, dynamically managing the distance to the boundary. Incorporating such controls
-would convert the problem into a stochastic optimal control problem over a reflected or
-absorbed process.
-
-\textbf{Deterministic interest rates.}
-DeFi lending protocols charge a floating borrow rate updated algorithmically as a function of
-pool utilisation \citep{gudgeon2020defi}. The implementation absorbs the funding cost into the
-price-growth drift $\mu_2$, which then changes the log-price drift
-$\mu_2^X$ through \eqref{eq:muX-drift}, treating the rate as deterministic
-and fixed at inception.
-Stochastic interest rates would couple the short-leg dynamics to a latent utilisation process.
-
-\textbf{No funding constraints.}
-The analysis assumes the investor can hold the initial position to horizon $T$ without receiving
-collateral top-up demands. A capital-constrained investor who cannot post additional margin when
-required may be forced to close the position before $\tau$, introducing an additional stopping
-time that is not captured by the model.
-
-\subsection{Practical implementation}\label{sec:practical}
-
-Despite the above limitations, the semi-analytic framework provides a tractable and fast starting
-point for position sizing. A natural two-step procedure is the following.
-
-\textbf{Step 1 — survival constraint.}
-Fix a maximum tolerated liquidation probability $\bar{p}$ over the horizon $T$, for example
-$\bar{p}=5\%$. The survival probability $p_{\mathrm{surv}}(H_0)$ is monotonically increasing in
-$H_0$ (Table~\ref{tab:results}): at $H_0\approx1.65$ survival is already above $99.9\%$ under the
-benchmark parameters. Inverting this map identifies the minimum admissible health factor
-$\underline{H}_0$ satisfying $p_{\mathrm{liq}}(T,0;\log\underline{H}_0)\le\bar{p}$. The Laplace
-method evaluates $p_{\mathrm{surv}}$ in $\approx60\,\mathrm{ms}$, so the inversion is a fast
-scalar root-find.
-
-\textbf{Step 2 — conditional upside maximisation.}
-Over the feasible set $H_0\ge\underline{H}_0$, maximise the conditional expected payoff, or a
-mean--variance functional, using the semi-analytic moments. Because the moments are noise-free
-and differentiable in $H_0$ through $h_0=\log H_0$, a standard one-dimensional line search converges in a handful of
-evaluations with no simulation variance.
-
-The output of this procedure is the \emph{optimal initial health factor} $H_0^\star$: the
-smallest cushion above the liquidation boundary that simultaneously satisfies the survival
-constraint and maximises conditional performance. The corresponding initial leverage is then
-read off from \eqref{eq:leverage} as $L_0^\star = H_0^\star/(H_0^\star-b)$; leverage is
-a consequence of the health-buffer choice, not the primary control variable.
-
-Figure~\ref{fig:frontier} visualises the full tradeoff in three dimensions.
-The vertical axis is the conditional mean $\E[\Pi_T\mid\tau>T]$; the two horizontal
-axes are the conditional variance $\mathrm{Var}(\Pi_T\mid\tau>T)$ and the liquidation
-probability $p_\ell=1-p_{\mathrm{surv}}$.
-The curve is parametrised by $H_0=e^{h_0}$ over the AAVE-feasible range
-$H_0\in[1.068,2.000]$: as $H_0$ falls the strategy takes on more leverage,
-pushing the curve toward higher variance and higher $p_\ell$. The conditional
-mean is mildly U-shaped over this interval: it first falls as leverage increases,
-then rises near the boundary because survival conditioning selects unusually
-favourable paths.
-Projections onto all three coordinate planes are shown as solid grey curves: the floor
-($z=\text{const}$) gives the variance--liquidation tradeoff; the left wall ($x=\text{const}$)
-gives the liquidation--upside tradeoff; the back wall ($p_\ell=0$) gives the classical
-mean--variance frontier conditional on near-certain survival.
-The lower-left panel reports the increasing efficient branch of the mean--liquidation
-tradeoff, omitting dominated low-risk health factors that would otherwise create a small
-initial dip.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.92\linewidth]{fig_frontier.pdf}
-\caption{Mean--variance--liquidation frontier of $\Pi_T\mid\{\tau>T\}$ for the benchmark
-parametrisation.
-Axes: $x=\mathrm{Var}(\Pi_T\mid\tau>T)$, $y=p_\ell=1-p_{\mathrm{surv}}$,
-$z=\mathrm{E}[\Pi_T\mid\tau>T]$ (vertical).
-The curve is parametrised by $H_0\in[1.068,2.000]$; decreasing $H_0$ moves the curve toward
-higher variance and higher $p_\ell$, while the conditional mean becomes U-shaped near the
-liquidation boundary.
-Grey projections on the three coordinate planes recover the pairwise two-dimensional tradeoffs;
-panel (a) plots the increasing efficient branch of the mean--liquidation projection.
-Script \texttt{jobs/frontier\_analysis.py}.}
-\label{fig:frontier}
-\end{figure}
-
-\appendices
-
+\clearpage
 % ============================================================
 \section{Proofs}\label{app:proofs}
 % ============================================================

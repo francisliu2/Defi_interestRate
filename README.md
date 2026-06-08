@@ -163,6 +163,17 @@ parameters, AAVE constraints, initial prices, and one-month horizon used in the
 empirical paper section.  Optional drift views can be passed to frontier jobs
 with `--mu1`, `--mu2`, `--delta-mu1`, and `--delta-mu2`.
 
+## Illustration Notebooks
+
+The executed notebooks in `notebooks/` provide focused package walkthroughs:
+
+- health factor, holdings, and leverage
+- survival probability and integer-order moments
+- sizing frontiers, objectives, and drift views
+- Kou calibration and spread-direction ECF diagnostics
+
+See `notebooks/README.md` for the notebook index and rerun command.
+
 ## Paper
 
 The main paper is:
