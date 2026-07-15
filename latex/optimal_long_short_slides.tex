@@ -1,0 +1,834 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\usebeamerfont{page number in head/foot}\insertframenumber/\inserttotalframenumber\hspace{1.2em}\vspace{0.8em}
+}
+\setbeamertemplate{itemize item}{\raise0.2ex\hbox{\scriptsize$\blacktriangleright$}}
+\setbeamertemplate{itemize subitem}{\raise0.2ex\hbox{\scriptsize$\triangleright$}}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,booktabs,array}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage[numbers,sort&compress]{natbib}
+\providecommand{\doi}[1]{}
+\usetikzlibrary{arrows.meta,positioning,calc}
+
+\definecolor{ink}{RGB}{22,31,45}
+\definecolor{slate}{RGB}{48,61,78}
+\definecolor{muted}{RGB}{94,105,118}
+\definecolor{rulegray}{RGB}{190,196,204}
+\definecolor{deepblue}{RGB}{18,52,86}
+\definecolor{wine}{RGB}{124,36,45}
+\definecolor{forest}{RGB}{34,93,73}
+\definecolor{paper}{RGB}{250,250,248}
+
+\setbeamercolor{normal text}{fg=ink,bg=paper}
+\setbeamercolor{frametitle}{fg=deepblue,bg=paper}
+\setbeamercolor{title}{fg=deepblue}
+\setbeamercolor{subtitle}{fg=slate}
+\setbeamercolor{structure}{fg=deepblue}
+\setbeamercolor{alerted text}{fg=wine}
+\setbeamerfont{title}{series=\bfseries,size=\Large}
+\setbeamerfont{frametitle}{series=\bfseries,size=\large}
+\setbeamerfont{author}{size=\normalsize}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{jointwork}{size=\scriptsize}
+
+\setlength{\parskip}{0.25em}
+\renewcommand{\arraystretch}{1.18}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Pbb}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\surv}{p_{\mathrm{surv}}}
+\newcommand{\liq}{p_{\mathrm{liq}}}
+\newcommand{\hf}{H}
+
+\title[A semi-analytic framework for DeFi long--short sizing]{A semi-Analytic Framework for Long--Short Position Sizing in DeFi under Liquidation and Jump Risk}
+\author{Francis Liu}
+\institute{Academic hour}
+\date{30th June 2026}
+
+\begin{document}
+
+% ------------------------------------------------------------
+\begin{frame}
+  \vspace{1.0em}
+  {\usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle\par}
+  \vspace{1.2em}
+  {\usebeamerfont{author}\insertauthor\par}
+  \vspace{0.7em}
+  {\usebeamerfont{jointwork}
+    Joint work with Professor Daniel Pele, Department of Statistics and Econometrics,\\
+    Bucharest University of Economic Studies\\
+    Theodor Ginavar, PhD Candidate, MSCA Digital Finance\par}
+  {\usebeamerfont{date}\insertinstitute\hspace{0.6em}|\hspace{0.6em}\insertdate\par}
+  \vfill
+  \begin{center}
+    \begin{tikzpicture}
+      \draw[deepblue,very thick] (0,0) -- (10.8,0);
+      \draw[wine,thick] (0,-0.12) -- (2.4,-0.12);
+    \end{tikzpicture}
+  \end{center}
+  \vspace{0.8em}
+  \large DeFi long--short sizing under liquidation and jump risk
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{DeFi Lending Platforms}
+  \small
+  Aave / Compound: pooled lending
+  \vspace{0.4em}
+
+  \begin{itemize}
+    \item \textbf{Mechanism} lenders supply pool assets; borrowers draw pooled liquidity
+    \item \textbf{Accounting} no bilateral lender; protocol-level collateral and debt balances
+    \item \textbf{Interest accrual} variable supply/borrow APRs; utilization-driven index growth
+    \item \textbf{No fixed tenor} open-ended loans; no maturity date; no term structure contract
+  \end{itemize}
+
+  \vspace{0.25em}
+  \textbf{Overcollateralization}
+  \begin{itemize}
+    \item Pseudonymous parties; no credit underwriting; no legal margin call
+    \item Solvency and obligation enforcement entirely collateral-based
+    \item No-arbitrage discipline through collateral constraint
+    \item \textbf{Liquidator role} repay unsolvent debt; seize collateral bonus; restore pool solvency
+  \end{itemize}
+
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Health Factor and Boundary}
+  \small
+  {\bf{Key mechanism variables}}
+  \vspace{0.35em}
+
+  State variables:
+  \[
+    V_{1,t}:=n_1S_{1,t}\quad\text{collateral value},
+    \qquad
+    V_{2,t}:=n_2S_{2,t}\quad\text{borrow/debt value}
+  \]
+  \vspace{0.25em}
+
+  Loan-to-value* and liquidation threshold:
+  \[
+    \mathrm{LTV}_t:=\frac{V_{2,t}}{V_{1,t}},
+    \qquad
+    b=\mathrm{threshold\ LTV}
+  \]
+  Aave origination LTV $<$ threshold LTV $b$; initial buffer by design
+  \vspace{0.25em}
+
+  Health factor:
+  \[
+    H_t:=\frac{b\,V_{1,t}}{V_{2,t}}
+    =
+    \frac{b}{\mathrm{LTV}_t}
+  \]
+  \vspace{0.25em}
+
+  Liquidation triggering condition:
+  \[
+    H_t<1
+    \quad\Longleftrightarrow\quad
+    V_{2,t}>b\,V_{1,t}
+  \]
+
+  {\scriptsize * Remark: for now, ignore origination-LTV / threshold-LTV gap}
+  \vspace{0.2em}
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Constructing the Long--Short Position}
+  \begin{center}
+    \begin{tabular}{@{}p{0.15\linewidth}p{0.45\linewidth}p{0.30\linewidth}@{}}
+      \toprule
+      Step & Protocol action & Economic exposure \\
+      \midrule
+      0 & Initial capital injection: \$1-worth BTC & External capital only \\
+      1 & Supply BTC collateral to Aave & Long BTC collateral \\
+      2 & Borrow \$0.8-worth ETH & Short ETH liability \\
+      3 & Sell ETH into \$0.8-worth BTC & Self-financing conversion \\
+      4 & Re-supply BTC as collateral & Total BTC collateral: \$1.8 \\
+      \midrule
+      Result & Collateralized debt position & Leveraged long BTC, short ETH \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \vspace{0.55em}
+  Resulting normalized position:
+  \begin{itemize}
+    \item External capital: \$1; no additional capital after step 0
+    \item BTC collateral: \$1.8; ETH debt: \$0.8
+    \item $b=0.8$; $H_0=0.8\times1.8/0.8=1.8$
+    \item Leveraged BTC exposure; short ETH exposure
+  \end{itemize}
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Looping the Position}
+  \small
+  Repeat steps 1--4; zero transaction cost and slippage
+  \vspace{0.35em}
+
+  Round-$m$ additional collateral:
+  \[
+    1,\quad b,\quad b^2,\quad \ldots,\quad b^m
+  \]
+  Total BTC collateral after $m$ loops:
+  \[
+    V_1^{(m)}
+    =
+    1+b+\cdots+b^m
+    =
+    \frac{1-b^{m+1}}{1-b}
+  \]
+  ETH debt:
+  \[
+    V_2^{(m)}
+    =
+    b+b^2+\cdots+b^{m+1}
+    =
+    b\,V_1^{(m)}
+  \]
+  Infinite-loop limit:
+  \[
+    V_1^{(\infty)}=\frac{1}{1-b},
+    \qquad
+    V_2^{(\infty)}=\frac{b}{1-b}
+  \]
+  Example $b=0.8$:
+  \[
+    V_1^{(\infty)}=5,
+    \qquad
+    V_2^{(\infty)}=4,
+    \qquad
+    H_0^{(\infty)}=\frac{bV_1^{(\infty)}}{V_2^{(\infty)}}=1
+  \]
+  Extreme leverage: any adverse move $\rightarrow$ liquidation; favorable move $\rightarrow$ amplified gain
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Unwinding and Taking Profit}
+  \small
+  Favorable scenario: BTC $+10\%$; ETH $-16.7\%$
+  \[
+    H_t=\frac{0.80\,V_{1,t}}{V_{2,t}},
+    \qquad
+    \text{equity}=V_{1,t}-V_{2,t}
+  \]
+  \vspace{0.15em}
+  \begin{center}
+    \begin{tabular}{@{}p{0.17\linewidth}r r c r p{0.20\linewidth}@{}}
+      \toprule
+      Scenario & BTC collat. & ETH debt & $H$ & Equity & Action \\
+      \midrule
+      Entry & \$1.80 & \$0.80 & $1.80$ & \$1.00 & Hold \\
+      Favorable move & \$1.98 & \$0.667 & $2.38$ & \$1.313 & Voluntary unwind \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \vspace{0.5em}
+  Outcome:
+  \[
+    \text{gain}=1.313-1.000=0.313
+  \]
+  Voluntary unwind; solvent position; profit realization
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Aave Liquidation and Immediate Risk}
+  \small
+  Adverse scenario: BTC $-25\%$; ETH $+40\%$
+  \[
+    H_t=\frac{bV_{1,t}}{V_{2,t}}
+    =
+    \frac{0.80\,V_{1,t}}{V_{2,t}},
+    \qquad
+    H_t\leq1
+    \Longleftrightarrow
+    \frac{V_{2,t}}{V_{1,t}}\geq0.80
+  \]
+  \vspace{0.15em}
+  \begin{center}
+    \begin{tabular}{@{}p{0.17\linewidth}r r c r p{0.20\linewidth}@{}}
+      \toprule
+      Scenario & BTC collat. & ETH debt & $H$ & Equity & Outcome \\
+      \midrule
+      Entry & \$1.80 & \$0.80 & $1.80$ & \$1.00 & Safe \\
+      Adverse move & \$1.35 & \$1.12 & $0.96$ & \$0.23 & Liquidatable \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \vspace{0.35em}
+  Outcome:
+  \[
+    H_t<1
+    \quad\Rightarrow\quad
+    \text{keeper liquidation; collateral seized at bonus}
+  \]
+  Recovery drivers: shock severity; market sentiment/liquidity; liquidator inventory willingness; gas fees
+  \vspace{0.2em}
+
+  Modeling convention: detailed recovery omitted; $\Pi_T=0$ whenever $\tau\le T$
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Payoff Function from the Trade}
+  \small
+  Holdings: $n_1$ units of collateral asset $S_1$; debt: $n_2$ units of borrowed asset $S_2$
+  \vspace{0.3em}
+
+  Surviving-path terminal wealth:
+  \[
+    \Pi_T:=(n_1S_{1,T}-n_2S_{2,T})\,\one_{\{\tau>T\}}
+  \]
+  Running BTC/ETH example:
+  \[
+    S_1=\mathrm{BTC},\qquad S_2=\mathrm{ETH},
+    \qquad n_1S_{1,0}=1.80,\qquad n_2S_{2,0}=0.80
+  \]
+  Therefore:
+  \[
+    \Pi_T=
+    \left(
+      1.80\,\frac{S_{1,T}}{S_{1,0}}
+      -
+      0.80\,\frac{S_{2,T}}{S_{2,0}}
+    \right)\one_{\{\tau>T\}}
+  \]
+  Survival indicator: $\tau\le T \Rightarrow \Pi_T=0$
+  \vspace{0.25em}
+
+  Initial net book value normalized to one unit of account; moments stated directly in $\Pi_T$
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Why Payoff Moments Are Hard}
+  \small
+  Target statistics:
+  \[
+    \E[\Pi_T],\qquad
+    \mathrm{Var}(\Pi_T),\qquad
+    \E[\Pi_T^k],\quad k\ge1
+  \]
+  Killed payoff:
+  \[
+    \Pi_T^k
+    =
+    (n_1S_{1,T}-n_2S_{2,T})^k
+    \one_{\{\tau>T\}}
+  \]
+  Terminal payoff state:
+  \[
+    (S_{1,T},S_{2,T})
+  \]
+  Pathwise killing process:
+  \[
+    \tau>T
+    \quad\Longleftrightarrow\quad
+    H_s\ge1\ \text{ for all }s\le T,
+    \qquad
+    H_s=\frac{b\,n_1S_{1,s}}{n_2S_{2,s}}
+  \]
+  Direct moment:
+  \[
+    \E_\Pbb[\Pi_T^k]
+    =
+    \E_\Pbb\!\left[(n_1S_{1,T}-n_2S_{2,T})^k\one_{\{\tau>T\}}\right]
+  \]
+  Difficulty: terminal bivariate payoff + pathwise barrier
+  \vspace{0.25em}
+
+  Generic numerical routes:
+  \begin{itemize}
+    \item Monte Carlo; barrier monitoring / possible 2D Brownian-bridge refinement
+    \item Numerical PDE/PIDE; two terminal state variables plus killing boundary
+  \end{itemize}
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Literature Positioning}
+  \small
+  Intersection:
+  \[
+    \text{DeFi liquidation}
+    \quad+\quad
+    \text{first-passage methods for jump diffusions}
+  \]
+  \vspace{0.35em}
+
+  \begin{itemize}
+    \item \textbf{DeFi liquidation} Qin et al.~\cite{Qin2021}; Heimbach--Huang~\cite{HeimbachHuang2024}
+    \item Incentive structure; leverage amplification; liquidation cascades
+    \item Empirical focus; no ex-ante sizing rule
+  \end{itemize}
+  \vspace{0.25em}
+
+  \begin{itemize}
+    \item \textbf{First passage under jumps} Kou--Wang~\cite{KouWang2003}; Sepp~\cite{Sepp2004}
+    \item Double-exponential jumps; Laplace transforms; finite algebraic systems
+    \item Classical object: single-asset barrier option
+  \end{itemize}
+  \vspace{0.25em}
+
+  Gap:
+  \[
+    \text{barrier-killed long--short ratio}
+    \quad\neq\quad
+    \text{single-asset barrier option}
+  \]
+  Bridge: change of measure $\rightarrow$ one-dimensional killed expectation
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Price Process}
+  \small
+  Jump motivation: crypto gaps; flash crashes; barrier crossed before rebalance
+  \hfill Kou model~\cite{Kou2002}
+  \vspace{0.25em}
+
+  Price dynamics, $i=1,2$:
+  \[
+    S_{i,t}=S_{i,0}e^{X_{i,t}},
+    \qquad
+    dX_{i,t}
+    =
+    \mu_i^X\,dt+\sigma_i\,dB_{i,t}
+    +d\!\left(\sum_{n=1}^{N_{i,t}}J_i^{(n)}\right)
+  \]
+  Brownian correlation:
+  \[
+    d\langle B_1,B_2\rangle_t=\rho\,dt,
+  \]
+  Poisson intensity: $\lambda_i$
+  \vspace{0.2em}
+
+  Kou double-exponential jump density:
+  \[
+    f_i(j)
+    =
+    \frac{p_i}{\eta_{i,+}}e^{-j/\eta_{i,+}}\one_{\{j>0\}}
+    +
+    \frac{1-p_i}{\eta_{i,-}}e^{j/\eta_{i,-}}\one_{\{j<0\}}
+  \]
+  Drift normalization: $\E_\P[S_{i,t}/S_{i,0}]=e^{\mu_i t}$
+  \[
+    \mu_i^X=\mu_i-\frac12\sigma_i^2-\lambda_i\chi_i,
+    \qquad
+    \chi_i=\E[e^{J_i}-1]
+    =
+    \frac{p_i}{1-\eta_{i,+}}+\frac{1-p_i}{1+\eta_{i,-}}-1
+  \]
+  Constant supply/borrow rates absorbed into drift; dynamic rate modeling outside scope
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Semi-Analytic Architecture}
+  \small
+  \begin{center}
+    \begin{tikzpicture}[
+      stage/.style={draw=slate,thick,minimum width=3.65cm,minimum height=0.82cm,align=center,font=\small},
+      done/.style={draw=forest,thick,minimum width=3.65cm,minimum height=0.82cm,align=center,font=\small},
+      arr/.style={-Latex,thick,slate}
+    ]
+      \node[done] (a) {$\checkmark$ payoff moments\\$\E[\Pi_T^k]$};
+      \node[stage,right=0.55cm of a] (b) {factorization\\short-leg factor\\killed $Z_t$, barrier $-h_0$};
+      \node[stage,right=0.55cm of b] (c) {measure tilt\\$\Pbb^{(k)}$};
+      \node[stage,below=0.78cm of c] (d) {Laplace resolvent\\boundary conditions\\$3\times3$ Kou system};
+      \node[stage,left=0.55cm of d] (e) {Talbot inversion\\time-domain moment};
+      \draw[arr] (a) -- (b);
+      \draw[arr] (b) -- (c);
+      \draw[arr] (c) -- (d);
+      \draw[arr] (d) -- (e);
+    \end{tikzpicture}
+  \end{center}
+  \vspace{0.45em}
+  Covered: payoff function + need for moments
+  \vspace{0.25em}
+
+  Next: factorization and measure change $\rightarrow$ one-dimensional killed expectation
+  \[
+    k\,\eta_{2,+}<1
+    \quad\text{moment-admissibility condition}
+  \]
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Factorization: From Two Assets to One Barrier}
+  \small
+  Motivation: separate terminal short-leg factor; isolate killed ratio problem
+  \vspace{0.25em}
+
+  Bivariate payoff; scalar liquidation state:
+  \[
+    Z_t=X_{1,t}-X_{2,t}
+  \]
+  Initial log health factor:
+  \[
+    h_0:=\log H_0
+  \]
+  Factorization using $H_T=e^{h_0+Z_T}$:
+  \[
+    \Pi_T
+    =
+    \frac{n_2}{b}\,S_{2,0}e^{X_{2,T}}
+    (e^{h_0+Z_T}-b)\,\one_{\{\tau>T\}}
+  \]
+  One-dimensional payoff kernel:
+  \[
+    g_k(z;h_0):=(e^{h_0+z}-b)^k,
+  \]
+  Integer moments:
+  \[
+  \begin{aligned}
+    \Pi_T^k
+    &=
+    \underbrace{
+      \Big(\frac{n_2}{b}\Big)^kS_{2,0}^k e^{kX_{2,T}}
+    }_{\mathcal F_T^{S_2}\text{ part}}
+    \underbrace{
+      g_k(Z_T;h_0)\,\one_{\{\tau>T\}}
+    }_{\mathcal F_T^{Z}\text{ killed-ratio part}}
+  \end{aligned}
+  \]
+  Measure change: absorb $\mathcal F_T^{S_2}$ factor; retain killed expectation under $Z$
+  \vspace{0.3em}
+
+  Barrier-option analogue: scalar state $Z$, barrier $-h_0$
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Measure Change}
+  \scriptsize
+  Start from factorized moment:
+  \[
+    \E_\Pbb[\Pi_T^k]
+    =
+    \Big(\frac{n_2}{b}\Big)^kS_{2,0}^k\,
+    \E_\Pbb\!\left[
+      e^{kX_{2,T}}g_k(Z_T;h_0)\one_{\{\tau>T\}}
+    \right]
+  \]
+  Exponential tilt:
+  \[
+    \left.\frac{d\Pbb^{(k)}}{d\Pbb}\right|_{\mathcal F_T}
+    =
+    \frac{e^{kX_{2,T}}}{\E[e^{kX_{2,T}}]}
+  \]
+  Heuristic reminder, with $Y=g_k(Z_T;h_0)\one_{\{\tau>T\}}$:
+  \[
+  \begin{aligned}
+    \E_{\Pbb^{(k)}}[Y]
+    &=
+    \int Y\,d\Pbb^{(k)}
+    =
+    \int Y\,\frac{d\Pbb^{(k)}}{d\Pbb}\,d\Pbb\\
+    &=
+    \E_\Pbb\!\left[
+      Y\,\frac{e^{kX_{2,T}}}{\E_\Pbb[e^{kX_{2,T}}]}
+    \right]
+    &=
+    \frac{\E_\Pbb[e^{kX_{2,T}}Y]}{\E_\Pbb[e^{kX_{2,T}}]}
+    \quad\Longrightarrow\quad
+    \E_\Pbb[e^{kX_{2,T}}Y]
+    =
+    \E_\Pbb[e^{kX_{2,T}}]\E_{\Pbb^{(k)}}[Y]
+  \end{aligned}
+  \]
+  {\scriptsize Remark: Radon--Nikodym theorem / change-of-measure identity}
+  \vspace{0.15em}
+
+  Reduced moment:
+  \[
+    \E[\Pi_T^k]
+    =
+    \Big(\frac{n_2}{b}\Big)^kS_{2,0}^k
+    \E[e^{kX_{2,T}}]\,
+    \E^{(k)}\!\left[
+      g_k(Z_T;h_0)\one_{\{\tau>T\}}
+    \right]
+  \]
+  Bivariate payoff moment $\rightarrow$ killed expectation of the ratio process
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Tilted Ratio Process}
+  \small
+  Remaining object:
+  \[
+    \E^{(k)}\!\left[
+      g_k(Z_T;h_0)\one_{\{\tau>T\}}
+    \right]
+  \]
+  Question:
+  \[
+    Z_t=X_{1,t}-X_{2,t}
+    \quad\text{under}\quad \Pbb^{(k)}
+  \]
+  Under $\Pbb^{(k)}$: $Z$ remains a L\'evy process
+
+  L\'evy--Khintchine exponent of $Z$ under $\Pbb^{(k)}$:
+  \[
+    \psi_Z^{(k)}(s)
+    =
+    \mu_Z^{(k)}s+\frac12\sigma_Z^2s^2
+    +\lambda_1\big(M_1(s)-1\big)
+    +\lambda_2\big(M_2(k-s)-M_2(k)\big)
+  \]
+  with
+  \[
+    M_i(s)=
+    \frac{p_i}{1-s\eta_{i,+}}
+    +
+    \frac{1-p_i}{1+s\eta_{i,-}},
+    \qquad
+    \sigma_Z^2=\sigma_1^2+\sigma_2^2-2\rho\sigma_1\sigma_2
+  \]
+  $\mathcal L^{(k)}$: infinitesimal generator of $Z$ under $\Pbb^{(k)}$, the generator eigenrelation:
+  \[
+    \mathcal L^{(k)}e^{sz}=\psi_Z^{(k)}(s)e^{sz}
+  \]
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Killed Moment PIDE}
+  \small
+  Target function:
+  \[
+    U(t,z)
+    :=
+    \E_z^{(k)}\!\left[
+      g_k(Z_t;h_0)\one_{\{\tau(h_0)>t\}}
+    \right],
+    \qquad z>-h_0
+  \]
+  \vspace{0.2em}
+
+  Backward Kolmogorov PIDE for the killed process:
+  \[
+    \partial_t U(t,z)=\mathcal L^{(k)}U(t,z),
+    \qquad z>-h_0
+  \]
+  Initial and absorbing boundary:
+  \[
+    U(0,z)=g_k(z;h_0),
+    \qquad
+    U(t,z)=0\quad\text{for }z\le -h_0
+  \]
+  \vspace{0.2em}
+  
+  One time variable; one state variable $z$ for the ratio process $Z$
+
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Laplace Transform Trick}
+  \small
+  Time-domain PIDE:
+  \[
+    \partial_t U(t,z)=\mathcal L^{(k)}U(t,z),
+    \qquad
+    U(0,z)=g_k(z;h_0)
+  \]
+  Laplace transform in time:
+  \[
+    \widehat U(q,z)=\int_0^\infty e^{-qt}U(t,z)\,dt,
+    \qquad q>0
+  \]
+  Laplace-domain resolvent:
+  \[
+    (q-\mathcal L^{(k)})\widehat U(q,z)=g_k(z;h_0),
+    \qquad z>-h_0
+  \]
+  Sepp~\cite{Sepp2004} idea:
+
+  Laplace transform $+$ double-exponential jumps $\rightarrow$ finite algebraic system
+  \vspace{0.25em}
+
+  Here:
+  \[
+    \psi_Z^{(k)}(\gamma)=q
+    \quad\Longrightarrow\quad
+    \text{degree-six characteristic equation}
+  \]
+  Three admissible roots $+$ three boundary conditions $\rightarrow 3\times3$ system
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Resolvent Solution Form}
+  \small
+  Resolvent decomposition:
+  \[
+    \widehat U(q,z;h_0)
+    =
+    \widehat U_{\mathrm{part}}(q,z;h_0)
+    +
+    \widehat U_{\mathrm{hom}}(q,z;h_0)
+  \]
+  Particular solution:
+  \[
+    \widehat U_{\mathrm{part}}(q,z;h_0)
+    =
+    \sum_{j=0}^{k}
+    \frac{c_{k,j}(h_0)}{q-\psi_Z^{(k)}(j)}e^{jz}
+  \]
+  Homogeneous solution:
+  \[
+    \widehat U_{\mathrm{hom}}(q,z;h_0)
+    =
+    \sum_{m=1}^{3}
+    B_m^{(k)}(q;h_0)e^{\gamma_{m+3}(q)(z+h_0)}
+  \]
+  Boundary coefficients:
+  \[
+    \underbrace{\mathbf M_{\mathrm{bar}}^{(k)}(q)}_{3\times3}
+    \underbrace{\mathbf B^{(k)}}_{3\times1}
+    =
+    -\underbrace{\mathbf b^{(k)}}_{3\times1}
+  \]
+  PIDE solve $\rightarrow$ summation of exponentials $+$ one $3\times3$ linear system
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Numerical Example}
+  \scriptsize
+  Conditional statistics; Laplace--resolvent vs MC survival
+  \vspace{0.15em}
+
+  \begin{center}
+  \resizebox{0.84\textwidth}{!}{%
+  \begin{tabular}{cc cc cccc}
+  \toprule
+  $h_0$ & $H_0$ & $p_{\mathrm{surv}}^{\mathrm{Lap}}$ & $p_{\mathrm{surv}}^{\mathrm{MC}}$
+  & Mean & Variance & Skewness & Ex.\ Kurt.\\
+  \midrule
+  $0.07$ & $1.07$ & $0.3051$ & $0.3163$ & $1.2581$ & $0.0753$ & $0.8767$ & $1.0996$ \\
+  $0.10$ & $1.11$ & $0.4615$ & $0.4750$ & $1.1633$ & $0.0672$ & $0.8525$ & $1.0083$ \\
+  $0.25$ & $1.28$ & $0.9129$ & $0.9156$ & $0.9847$ & $0.0545$ & $0.5676$ & $0.3668$ \\
+  $0.50$ & $1.65$ & $0.9996$ & $0.9995$ & $0.9845$ & $0.0350$ & $0.3132$ & $0.3565$ \\
+  $0.75$ & $2.12$ & $1.0000$ & $1.0000$ & $1.0043$ & $0.0236$ & $0.3791$ & $0.4093$ \\
+  $1.00$ & $2.72$ & $1.0000$ & $1.0000$ & $1.0158$ & $0.0186$ & $0.4158$ & $0.4234$ \\
+  $1.50$ & $4.48$ & $1.0000$ & $1.0000$ & $1.0280$ & $0.0145$ & $0.4318$ & $0.4187$ \\
+  $2.00$ & $7.39$ & $1.0000$ & $1.0000$ & $1.0339$ & $0.0130$ & $0.4263$ & $0.4017$ \\
+  \midrule
+  $\infty$ & $\infty$ & $1.0000$ & --- & $1.0414$ & $0.0114$ & $0.4052$ & $0.3612$ \\
+  \bottomrule
+  \end{tabular}}
+  \end{center}
+  \vspace{0.2em}
+
+  \begin{itemize}
+    \item Smaller $H_0$: lower survival probability; higher liquidation probability
+    \item Conditional mean: U-shape across $H_0$; high near boundary, trough around $H_0\approx1.3$--$1.7$
+    \item Conditional variance: decreasing as $H_0$ increases
+  \end{itemize}
+  \vspace{0.1em}
+
+  Bottom row: no-shorting analytical limit
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Numerical Example}
+  \scriptsize
+  Laplace minus MC; wall-clock computation time
+  \vspace{0.15em}
+
+  \begin{center}
+  \resizebox{0.84\textwidth}{!}{%
+  \begin{tabular}{cc rrrrr rr}
+  \toprule
+  $h_0$ & $H_0$ & $\Delta p_{\mathrm{surv}}$ & $\Delta$Mean
+  & $\Delta$Var. & $\Delta$Skew. & $\Delta$Kurt.
+  & Lap. & MC \\
+  \midrule
+  $0.07$ & $1.07$ & $-0.0112$ & $\phantom{-}0.0042$ & $-0.0019$ & $-0.0233$ & $-0.1959$ & $0.10$ & $50.37$ \\
+  $0.10$ & $1.11$ & $-0.0136$ & $\phantom{-}0.0042$ & $-0.0013$ & $-0.0230$ & $-0.1499$ & $0.10$ & $49.15$ \\
+  $0.25$ & $1.28$ & $-0.0026$ & $-0.0001$ & $-0.0007$ & $-0.0054$ & $-0.0563$ & $0.10$ & $48.90$ \\
+  $0.50$ & $1.65$ & $\phantom{-}0.0001$ & $-0.0005$ & $-0.0003$ & $-0.0110$ & $-0.0347$ & $0.10$ & $49.11$ \\
+  $0.75$ & $2.12$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0107$ & $-0.0382$ & $0.10$ & $49.49$ \\
+  $1.00$ & $2.72$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0123$ & $-0.0378$ & $0.10$ & $49.46$ \\
+  $1.50$ & $4.48$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0001$ & $-0.0144$ & $-0.0369$ & $0.10$ & $49.94$ \\
+  $2.00$ & $7.39$ & $\phantom{-}0.0000$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0152$ & $-0.0362$ & $0.10$ & $49.76$ \\
+  \bottomrule
+  \end{tabular}}
+  \end{center}
+  \vspace{0.2em}
+
+  \begin{itemize}
+    \item $\Delta p_{\mathrm{surv}}<0$: MC misses intra-period barrier crossings
+    \item Gap largest near $H_0^{\min}$; negligible for larger health buffers
+    \item Runtime: Laplace $\approx0.10$s vs MC $\approx49$--$50$s; about $490\times$ speed-up
+  \end{itemize}
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Sizing Objective}
+  Choice variable: $h_0=\log H_0$; equivalently initial borrow amount
+  \vspace{0.3em}
+
+  Representative objective:
+  \[
+  \begin{aligned}
+    \Phi(h_0)
+    &=
+    \E[\Pi_T\mid \tau>T]
+    -\frac{\alpha}{2}\operatorname{Var}(\Pi_T\mid \tau>T)
+    -\delta\,\liq(h_0),
+  \end{aligned}
+  \]
+  Liquidation probability:
+  \[
+    \liq(h_0)=\Pbb(\tau\leq T)
+  \]
+  One-dimensional search:
+  \[
+    h_0^\star\in\arg\max_{h_0>0}\Phi(h_0)
+  \]
+  Tradeoff: expected payoff vs variance vs liquidation probability
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture,overlay]
+    \node at (current page.center) {%
+    \includegraphics[width=1.06\paperwidth,height=0.98\paperheight,keepaspectratio]{fig_frontier_3d.pdf}%
+    };
+  \end{tikzpicture}
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Conclusions and Discussion}
+  \begin{itemize}
+    \item DeFi long--short $\rightarrow$ collateral/debt first passage
+    \item Central sizing variable: $h_0=\log H_0$
+    \item Kou jump diffusion $\rightarrow$ finite-dimensional semi-analytic moments
+    \item Fast liquidation-aware sizing; no repeated Monte Carlo
+  \end{itemize}
+  \vspace{0.8em}
+  \textbf{Ongoing developments}
+  \begin{itemize}
+    \item Robust empirical example
+    \item Sensitivity analysis: strong drift dependence
+    \item Borrowing- and lending-rate modelling
+  \end{itemize}
+  \vfill
+  \begin{center}
+    \large Thank you
+  \end{center}
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{References}
+  \footnotesize
+  \bibliographystyle{abbrvnat}
+  \bibliography{finance}
+\end{frame}
+
+\end{document}
