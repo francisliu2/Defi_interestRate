@@ -29,8 +29,15 @@
       "Bash(curl -sL \"https://raw.githubusercontent.com/emitanaka/combine2019/master/output/articles/article_template_tf_article/interact.cls\")",
       "Bash(/Users/francis/Defi_interestRate/.venv/bin/python jobs/sensitivity_analysis.py)",
       "Bash(.venv/bin/python jobs/sensitivity_analysis.py)",
-      "Bash(.venv/bin/python -)"
+      "Bash(.venv/bin/python -)",
+      "Bash(jupyter nbconvert *)",
+      "Bash(jupyter --version)",
+      "Bash(sed -i '' 's/coll=np.full\\(NP,IC\\);/coll=np.full\\(NP,float\\(IC\\)\\);/' /tmp/wf_proto.py && python3 /tmp/wf_proto.py)",
+      "Bash(echo \"exit: $?\")"
     ],
-    "deny": []
+    "deny": [],
+    "additionalDirectories": [
+      "/private/tmp"
+    ]
   }
 }

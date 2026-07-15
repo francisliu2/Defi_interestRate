@@ -1,0 +1,352 @@
+{
+  "run_id": "20260603T122514Z",
+  "network": "ethereum",
+  "strategy": "carry",
+  "abort": false,
+  "circuit_breakers": {
+    "gas_gwei": {
+      "value": 45.0,
+      "triggered": false
+    },
+    "eth_vol_ann": {
+      "value": 0.36911,
+      "triggered": false
+    },
+    "oracle_dev": {
+      "value": 0.003,
+      "triggered": false
+    },
+    "max_util": {
+      "value": 0.375,
+      "triggered": false
+    }
+  },
+  "universe_size": 10,
+  "filtered_size": 8,
+  "selected": [
+    "DAI",
+    "USDT",
+    "USDC",
+    "WBTC",
+    "WETH"
+  ],
+  "exclusions": {
+    "AAVE": [
+      "paused"
+    ],
+    "LINK": [
+      "not_carry_eligible"
+    ]
+  },
+  "scores": [
+    {
+      "symbol": "DAI",
+      "composite_score": 0.8956
+    },
+    {
+      "symbol": "USDT",
+      "composite_score": 0.3723
+    },
+    {
+      "symbol": "USDC",
+      "composite_score": 0.2851
+    },
+    {
+      "symbol": "WBTC",
+      "composite_score": 0.0091
+    },
+    {
+      "symbol": "WETH",
+      "composite_score": -0.0731
+    },
+    {
+      "symbol": "rETH",
+      "composite_score": -0.1454
+    },
+    {
+      "symbol": "wstETH",
+      "composite_score": -0.2714
+    },
+    {
+      "symbol": "GHO",
+      "composite_score": -1.0721
+    }
+  ],
+  "features": [
+    {
+      "symbol": "USDC",
+      "asset_type": "stablecoin",
+      "supply_mean": 0.04776,
+      "borrow_mean": 0.05999,
+      "supply_now": 0.05091,
+      "borrow_now": 0.06293,
+      "carry_spread": -0.01223,
+      "util_zscore": 0.51199,
+      "util_momentum": 0.0,
+      "liquidity_ratio": 0.875,
+      "volatility": 0.01043,
+      "max_drawdown": -0.00269,
+      "eth_corr": -0.24849,
+      "ltv_buffer": 0.03,
+      "liquidity_usd": 341699503.85017,
+      "ltv": 0.77,
+      "liq_threshold": 0.8,
+      "borrowable": true,
+      "collateral": true,
+      "price_eth": 0.00053
+    },
+    {
+      "symbol": "USDT",
+      "asset_type": "stablecoin",
+      "supply_mean": 0.05204,
+      "borrow_mean": 0.0647,
+      "supply_now": 0.05286,
+      "borrow_now": 0.06096,
+      "carry_spread": -0.01266,
+      "util_zscore": -0.95194,
+      "util_momentum": -0.01971,
+      "liquidity_ratio": 0.84,
+      "volatility": 0.01484,
+      "max_drawdown": -0.00234,
+      "eth_corr": -0.31697,
+      "ltv_buffer": 0.03,
+      "liquidity_usd": 205019702.3101,
+      "ltv": 0.75,
+      "liq_threshold": 0.78,
+      "borrowable": true,
+      "collateral": true,
+      "price_eth": 0.00053
+    },
+    {
+      "symbol": "DAI",
+      "asset_type": "stablecoin",
+      "supply_mean": 0.04619,
+      "borrow_mean": 0.05758,
+      "supply_now": 0.0477,
+      "borrow_now": 0.05151,
+      "carry_spread": -0.01139,
+      "util_zscore": -4.77247,
+      "util_momentum": -0.05732,
+      "liquidity_ratio": 0.8,
+      "volatility": 0.01513,
+      "max_drawdown": -0.00588,
+      "eth_corr": 0.13561,
+      "ltv_buffer": 0.14,
+      "liquidity_usd": 78102743.73718,
+      "ltv": 0.63,
+      "liq_threshold": 0.77,
+      "borrowable": true,
+      "collateral": true,
+      "price_eth": 0.00053
+    },
+    {
+      "symbol": "WETH",
+      "asset_type": "eth",
+      "supply_mean": 0.01976,
+      "borrow_mean": 0.03025,
+      "supply_now": 0.01283,
+      "borrow_now": 0.02827,
+      "carry_spread": -0.01049,
+      "util_zscore": 0.34247,
+      "util_momentum": 0.0,
+      "liquidity_ratio": 0.66667,
+      "volatility": 0.47577,
+      "max_drawdown": -0.33576,
+      "eth_corr": -0.05294,
+      "ltv_buffer": 0.025,
+      "liquidity_usd": 111363227.76214,
+      "ltv": 0.8,
+      "liq_threshold": 0.825,
+      "borrowable": true,
+      "collateral": true,
+      "price_eth": 1.0
+    },
+    {
+      "symbol": "WBTC",
+      "asset_type": "btc_proxy",
+      "supply_mean": 0.00747,
+      "borrow_mean": 0.01507,
+      "supply_now": 0.01126,
+      "borrow_now": 0.01253,
+      "carry_spread": -0.0076,
+      "util_zscore": -1.43266,
+      "util_momentum": -0.05045,
+      "liquidity_ratio": 0.625,
+      "volatility": 0.4128,
+      "max_drawdown": -0.06835,
+      "eth_corr": 0.15183,
+      "ltv_buffer": 0.05,
+      "liquidity_usd": 83522420.82161,
+      "ltv": 0.7,
+      "liq_threshold": 0.75,
+      "borrowable": true,
+      "collateral": true,
+      "price_eth": 18.0
+    },
+    {
+      "symbol": "wstETH",
+      "asset_type": "lst",
+      "supply_mean": 0.0358,
+      "borrow_mean": 0.06041,
+      "supply_now": 0.04145,
+      "borrow_now": 0.05737,
+      "carry_spread": -0.02461,
+      "util_zscore": 0.0,
+      "util_momentum": 0.0,
+      "liquidity_ratio": 0.71429,
+      "volatility": 0.51102,
+      "max_drawdown": -0.08568,
+      "eth_corr": 0.14983,
+      "ltv_buffer": 0.1,
+      "liquidity_usd": 51969506.289,
+      "ltv": 0.69,
+      "liq_threshold": 0.79,
+      "borrowable": false,
+      "collateral": true,
+      "price_eth": 1.12
+    },
+    {
+      "symbol": "rETH",
+      "asset_type": "lst",
+      "supply_mean": 0.03617,
+      "borrow_mean": 0.04432,
+      "supply_now": 0.03671,
+      "borrow_now": 0.05266,
+      "carry_spread": -0.00816,
+      "util_zscore": 0.73867,
+      "util_momentum": 0.06357,
+      "liquidity_ratio": 0.66667,
+      "volatility": 0.51073,
+      "max_drawdown": -0.24165,
+      "eth_corr": -0.14526,
+      "ltv_buffer": 0.07,
+      "liquidity_usd": 12249955.05384,
+      "ltv": 0.67,
+      "liq_threshold": 0.74,
+      "borrowable": false,
+      "collateral": true,
+      "price_eth": 1.1
+    },
+    {
+      "symbol": "GHO",
+      "asset_type": "stablecoin",
+      "supply_mean": 0.00213,
+      "borrow_mean": 0.05707,
+      "supply_now": 0.00071,
+      "borrow_now": 0.05663,
+      "carry_spread": -0.05494,
+      "util_zscore": 0.0,
+      "util_momentum": 0.0,
+      "liquidity_ratio": 0.625,
+      "volatility": 0.0138,
+      "max_drawdown": -0.0045,
+      "eth_corr": 0.1528,
+      "ltv_buffer": 0.0,
+      "liquidity_usd": 48814214.83574,
+      "ltv": 0.0,
+      "liq_threshold": 0.0,
+      "borrowable": true,
+      "collateral": false,
+      "price_eth": 0.00053
+    }
+  ],
+  "positions": [
+    {
+      "symbol": "DAI",
+      "asset_type": "stablecoin",
+      "raw_weight": 0.2,
+      "capped_weight": 0.2,
+      "notional_usd": 200000.0,
+      "max_pool_notional": 7810274.37371809,
+      "leverage": 0.385,
+      "health_factor": 2.0,
+      "ltv": 0.63
+    },
+    {
+      "symbol": "USDT",
+      "asset_type": "stablecoin",
+      "raw_weight": 0.2,
+      "capped_weight": 0.2,
+      "notional_usd": 200000.0,
+      "max_pool_notional": 20501970.23100999,
+      "leverage": 0.39,
+      "health_factor": 2.0,
+      "ltv": 0.75
+    },
+    {
+      "symbol": "USDC",
+      "asset_type": "stablecoin",
+      "raw_weight": 0.2,
+      "capped_weight": 0.2,
+      "notional_usd": 200000.0,
+      "max_pool_notional": 34169950.38501665,
+      "leverage": 0.4,
+      "health_factor": 2.0,
+      "ltv": 0.77
+    },
+    {
+      "symbol": "WBTC",
+      "asset_type": "btc_proxy",
+      "raw_weight": 0.2,
+      "capped_weight": 0.2,
+      "notional_usd": 200000.0,
+      "max_pool_notional": 8352242.082160506,
+      "leverage": 0.375,
+      "health_factor": 2.0,
+      "ltv": 0.7
+    },
+    {
+      "symbol": "WETH",
+      "asset_type": "eth",
+      "raw_weight": 0.2,
+      "capped_weight": 0.2,
+      "notional_usd": 200000.0,
+      "max_pool_notional": 11136322.77621401,
+      "leverage": 0.412,
+      "health_factor": 2.0,
+      "ltv": 0.8
+    }
+  ],
+  "orders": [
+    {
+      "symbol": "DAI",
+      "action": "open",
+      "current_notional": 0.0,
+      "target_notional": 200000.0,
+      "delta_usd": 200000.0,
+      "reason": "target=200,000 current=0"
+    },
+    {
+      "symbol": "USDT",
+      "action": "open",
+      "current_notional": 0.0,
+      "target_notional": 200000.0,
+      "delta_usd": 200000.0,
+      "reason": "target=200,000 current=0"
+    },
+    {
+      "symbol": "USDC",
+      "action": "open",
+      "current_notional": 0.0,
+      "target_notional": 200000.0,
+      "delta_usd": 200000.0,
+      "reason": "target=200,000 current=0"
+    },
+    {
+      "symbol": "WBTC",
+      "action": "open",
+      "current_notional": 0.0,
+      "target_notional": 200000.0,
+      "delta_usd": 200000.0,
+      "reason": "target=200,000 current=0"
+    },
+    {
+      "symbol": "WETH",
+      "action": "open",
+      "current_notional": 0.0,
+      "target_notional": 200000.0,
+      "delta_usd": 200000.0,
+      "reason": "target=200,000 current=0"
+    }
+  ]
+}
