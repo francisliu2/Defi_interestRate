@@ -7,19 +7,20 @@ Natural-space vector (13 elements):
 
 Unconstrained vector (13 elements):
   tau = [mu1,
-         log(sigma1),  log(lam1),  logit(p1),  logit(eta1_pos),  log(eta1_neg),
+         log(sigma1),  log(lam1),  logit(p1),  logit(eta1_pos / eta1_max),  log(eta1_neg),
          mu2,
          log(sigma2),  log(lam2),  logit(p2),  logit(eta2_pos / eta2_max),  log(eta2_neg),
          atanh(rho)]
 
-eta2_pos uses a *scaled* sigmoid so that eta2_pos < eta2_max = (1-eps)/K
-automatically, satisfying the k-tilted moment-admissibility condition K*eta2_pos < 1
-from the paper.
+Both positive-jump means use scaled sigmoids so that
+eta_i_pos < eta_i_max <= (1-eps)/K automatically, satisfying the two
+K-th payoff-moment admissibility conditions from the paper.
 """
 from __future__ import annotations
 
 import numpy as np
 from dataclasses import dataclass
+from numbers import Integral
 
 from optimal_long_short.model_params import KouParams
 
@@ -33,9 +34,10 @@ class ParameterBounds:
     """
     Box constraints for the bivariate Kou model parameters.
 
-    ``max_moment_order`` sets the admissibility constraint: the Laplace
-    resolvent requires K*eta2_pos < 1 for moment orders k = 0, ..., K.
-    The bound is enforced hard via the unconstrained parameterisation.
+    ``max_moment_order`` sets the admissibility constraint: the killed-moment
+    resolvent requires both K*eta1_pos < 1 and K*eta2_pos < 1 for moment
+    orders k = 1, ..., K. The bounds are enforced hard through the
+    unconstrained parameterisation.
     """
     mu_min: float = -5.0
     mu_max: float = 5.0
@@ -46,14 +48,59 @@ class ParameterBounds:
     p_min: float = 0.01
     p_max: float = 0.99
     eta_pos1_min: float = 1e-5
-    eta_pos1_max: float = 0.99    # eta1_pos only needs < 1 (compensator)
+    eta_pos1_max: float = 0.99    # additional user cap before the K-th moment cap
     eta_pos2_min: float = 1e-5
     eta_neg_min: float = 1e-5
     eta_neg_max: float = 5.0
     rho_min: float = -0.995
     rho_max: float = 0.995
-    max_moment_order: int = 4     # K: requires K*eta2_pos < 1
+    max_moment_order: int = 4     # K: requires K*eta_i_pos < 1 for i=1,2
     moment_eps: float = 1e-4      # safety margin
+
+    def __post_init__(self) -> None:
+        if (
+            isinstance(self.max_moment_order, bool)
+            or not isinstance(self.max_moment_order, Integral)
+            or self.max_moment_order < 1
+        ):
+            raise ValueError("max_moment_order must be a positive integer")
+        if not 0.0 < self.moment_eps < 1.0:
+            raise ValueError("moment_eps must lie in (0, 1)")
+        ordered_bounds = (
+            ("mu", self.mu_min, self.mu_max),
+            ("sigma", self.sigma_min, self.sigma_max),
+            ("lambda", self.lambda_min, self.lambda_max),
+            ("p", self.p_min, self.p_max),
+            ("eta_neg", self.eta_neg_min, self.eta_neg_max),
+            ("rho", self.rho_min, self.rho_max),
+        )
+        for name, lower, upper in ordered_bounds:
+            if not np.isfinite(lower) or not np.isfinite(upper) or lower >= upper:
+                raise ValueError(f"{name}_min must be finite and below {name}_max")
+        if self.sigma_min <= 0.0 or self.lambda_min <= 0.0:
+            raise ValueError("sigma_min and lambda_min must be positive")
+        if self.eta_neg_min <= 0.0:
+            raise ValueError("eta_neg_min must be positive")
+        if not 0.0 < self.p_min < self.p_max < 1.0:
+            raise ValueError("p bounds must lie strictly inside (0, 1)")
+        if not -1.0 < self.rho_min < self.rho_max < 1.0:
+            raise ValueError("rho bounds must lie strictly inside (-1, 1)")
+        if not 0.0 < self.eta_pos1_min < self.eta_pos1_max:
+            raise ValueError("eta_pos1 bounds must be positive and ordered")
+        if self.eta_pos2_min <= 0.0:
+            raise ValueError("eta_pos2_min must be positive")
+        if self.eta_pos1_min >= self.eta_pos1_admissible_max:
+            raise ValueError("eta_pos1_min exceeds the moment-admissible maximum")
+        if self.eta_pos2_min >= self.eta_pos2_max:
+            raise ValueError("eta_pos2_min exceeds the moment-admissible maximum")
+
+    @property
+    def eta_pos1_admissible_max(self) -> float:
+        """Effective upper bound on eta1_pos for moments through order K."""
+        return min(
+            self.eta_pos1_max,
+            (1.0 - self.moment_eps) / self.max_moment_order,
+        )
 
     @property
     def eta_pos2_max(self) -> float:
@@ -65,10 +112,11 @@ class ParameterBounds:
         L-BFGS-B bounds in unconstrained tau space.
         Wide enough not to bind under normal conditions.
         """
+        eta1m = self.eta_pos1_admissible_max
         eta2m = self.eta_pos2_max
-        # eta1_pos uses logit transform: tau = logit(ep1), ep1 = sigmoid(tau)
-        logit_e1min = _logit(self.eta_pos1_min)
-        logit_e1max = _logit(self.eta_pos1_max)
+        # eta_i_pos uses a scaled logit: tau = logit(ep_i / eta_i_max)
+        e1lo = _logit(max(self.eta_pos1_min, 1e-12) / eta1m)
+        e1hi = _logit(1.0 - self.moment_eps)
         # eta2_pos uses scaled logit: tau = logit(ep2 / eta2m), ep2 = eta2m * sigmoid(tau)
         e2lo = _logit(max(self.eta_pos2_min, 1e-12) / eta2m)
         e2hi = _logit(1.0 - self.moment_eps)  # logit((1-eps)) ≈ 9.2 for eps=1e-4
@@ -77,7 +125,7 @@ class ParameterBounds:
             (np.log(self.sigma_min), np.log(self.sigma_max)),
             (np.log(self.lambda_min), np.log(self.lambda_max)),
             (_logit(self.p_min), _logit(self.p_max)),
-            (logit_e1min, logit_e1max),    # eta1_pos: logit(ep1)
+            (e1lo, e1hi),                  # eta1_pos: logit(ep1/eta1m)
             (np.log(self.eta_neg_min), np.log(self.eta_neg_max)),
             (self.mu_min,  self.mu_max),
             (np.log(self.sigma_min), np.log(self.sigma_max)),
@@ -113,14 +161,16 @@ def nat_to_unc(theta: np.ndarray,
                bounds: ParameterBounds = _DEFAULT_BOUNDS) -> np.ndarray:
     """Natural-space vector -> unconstrained vector."""
     mu1, s1, l1, p1, ep1, en1, mu2, s2, l2, p2, ep2, en2, rho = theta
+    eta1m = bounds.eta_pos1_admissible_max
     eta2m = bounds.eta_pos2_max
+    ep1_sc = float(np.clip(ep1 / eta1m, 1e-10, 1.0 - 1e-10))
     ep2_sc = float(np.clip(ep2 / eta2m, 1e-10, 1.0 - 1e-10))
     return np.array([
         float(mu1),
         float(np.log(np.clip(s1,  bounds.sigma_min,  bounds.sigma_max))),
         float(np.log(np.clip(l1,  bounds.lambda_min, bounds.lambda_max))),
         _logit(float(np.clip(p1,  bounds.p_min,      bounds.p_max))),
-        _logit(float(np.clip(ep1, bounds.eta_pos1_min, bounds.eta_pos1_max))),
+        _logit(ep1_sc),
         float(np.log(np.clip(en1, bounds.eta_neg_min, bounds.eta_neg_max))),
         float(mu2),
         float(np.log(np.clip(s2,  bounds.sigma_min,  bounds.sigma_max))),
@@ -136,13 +186,14 @@ def unc_to_nat(tau: np.ndarray,
                bounds: ParameterBounds = _DEFAULT_BOUNDS) -> np.ndarray:
     """Unconstrained vector -> natural-space vector."""
     mu1, a1, b1, c1, d1, e1, mu2, a2, b2, c2, d2, e2, f = tau
+    eta1m = bounds.eta_pos1_admissible_max
     eta2m = bounds.eta_pos2_max
     return np.array([
         float(mu1),
         float(np.exp(a1)),
         float(np.exp(b1)),
         float(_sigmoid(c1)),
-        float(_sigmoid(d1)),            # eta1_pos in (0, 1)
+        eta1m * float(_sigmoid(d1)),    # eta1_pos in (0, eta1_max) < 1/K
         float(np.exp(e1)),
         float(mu2),
         float(np.exp(a2)),

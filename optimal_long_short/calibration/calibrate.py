@@ -135,7 +135,8 @@ def calibrate_ecf(
     theta0           : 13-element natural-space starting vector; auto if None.
     n_starts         : Multi-start cloud size.
     threshold          : MAD multiplier for diffusion-subset classification.
-    max_moment_order   : K such that K*eta2_pos < 1 is enforced.
+    max_moment_order   : K such that both K*eta1_pos < 1 and
+                         K*eta2_pos < 1 are enforced.
     moment_anchor_weight : Weight of the log-lambda POT soft penalty.
     eta_anchor_weight    : Weight of the log-eta POT soft penalty (lambda-eta
                            degeneracy guard; default 0.02).
@@ -174,6 +175,12 @@ def calibrate_ecf(
     # ------------------------------------------------------------------
     if bounds is None:
         bounds = ParameterBounds(max_moment_order=max_moment_order)
+    elif bounds.max_moment_order < max_moment_order:
+        raise ValueError(
+            "Supplied bounds do not enforce the requested moment order: "
+            f"bounds.max_moment_order={bounds.max_moment_order} < "
+            f"max_moment_order={max_moment_order}"
+        )
     if grid is None:
         grid = StandardizedCalibrationGrid()
 

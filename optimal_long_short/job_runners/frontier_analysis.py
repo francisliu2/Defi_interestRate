@@ -11,7 +11,7 @@ Figure layout (3 rows × 2 columns):
   Row 2 left  (c): E[Pi_T | tau>T]      vs  L_0    — mean–leverage tradeoff
   Row 2 right (d): Phi(H_0)             vs  H_0    — penalised objective value
                    Phi = E[..] - (alpha/2) Var[..] - delta * p_liq
-                   (star marks optimal H_0^*)
+                   (marker shows the selected grid point for this criterion)
 
 Representative H_0 values are annotated on each 2-D panel so the reader can
 link the tradeoff curves back to the health-buffer parameter.
@@ -92,7 +92,7 @@ def price_drift_view(args: argparse.Namespace) -> dict[str, float]:
 
 
 # ── Core computation ───────────────────────────────────────────────────────────
-def compute(params, h0_grid, b, T, S10=1.0, S20=1.0):
+def compute(params, h0_grid, b, T, S10=1.0, S20=1.0, ltv_max=None):
     """Return (ps, mu, var, L0) arrays over h0.
 
     ps  = survival probability P(tau > T)
@@ -107,6 +107,7 @@ def compute(params, h0_grid, b, T, S10=1.0, S20=1.0):
         T=T,
         S10=S10,
         S20=S20,
+        ltv_max=ltv_max,
         max_moment_order=2,
     )
     ps = np.array([row["p_surv"] for row in rows])
@@ -151,7 +152,15 @@ def main() -> None:
         f"muX1-muX2={ds['spread']['muX_1_minus_2']:.4f}"
     )
     print("Computing benchmark frontier …")
-    ps, mu, var, L0 = compute(params, h0_grid, base_b, args.T, S10=S10, S20=S20)
+    ps, mu, var, L0 = compute(
+        params,
+        h0_grid,
+        base_b,
+        args.T,
+        S10=S10,
+        S20=S20,
+        ltv_max=constraint["ltv_max"],
+    )
     pliq = 1.0 - ps
     phi  = mu - 0.5 * ALPHA * var - DELTA * pliq
 
@@ -345,15 +354,15 @@ def main() -> None:
     ax_d.yaxis.grid(True, lw=0.4, alpha=0.35, color="0.65")
     ax_d.set_axisbelow(True)
 
-    # Mark optimal H_0
-    i_opt   = int(np.nanargmax(phig))
-    H0_opt  = health_g[i_opt]
-    phi_opt = phig[i_opt]
-    ax_d.axvline(H0_opt, color="0.55", lw=0.9, ls="--", alpha=0.80)
-    ax_d.scatter(H0_opt, phi_opt, s=28, color="black", zorder=5)
+    # Mark the grid point selected by this one illustrative criterion.
+    i_selected = int(np.nanargmax(phig))
+    H0_selected = health_g[i_selected]
+    phi_selected = phig[i_selected]
+    ax_d.axvline(H0_selected, color="0.55", lw=0.9, ls="--", alpha=0.80)
+    ax_d.scatter(H0_selected, phi_selected, s=28, color="black", zorder=5)
     ax_d.annotate(
-        rf"$H_0^\star\!=\!{H0_opt:.2f}$",
-        xy=(H0_opt, phi_opt),
+        rf"$H_0^{{\mathrm{{sel}}}}\!=\!{H0_selected:.2f}$",
+        xy=(H0_selected, phi_selected),
         xytext=(8, -4),
         textcoords="offset points",
         fontsize=6.5, color="0.20", ha="left", va="top",

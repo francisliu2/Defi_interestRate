@@ -48,7 +48,7 @@
 \newcommand{\liq}{p_{\mathrm{liq}}}
 \newcommand{\hf}{H}
 
-\title[A semi-analytic framework for DeFi long--short sizing]{A semi-Analytic Framework for Long--Short Position Sizing in DeFi under Liquidation and Jump Risk}
+\title[Optimal sizing under Kou jumps]{Optimal Sizing of Leveraged Crypto Long--Short Positions under Kou Jump-Diffusion via Killed Moments}
 \author{Francis Liu}
 \institute{Academic hour}
 \date{30th June 2026}
@@ -75,7 +75,7 @@
     \end{tikzpicture}
   \end{center}
   \vspace{0.8em}
-  \large DeFi long--short sizing under liquidation and jump risk
+  \large Method: survival probabilities and killed moments\quad Application: initial-buffer sizing
 \end{frame}
 
 % ------------------------------------------------------------
@@ -97,7 +97,7 @@
     \item Pseudonymous parties; no credit underwriting; no legal margin call
     \item Solvency and obligation enforcement entirely collateral-based
     \item No-arbitrage discipline through collateral constraint
-    \item \textbf{Liquidator role} repay unsolvent debt; seize collateral bonus; restore pool solvency
+    \item \textbf{Liquidator role} repay insolvent debt; seize collateral bonus; restore pool solvency
   \end{itemize}
 
 \end{frame}
@@ -140,7 +140,8 @@
     V_{2,t}>b\,V_{1,t}
   \]
 
-  {\scriptsize * Remark: for now, ignore origination-LTV / threshold-LTV gap}
+  {\scriptsize Origination requires $\mathrm{LTV}_0\le\ell_{\max}<b$, hence
+  $h_0\ge\log(b/\ell_{\max})$.}
   \vspace{0.2em}
 \end{frame}
 
@@ -153,9 +154,9 @@
       \midrule
       0 & Initial capital injection: \$1-worth BTC & External capital only \\
       1 & Supply BTC collateral to Aave & Long BTC collateral \\
-      2 & Borrow \$0.8-worth ETH & Short ETH liability \\
-      3 & Sell ETH into \$0.8-worth BTC & Self-financing conversion \\
-      4 & Re-supply BTC as collateral & Total BTC collateral: \$1.8 \\
+      2 & Borrow \$0.73-worth ETH & Short ETH liability \\
+      3 & Sell ETH into \$0.73-worth BTC & Self-financing conversion \\
+      4 & Re-supply BTC as collateral & Total BTC collateral: \$1.73 \\
       \midrule
       Result & Collateralized debt position & Leveraged long BTC, short ETH \\
       \bottomrule
@@ -165,8 +166,8 @@
   Resulting normalized position:
   \begin{itemize}
     \item External capital: \$1; no additional capital after step 0
-    \item BTC collateral: \$1.8; ETH debt: \$0.8
-    \item $b=0.8$; $H_0=0.8\times1.8/0.8=1.8$
+    \item BTC collateral: \$1.73; ETH debt: \$0.73
+    \item $(b,\ell_{\max})=(0.78,0.73)$; $H_0=0.78\times1.73/0.73\approx1.85$
     \item Leveraged BTC exposure; short ETH exposure
   \end{itemize}
 \end{frame}
@@ -177,41 +178,41 @@
   Repeat steps 1--4; zero transaction cost and slippage
   \vspace{0.35em}
 
-  Round-$m$ additional collateral:
+  With origination ratio $\ell_{\max}<b$, the first $m$ recycled additions are:
   \[
-    1,\quad b,\quad b^2,\quad \ldots,\quad b^m
+    \ell_{\max},\quad \ell_{\max}^2,\quad \ldots,\quad \ell_{\max}^m
   \]
   Total BTC collateral after $m$ loops:
   \[
     V_1^{(m)}
     =
-    1+b+\cdots+b^m
+    1+\ell_{\max}+\cdots+\ell_{\max}^m
     =
-    \frac{1-b^{m+1}}{1-b}
+    \frac{1-\ell_{\max}^{m+1}}{1-\ell_{\max}}
   \]
   ETH debt:
   \[
     V_2^{(m)}
     =
-    b+b^2+\cdots+b^{m+1}
+    \ell_{\max}+\ell_{\max}^2+\cdots+\ell_{\max}^{m}
     =
-    b\,V_1^{(m)}
+    V_1^{(m)}-1
   \]
   Infinite-loop limit:
   \[
-    V_1^{(\infty)}=\frac{1}{1-b},
+    V_1^{(\infty)}=\frac{1}{1-\ell_{\max}},
     \qquad
-    V_2^{(\infty)}=\frac{b}{1-b}
+    V_2^{(\infty)}=\frac{\ell_{\max}}{1-\ell_{\max}}
   \]
-  Example $b=0.8$:
+  Aave illustration $(b,\ell_{\max})=(0.78,0.73)$:
   \[
-    V_1^{(\infty)}=5,
+    V_1^{(\infty)}=3.704,
     \qquad
-    V_2^{(\infty)}=4,
+    V_2^{(\infty)}=2.704,
     \qquad
-    H_0^{(\infty)}=\frac{bV_1^{(\infty)}}{V_2^{(\infty)}}=1
+    H_0^{(\infty)}=\frac{b}{\ell_{\max}}\approx1.068
   \]
-  Extreme leverage: any adverse move $\rightarrow$ liquidation; favorable move $\rightarrow$ amplified gain
+  The protocol origination gap prevents entry exactly at the liquidation boundary.
 \end{frame}
 
 % ------------------------------------------------------------
@@ -219,7 +220,7 @@
   \small
   Favorable scenario: BTC $+10\%$; ETH $-16.7\%$
   \[
-    H_t=\frac{0.80\,V_{1,t}}{V_{2,t}},
+    H_t=\frac{0.78\,V_{1,t}}{V_{2,t}},
     \qquad
     \text{equity}=V_{1,t}-V_{2,t}
   \]
@@ -229,15 +230,15 @@
       \toprule
       Scenario & BTC collat. & ETH debt & $H$ & Equity & Action \\
       \midrule
-      Entry & \$1.80 & \$0.80 & $1.80$ & \$1.00 & Hold \\
-      Favorable move & \$1.98 & \$0.667 & $2.38$ & \$1.313 & Voluntary unwind \\
+      Entry & \$1.73 & \$0.73 & $1.85$ & \$1.00 & Hold \\
+      Favorable move & \$1.903 & \$0.608 & $2.44$ & \$1.295 & Voluntary unwind \\
       \bottomrule
     \end{tabular}
   \end{center}
   \vspace{0.5em}
   Outcome:
   \[
-    \text{gain}=1.313-1.000=0.313
+    \text{gain}=1.295-1.000=0.295
   \]
   Voluntary unwind; solvent position; profit realization
 \end{frame}
@@ -249,11 +250,11 @@
   \[
     H_t=\frac{bV_{1,t}}{V_{2,t}}
     =
-    \frac{0.80\,V_{1,t}}{V_{2,t}},
+    \frac{0.78\,V_{1,t}}{V_{2,t}},
     \qquad
-    H_t\leq1
+    H_t<1
     \Longleftrightarrow
-    \frac{V_{2,t}}{V_{1,t}}\geq0.80
+    \frac{V_{2,t}}{V_{1,t}}>0.78
   \]
   \vspace{0.15em}
   \begin{center}
@@ -261,8 +262,8 @@
       \toprule
       Scenario & BTC collat. & ETH debt & $H$ & Equity & Outcome \\
       \midrule
-      Entry & \$1.80 & \$0.80 & $1.80$ & \$1.00 & Safe \\
-      Adverse move & \$1.35 & \$1.12 & $0.96$ & \$0.23 & Liquidatable \\
+      Entry & \$1.73 & \$0.73 & $1.85$ & \$1.00 & Safe \\
+      Adverse move & \$1.298 & \$1.022 & $0.99$ & \$0.276 & Liquidatable \\
       \bottomrule
     \end{tabular}
   \end{center}
@@ -276,7 +277,7 @@
   Recovery drivers: shock severity; market sentiment/liquidity; liquidator inventory willingness; gas fees
   \vspace{0.2em}
 
-  Modeling convention: detailed recovery omitted; $\Pi_T=0$ whenever $\tau\le T$
+  Killed-payoff convention: $\Pi_T=0$ whenever $\tau\le T$; this is not a recovery model
 \end{frame}
 
 % ------------------------------------------------------------
@@ -285,22 +286,22 @@
   Holdings: $n_1$ units of collateral asset $S_1$; debt: $n_2$ units of borrowed asset $S_2$
   \vspace{0.3em}
 
-  Surviving-path terminal wealth:
+  Killed terminal payoff:
   \[
     \Pi_T:=(n_1S_{1,T}-n_2S_{2,T})\,\one_{\{\tau>T\}}
   \]
   Running BTC/ETH example:
   \[
     S_1=\mathrm{BTC},\qquad S_2=\mathrm{ETH},
-    \qquad n_1S_{1,0}=1.80,\qquad n_2S_{2,0}=0.80
+    \qquad n_1S_{1,0}=1.73,\qquad n_2S_{2,0}=0.73
   \]
   Therefore:
   \[
     \Pi_T=
     \left(
-      1.80\,\frac{S_{1,T}}{S_{1,0}}
+      1.73\,\frac{S_{1,T}}{S_{1,0}}
       -
-      0.80\,\frac{S_{2,T}}{S_{2,0}}
+      0.73\,\frac{S_{2,T}}{S_{2,0}}
     \right)\one_{\{\tau>T\}}
   \]
   Survival indicator: $\tau\le T \Rightarrow \Pi_T=0$
@@ -367,7 +368,7 @@
   \begin{itemize}
     \item \textbf{DeFi liquidation} Qin et al.~\cite{Qin2021}; Heimbach--Huang~\cite{HeimbachHuang2024}
     \item Incentive structure; leverage amplification; liquidation cascades
-    \item Empirical focus; no ex-ante sizing rule
+    \item Empirical focus; no repeated killed-moment evaluation engine
   \end{itemize}
   \vspace{0.25em}
 
@@ -441,7 +442,7 @@
       \node[done] (a) {$\checkmark$ payoff moments\\$\E[\Pi_T^k]$};
       \node[stage,right=0.55cm of a] (b) {factorization\\short-leg factor\\killed $Z_t$, barrier $-h_0$};
       \node[stage,right=0.55cm of b] (c) {measure tilt\\$\Pbb^{(k)}$};
-      \node[stage,below=0.78cm of c] (d) {Laplace resolvent\\boundary conditions\\$3\times3$ Kou system};
+      \node[stage,below=0.78cm of c] (d) {Laplace resolvent\\boundary conditions\\generic $3\times3$ Kou system};
       \node[stage,left=0.55cm of d] (e) {Talbot inversion\\time-domain moment};
       \draw[arr] (a) -- (b);
       \draw[arr] (b) -- (c);
@@ -455,7 +456,7 @@
 
   Next: factorization and measure change $\rightarrow$ one-dimensional killed expectation
   \[
-    k\,\eta_{2,+}<1
+    k\,\eta_{1,+}<1,\qquad k\,\eta_{2,+}<1
     \quad\text{moment-admissibility condition}
   \]
 \end{frame}
@@ -658,7 +659,8 @@
     \quad\Longrightarrow\quad
     \text{degree-six characteristic equation}
   \]
-  Three admissible roots $+$ three boundary conditions $\rightarrow 3\times3$ system
+  Distinct downward phases: three admissible roots $+$ three boundary conditions
+  $\rightarrow 3\times3$ system
 \end{frame}
 
 % ------------------------------------------------------------
@@ -693,13 +695,40 @@
     =
     -\underbrace{\mathbf b^{(k)}}_{3\times1}
   \]
-  PIDE solve $\rightarrow$ summation of exponentials $+$ one $3\times3$ linear system
+  PIDE solve $\rightarrow$ summation of exponentials $+$ one generic $3\times3$ linear system
 \end{frame}
 
 % ------------------------------------------------------------
-\begin{frame}{Numerical Example}
+\begin{frame}{Primary Output: Survival and Killed Moments}
+  \small
+  Objective-independent Laplace--resolvent outputs
+  \vspace{0.4em}
+
+  \begin{center}
+  \begin{tabular}{rrrrrr}
+    \toprule
+    $h_0$ & $p_{\mathrm{surv}}$ & $M_1$ & $M_2$
+    & $\E[\Pi_T\mid\tau>T]$ & $\E[\Pi_T^2\mid\tau>T]$ \\
+    \midrule
+    $0.0662$ & $0.306293$ & $0.385094$ & $0.507211$ & $1.257274$ & $1.655967$ \\
+    $0.1000$ & $0.461481$ & $0.536822$ & $0.655481$ & $1.163260$ & $1.420385$ \\
+    $0.2500$ & $0.912938$ & $0.898984$ & $0.934991$ & $0.984716$ & $1.024156$ \\
+    $0.5000$ & $0.999613$ & $0.984080$ & $1.003811$ & $0.984461$ & $1.004199$ \\
+    $1.0000$ & $1.000000$ & $1.015788$ & $1.050402$ & $1.015788$ & $1.050402$ \\
+    $2.0000$ & $1.000000$ & $1.033907$ & $1.081910$ & $1.033907$ & $1.081910$ \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{0.5em}
+
+  \footnotesize $M_k=p_{\mathrm{surv}}\E[\Pi_T^k\mid\tau>T]$; the first row is the
+  protocol origination bound. Decision rules consume this map downstream.
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Conditional Statistics and MC Survival}
   \scriptsize
-  Conditional statistics; Laplace--resolvent vs MC survival
+  Secondary transformation of killed moments; Laplace--resolvent vs MC survival
   \vspace{0.15em}
 
   \begin{center}
@@ -709,7 +738,7 @@
   $h_0$ & $H_0$ & $p_{\mathrm{surv}}^{\mathrm{Lap}}$ & $p_{\mathrm{surv}}^{\mathrm{MC}}$
   & Mean & Variance & Skewness & Ex.\ Kurt.\\
   \midrule
-  $0.07$ & $1.07$ & $0.3051$ & $0.3163$ & $1.2581$ & $0.0753$ & $0.8767$ & $1.0996$ \\
+  $0.066$ & $1.068$ & $0.3063$ & $0.3171$ & $1.2573$ & $0.0752$ & $0.8766$ & $1.0991$ \\
   $0.10$ & $1.11$ & $0.4615$ & $0.4750$ & $1.1633$ & $0.0672$ & $0.8525$ & $1.0083$ \\
   $0.25$ & $1.28$ & $0.9129$ & $0.9156$ & $0.9847$ & $0.0545$ & $0.5676$ & $0.3668$ \\
   $0.50$ & $1.65$ & $0.9996$ & $0.9995$ & $0.9845$ & $0.0350$ & $0.3132$ & $0.3565$ \\
@@ -748,7 +777,7 @@
   & $\Delta$Var. & $\Delta$Skew. & $\Delta$Kurt.
   & Lap. & MC \\
   \midrule
-  $0.07$ & $1.07$ & $-0.0112$ & $\phantom{-}0.0042$ & $-0.0019$ & $-0.0233$ & $-0.1959$ & $0.10$ & $50.37$ \\
+  $0.066$ & $1.068$ & $-0.0108$ & $\phantom{-}0.0040$ & $-0.0019$ & $-0.0236$ & $-0.1965$ & $0.06$ & $48.67$ \\
   $0.10$ & $1.11$ & $-0.0136$ & $\phantom{-}0.0042$ & $-0.0013$ & $-0.0230$ & $-0.1499$ & $0.10$ & $49.15$ \\
   $0.25$ & $1.28$ & $-0.0026$ & $-0.0001$ & $-0.0007$ & $-0.0054$ & $-0.0563$ & $0.10$ & $48.90$ \\
   $0.50$ & $1.65$ & $\phantom{-}0.0001$ & $-0.0005$ & $-0.0003$ & $-0.0110$ & $-0.0347$ & $0.10$ & $49.11$ \\
@@ -764,16 +793,16 @@
   \begin{itemize}
     \item $\Delta p_{\mathrm{surv}}<0$: MC misses intra-period barrier crossings
     \item Gap largest near $H_0^{\min}$; negligible for larger health buffers
-    \item Runtime: Laplace $\approx0.10$s vs MC $\approx49$--$50$s; about $490\times$ speed-up
+    \item Host-specific runtime: Laplace $\approx0.10$s vs grid-monitored MC $\approx49$--$50$s
   \end{itemize}
 \end{frame}
 
 % ------------------------------------------------------------
-\begin{frame}{Sizing Objective}
+\begin{frame}{Application: Objective-Specific Sizing}
   Choice variable: $h_0=\log H_0$; equivalently initial borrow amount
   \vspace{0.3em}
 
-  Representative objective:
+  One illustrative objective:
   \[
   \begin{aligned}
     \Phi(h_0)
@@ -787,11 +816,64 @@
   \[
     \liq(h_0)=\Pbb(\tau\leq T)
   \]
-  One-dimensional search:
+  Objective-specific selection:
   \[
-    h_0^\star\in\arg\max_{h_0>0}\Phi(h_0)
+    h_0^\star\in\arg\max_{h_0\in\mathcal H(b,\ell_{\max})}\Phi(h_0)
   \]
-  Tradeoff: expected payoff vs variance vs liquidation probability
+  Alternatives use the same evaluation map: a liquidation constraint or unconditional
+  killed-payoff mean--variance. No rule is designated as universally correct.
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Same Engine, Different Selections}
+  \scriptsize
+  Baseline calibration; 200-point grid on $H_0\in[1.068,2.000]$
+  \vspace{0.3em}
+
+  \begin{center}
+    \begin{tabular}{llrrr}
+      \toprule
+      Rule & Parameters & Selected $H_0$ & $L_0$ & $p_{\mathrm{liq}}$ \\
+      \midrule
+      Max.\ leverage under cap & $\bar p=0.05$ & $1.331$ & $2.417$ & $0.0478$ \\
+      Max.\ leverage under cap & $\bar p=0.10$ & $1.274$ & $2.577$ & $0.0980$ \\
+      Max.\ leverage under cap & $\bar p=0.20$ & $1.214$ & $2.799$ & $0.1976$ \\
+      Unconditional killed MV & $\alpha=1$ & $2.000^\dagger$ & $1.639$ & $<10^{-4}$ \\
+      Conditional MV $+$ penalty & $(\alpha,\delta)=(1,0)$ & $1.068^\dagger$ & $3.704$ & $0.6937$ \\
+      Conditional MV $+$ penalty & $(\alpha,\delta)=(1,0.5)$ & $2.000^\dagger$ & $1.639$ & $<10^{-4}$ \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \vspace{0.35em}
+
+  $^\dagger$Candidate-grid endpoint. The selected buffer changes with the rule and
+  preference parameters; no row is a universal recommendation.
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Sampling Uncertainty Is Material}
+  \small
+  Paired circular moving-block bootstrap: 40 recalibrations, 1.5-day blocks,
+  90\% percentile intervals. Downstream rule: maximize $L_0$ subject to
+  $p_{\mathrm{liq}}\leq0.10$ on the same 200-point grid.
+  \vspace{0.6em}
+
+  \begin{center}
+    \begin{tabular}{lrr}
+      \toprule
+      Quantity & Point & 90\% interval \\
+      \midrule
+      $p_{\mathrm{surv}}$ at $H_0=1.274$ & $0.902$ & $[0.483,0.978]$ \\
+      Selected $H_0$ & $1.274$ & $[1.175,1.536]$ \\
+      Selected $L_0$ & $2.577$ & $[2.032,2.974]$ \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \vspace{0.6em}
+
+  \footnotesize Conditional on the Kou model, ECF criterion, preprocessing,
+  protocol terms, block length, and sizing grid; not a model-selection or
+  out-of-sample forecast interval.
 \end{frame}
 
 % ------------------------------------------------------------
@@ -807,16 +889,17 @@
 \begin{frame}{Conclusions and Discussion}
   \begin{itemize}
     \item DeFi long--short $\rightarrow$ collateral/debt first passage
-    \item Central sizing variable: $h_0=\log H_0$
-    \item Kou jump diffusion $\rightarrow$ finite-dimensional semi-analytic moments
-    \item Fast liquidation-aware sizing; no repeated Monte Carlo
+    \item Measure change $\rightarrow$ one-dimensional killed expectations of $Z=X_1-X_2$
+    \item Kou jump diffusion $\rightarrow$ finite-dimensional Laplace resolvent
+    \item Primary output: $h_0\mapsto$ survival and killed-payoff moment characteristics
+    \item Sizing is an objective-specific application of that map
   \end{itemize}
   \vspace{0.8em}
-  \textbf{Ongoing developments}
+  \textbf{Scope limits}
   \begin{itemize}
-    \item Robust empirical example
-    \item Sensitivity analysis: strong drift dependence
-    \item Borrowing- and lending-rate modelling
+    \item Killed-payoff benchmark does not model liquidation recovery
+    \item Static buffer only: no collateral intervention, oracle/keeper delay, or execution cost
+    \item Selected buffers remain objective-, model-, and calibration-dependent
   \end{itemize}
   \vfill
   \begin{center}

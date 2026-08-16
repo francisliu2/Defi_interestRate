@@ -45,8 +45,8 @@ class CharacteristicRootFinder:
         P(s) = [0.5*sigma_Z^2 * s^2 + mu_Z * s - q - lam1 - lam2*M2(k)] * D(s)
              + lam1 * p1  * r1_pos * D_no_r1p(s)
              + lam1 * (1-p1) * r1_neg * D_no_r1n(s)
-             + lam2 * p2  * eta2_pos * D_no_r2n(s)
-             + lam2 * (1-p2) * eta2_neg * D_no_r2p(s)  = 0,
+             + lam2 * p2  * r2_neg * D_no_r2n(s)
+             + lam2 * (1-p2) * r2_pos * D_no_r2p(s)  = 0,
 
     where D_no_X denotes D(s) with the factor containing X removed.
 
@@ -66,10 +66,10 @@ class CharacteristicRootFinder:
         p = dyn.params
         k = dyn.k
 
-        a = dyn.r1_pos   # eta1_pos
-        b = dyn.r1_neg   # eta1_neg
-        c = dyn.r2_pos   # eta2_neg + k
-        d = dyn.r2_neg   # eta2_pos - k
+        a = dyn.r1_pos   # 1 / eta1_pos
+        b = dyn.r1_neg   # 1 / eta1_neg
+        c = dyn.r2_pos   # 1 / eta2_neg + k
+        d = dyn.r2_neg   # 1 / eta2_pos - k
 
         # Linear factors: numpy.poly1d high-to-low convention
         fa = np.array([-1.0, a], dtype=complex)   # (a - s)
@@ -84,7 +84,7 @@ class CharacteristicRootFinder:
         D_no_d  = np.polymul(np.polymul(fa, fb), fc)   # (a-s)(b+s)(c-s)
 
         # M2(k) = p2*(d+k)/d + (1-p2)*(c-k)/c
-        #       = p2*eta2_pos/(eta2_pos-k) + (1-p2)*eta2_neg/(eta2_neg+k)
+        #       = p2/(1-k*eta2_pos) + (1-p2)/(1+k*eta2_neg)
         M2k = p.p2 * (d + k) / d + (1 - p.p2) * (c - k) / c
 
         # Quadratic polynomial: 0.5*sigma_Z^2*s^2 + mu_Z*s + (-q - lam1 - lam2*M2k)
@@ -108,7 +108,8 @@ class CharacteristicRootFinder:
         Parameters
         ----------
         q : complex
-            Laplace parameter. Must be positive real for standard usage.
+            Laplace parameter. The derivation starts at positive real q;
+            production inversion also evaluates complex Talbot nodes.
         tol : float
             Minimum separation between any two roots; raises ValueError if
             any pair is closer than this (root collision / Assumption 4.1 violated).
@@ -116,9 +117,10 @@ class CharacteristicRootFinder:
         Returns
         -------
         SixRoots
-            Named tuple with fields `positive` (Re > 0) and `negative` (Re < 0),
-            each a tuple of 3 complex numbers sorted by descending and ascending
-            real part respectively.
+            Named tuple with rank-labeled fields ``positive`` and ``negative``.
+            For positive real q these agree with the signs of the real parts;
+            at complex contour nodes the three largest-real-part roots retain
+            the positive label and the other three retain the negative label.
 
         Raises
         ------

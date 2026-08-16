@@ -14,13 +14,14 @@ visualisations:
 2. `02_survival_and_integer_moments.ipynb`
    - Run `ConditionalMoments`, `h0_liquidation_moment_report`, and `MonteCarlo`
    - Survival and liquidation probabilities
+   - Objective-independent killed payoff moments
    - Integer-order moment admissibility
    - Conditional variance, skewness, and kurtosis
 
 3. `03_sizing_frontier_and_drift_views.ipynb`
-   - Build reusable sizing-grid and objective helpers from package results
-   - Mean-variance-liquidation frontier
-   - Penalised sizing objective
+   - Build reusable evaluation-grid and decision-rule helpers from package results
+   - Liquidation/moment evaluation frontier
+   - Alternative illustrative, objective-specific buffer rules
    - Price-growth drift scenarios
 
 4. `04_kou_calibration_diagnostics.ipynb`

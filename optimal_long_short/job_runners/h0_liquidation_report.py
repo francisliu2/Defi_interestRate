@@ -55,6 +55,7 @@ def main() -> None:
         T=args.T,
         S10=constraint.get("S10", 1.0),
         S20=constraint.get("S20", 1.0),
+        ltv_max=constraint["ltv_max"],
         max_moment_order=args.moments,
     )
 

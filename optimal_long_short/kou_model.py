@@ -1,7 +1,42 @@
 import cmath
 from dataclasses import dataclass, field
+from numbers import Integral
 
 from optimal_long_short.model_params import KouParams
+
+
+def validate_moment_admissibility(params: KouParams, k: int) -> None:
+    """Validate the positive-jump moment domain for integer order ``k``.
+
+    The ``k``-th killed payoff moment uses both ``M_1(k)`` in the forcing
+    polynomial and ``M_2(k)`` in the exponential change of measure.  Under
+    the mean-parameterized Kou convention, both moment-generating functions
+    are finite only when
+
+        k * eta1_pos < 1  and  k * eta2_pos < 1.
+
+    ``k=0`` is allowed for the untilted survival problem.
+    """
+    if not isinstance(k, Integral) or isinstance(k, bool) or k < 0:
+        raise ValueError(f"k must be a non-negative integer, got {k!r}")
+    if k == 0:
+        return
+
+    violations = []
+    for name, eta_pos in (
+        ("eta1_pos", params.eta1_pos),
+        ("eta2_pos", params.eta2_pos),
+    ):
+        product = k * eta_pos
+        if product >= 1.0:
+            violations.append(f"k * {name} = {product:.6g} >= 1")
+
+    if violations:
+        raise ValueError(
+            "Moment order is not admissible: "
+            + "; ".join(violations)
+            + ". Both k * eta1_pos and k * eta2_pos must be less than 1."
+        )
 
 
 @dataclass
@@ -26,8 +61,8 @@ class BivariateKouModel:
 
     where the Kou characteristic function of asset i's jump is
 
-        phi_Ji(u) = p_i * eta_i_pos / (eta_i_pos - i*u)
-                  + (1 - p_i) * eta_i_neg / (eta_i_neg + i*u).
+        phi_Ji(u) = p_i / (1 - i*u*eta_i_pos)
+                  + (1 - p_i) / (1 + i*u*eta_i_neg).
     """
     params: KouParams
 
@@ -128,18 +163,16 @@ class KouZTiltedDynamics:
     params : KouParams
         Model parameters.
     k : int
-        Tilting order (k=0 for untilted, k=1 or k=2 for moment computations).
-        Requires eta2_pos < 1/k for the tilt to be well-defined.
+        Tilting order (k=0 for survival, any admissible positive integer for
+        a killed payoff moment).
+        Positive orders require both k * eta1_pos < 1 and
+        k * eta2_pos < 1 for the killed payoff moment to be finite.
     """
     params: KouParams
     k: int
 
     def __post_init__(self) -> None:
-        if self.params.eta2_pos >= 1.0 / self.k if self.k > 0 else False:
-            raise ValueError(
-                f"eta2_pos must be less than 1/k for the tilt to be well-defined; "
-                f"got eta2_pos={self.params.eta2_pos}, k={self.k}, 1/k={1.0/self.k}"
-            )
+        validate_moment_admissibility(self.params, self.k)
 
     @staticmethod
     def _mgf_kou(s: complex, pi: float, ep: float, en: float) -> complex:

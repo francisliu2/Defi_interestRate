@@ -3,8 +3,14 @@
 This repository studies leveraged long-short positions on AAVE using a
 bivariate Kou jump-diffusion model.  The current empirical workflow calibrates
 WBTC/WETH dynamics from AAVE v3 Ethereum on-chain data, then uses a
-Laplace-resolvent method to compute liquidation probabilities and conditional
-payoff moments over admissible initial health factors.
+Laplace-resolvent method to compute liquidation probabilities, killed payoff
+moments, and conditional surviving-path moments over admissible initial health
+factors.
+
+The primary contribution is the evaluation engine: survival probabilities and
+killed payoff moments under a ratio barrier. Initial health-buffer sizing is a
+stylized, objective-specific application of those outputs, not a universal
+optimal-leverage rule or a protocol-level trading strategy.
 
 The project has two main parts:
 
@@ -26,9 +32,12 @@ lives under `optimal_long_short/job_runners/` and `optimal_long_short/`.
 |   |-- calibration/               # ECF calibration, initializers, diagnostics
 |   |-- job_runners/               # Implementations behind jobs/*.py
 |   |-- model_params.py            # Kou parameter convention
-|   |-- moments.py                 # Conditional moments
+|   |-- moments.py                 # Survival, killed, and survivor-conditional moments
 |   |-- laplace_resolvent.py       # Laplace-resolvent machinery
 |   |-- risk_report.py             # H0/h0 liquidation reports
+|   |-- sizing.py                  # Explicit objective-specific selection rules
+|   |-- calibration_uncertainty.py # Paired block bootstrap and propagation
+|   |-- numerical_diagnostics.py   # Inversion/root/conditioning/MC diagnostics
 |   `-- drift.py                   # Drift-view helpers and diagnostics
 |-- latex/                         # Paper and generated figures
 |-- results/                       # Calibrated parameter JSON and reports
@@ -94,8 +103,8 @@ The main empirical calibration is WBTC collateral versus WETH borrow:
 
 This reads the latest WBTC and WETH rows from `aave-ts/data/AAVE/manifest.csv`,
 merges their parquet data by block, computes log returns, subtracts an
-exponentially weighted mean, and calibrates bivariate Kou parameters by ECF
-matching.
+exponentially weighted mean, and calibrates bivariate Kou parameters with a
+normalized ECF criterion plus disclosed soft moment/POT anchors.
 
 Outputs:
 
@@ -155,7 +164,31 @@ Run from the repository root.
 
 # CSV report over h0 / H0 grid
 .venv/bin/python jobs/h0_liquidation_report.py
+
+# Compare explicitly parameterized initial-buffer decision rules
+.venv/bin/python jobs/objective_comparison.py
+
+# Talbot/root/conditioning and discrete-monitoring diagnostics
+.venv/bin/python jobs/numerical_diagnostics.py
+
+# Paired moving-block calibration and sizing uncertainty
+.venv/bin/python jobs/calibration_uncertainty.py
 ```
+
+The objective-comparison defaults reproduce
+`results/sizing_objective_comparison.csv` on a 200-point health-factor grid.
+The bootstrap job writes replicate-level estimates, percentile summaries, and
+run metadata to:
+
+```text
+results/calibration_uncertainty_bootstrap.csv
+results/calibration_uncertainty_summary.csv
+results/calibration_uncertainty_metadata.json
+```
+
+These intervals describe sampling variability conditional on the Kou model,
+ECF criterion, return preprocessing, block length, protocol terms, and sizing
+grid. They are not model-selection or out-of-sample forecast intervals.
 
 `frontier_analysis.py` and `sensitivity_analysis.py` load
 `results/params_WBTC_WETH.json` by default, including the same calibrated
@@ -181,6 +214,10 @@ The main paper is:
 ```text
 latex/optimal_long_short.tex
 ```
+
+Its title is *Optimal Sizing of Leveraged Crypto Long--Short Positions under
+Kou Jump-Diffusion via Killed Moments*; DeFi health-buffer sizing is the
+application section.
 
 Build it with:
 

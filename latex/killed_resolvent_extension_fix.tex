@@ -1,0 +1,553 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=30mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,tabularx}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\diff}{\mathrm{d}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\Rea}{\operatorname{Re}}
+
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{A Step-by-Step Repair of the Killed-Resolvent Proof\\
+\large Why the old boundary argument fails and why the corrected one works}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The current paper reaches the right-looking $3\times3$ linear system by using
+one function in two incompatible ways.  It first treats the resolvent as zero
+below the liquidation barrier, but then applies a full-line exponential
+integral to its particular and homogeneous pieces.  This note explains the
+problem using the constant particular solution $1/q$, introduces the required
+notation from scratch, and gives a corrected proof.  The repair is simple in
+principle: a downward jump integral must stop at the barrier.  For an
+exponential term, this truncated integral equals the familiar rational term
+minus one extra exponential term.  The last two rows of the $3\times3$ system
+make these extra terms cancel; the first row imposes absorption at the
+barrier.  The numerical matrix can therefore be retained, but the old
+boundary interpretation must be replaced.
+\end{abstract}
+
+\section{What the proof is trying to calculate}
+
+Fix a moment order $k$ and a time-Laplace variable $q$.  The object of interest
+is the Laplace transform of a payoff that is set to zero after the log health
+factor crosses its liquidation boundary.  In the paper's original coordinate,
+the log-ratio process is denoted by $z$ and liquidation occurs at
+\[
+a:=-h_0.
+\]
+The resolvent is needed only for $z>a$, but the generator contains jump
+integrals whose landing points can lie below $a$.  This is where the boundary
+treatment matters.
+
+It is clearer to measure distance from liquidation.  Define
+\begin{equation}\label{eq:x-definition}
+x:=z-a=z+h_0.
+\end{equation}
+Then $x>0$ means that the position is alive, $x=0$ is the barrier, and $x<0$
+means that a downward jump has crossed the barrier.  Let
+\[
+u(q,x)
+\]
+denote the killed resolvent in this translated coordinate.  Absorption means
+\begin{equation}\label{eq:killed-extension}
+u(q,x)=0,\qquad x\leq0.
+\end{equation}
+
+\section{Why the current proof does not work}
+
+Consider one downward exponential jump phase with rate $r>0$.  If jump size is
+$y>0$, then a jump from $x$ lands at $x-y$.  Applied to the killed function,
+the downward jump operator is
+\begin{equation}\label{eq:old-killed-op}
+K_{r,-}^{D}u(q,x)
+:=\int_0^\infty u(q,x-y)r e^{-ry}\,\diff y
+=\int_0^x u(q,x-y)r e^{-ry}\,\diff y.
+\end{equation}
+The second equality follows from \eqref{eq:killed-extension}: terms with
+$y\geq x$ land at or below zero and contribute nothing.  Hence
+\begin{equation}\label{eq:true-boundary-limit}
+\lim_{x\downarrow0}K_{r,-}^{D}u(q,x)=0.
+\end{equation}
+
+The old proof then writes the interior formula as
+\[
+u(q,x)=P(q,x)+H(q,x),\qquad x>0,
+\]
+where $P$ is a particular solution and $H$ is a sum of characteristic
+exponentials.  It uses linearity to replace
+\eqref{eq:true-boundary-limit} by
+\[
+K_{r,-}[P](0)+K_{r,-}[H](0)=0,
+\]
+and evaluates these two terms using full-line exponential formulas.  That step
+is not valid: $P$ and $H$ have only been introduced as pieces of an
+\emph{interior} formula.  Their exponential formulas extend them to $x<0$,
+whereas the killed function in \eqref{eq:killed-extension} is zero.
+
+\subsection*{The contradiction is visible for the constant $1/q$}
+
+For the survival probability, the particular solution inside the alive region
+is the constant
+\[
+P(q,x)=\frac1q,\qquad x>0.
+\]
+There are now two different calculations:
+\begin{align*}
+\text{killed extension:}\quad
+K_{r,-}^{D}[P](0^+)&=0,\\
+\text{constant extended to the whole line:}\quad
+\int_0^\infty \frac1q r e^{-ry}\,\diff y&=\frac1q.
+\end{align*}
+Both calculations are individually correct, but they concern different
+functions below the barrier.  The old proof uses the first interpretation to
+state the boundary condition and the second interpretation to compute its
+components.  Linearity cannot connect two different extensions.
+
+There is a second problem.  For a characteristic term $e^{\gamma x}$, the
+full-line calculation requires
+\[
+\int_0^\infty e^{-\gamma y}r e^{-ry}\,\diff y<\infty,
+\quad\text{or equivalently}\quad \Rea(\gamma)>-r.
+\]
+Some negative characteristic roots can lie to the left of the pole $-r$.
+Then the integral diverges even though the rational expression
+$r/(r+\gamma)$ is finite.  A proof based on the literal full-line integral
+therefore cannot cover all roots used by the matrix.
+
+The failure is thus not that the final matrix necessarily has the wrong
+numbers.  The failure is that the stated boundary condition does not imply
+those matrix rows by the reasoning given.
+
+\section{Notation for the corrected proof}
+
+The main symbols are collected here before the calculation begins.
+\begin{center}
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{lX}
+\toprule
+Symbol & Meaning \\
+\midrule
+$z$ & Original log-ratio state used in the paper. \\
+$a=-h_0$ & Liquidation boundary in the $z$ coordinate. \\
+$x=z+h_0$ & Distance from the liquidation boundary; the alive region is $x>0$. \\
+$u(q,x)$ & Killed resolvent, set equal to zero for $x\leq0$. \\
+$v(q,x)$ & Exponential formula proposed only on the interior $x>0$. \\
+$r_{d,-}^{(k)}$ & Rate of downward exponential phase $d\in\{1,2\}$ under the $k$-tilted measure. \\
+$\lambda_{d,-}^{(k)}$ & Intensity of downward phase $d$; it is positive. \\
+$K_{r,-}^{D}$ & True killed downward operator; its integral stops at jump size $x$. \\
+$\cL^{(k),D}$ & True generator of the process killed at $x=0$. \\
+$\cL^{(k),\mathrm{rat}}$ & Algebraic ``rational'' operator used to identify particular solutions and characteristic roots. \\
+$C_r[v]$ & Coefficient of the extra $e^{-rx}$ term created by truncating a downward integral. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{The true killed generator}
+
+Fix a tilt order $k$.  Under the $k$-tilted measure, the log-ratio process has
+two upward exponential jump phases and two downward exponential jump phases.
+Index upward phases by $a\in\{1,2\}$ and downward phases by
+$d\in\{1,2\}$.  Write their positive intensities as
+$\lambda_{a,+}^{(k)}$ and $\lambda_{d,-}^{(k)}$, and their positive rates as
+$r_{a,+}^{(k)}$ and $r_{d,-}^{(k)}$.  The exact intensity formulas are not
+needed for the boundary argument; positivity and the two distinct downward
+rates are what matter.
+
+More explicitly, phase 1 comes from jumps of asset 1 and phase 2 from jumps of
+asset 2.  Since $Z=X_1-X_2$, a negative jump of asset 2 is an upward jump of
+$Z$, while a positive jump of asset 2 is a downward jump of $Z$.  The rates
+and intensities are
+\begin{align*}
+r_{1,+}^{(k)}&=\frac1{\eta_{1,+}},
+&\lambda_{1,+}^{(k)}&=\lambda_1p_1,\\
+r_{2,+}^{(k)}&=\frac1{\eta_{2,-}}+k,
+&\lambda_{2,+}^{(k)}&=\frac{\lambda_2(1-p_2)}{1+k\eta_{2,-}},\\
+r_{1,-}^{(k)}&=\frac1{\eta_{1,-}},
+&\lambda_{1,-}^{(k)}&=\lambda_1(1-p_1),\\
+r_{2,-}^{(k)}&=\frac1{\eta_{2,+}}-k,
+&\lambda_{2,-}^{(k)}&=\frac{\lambda_2p_2}{1-k\eta_{2,+}}.
+\end{align*}
+The condition $k\eta_{2,+}<1$ makes the last rate and intensity positive.
+
+For a function defined on $x>0$, the generator of the killed process is
+\begin{align}
+\cL^{(k),D}f(x)
+={}&\mu^{(k)}f'(x)+\frac{\sigma_Z^2}{2}f''(x)
+ +\sum_{a=1}^2\lambda_{a,+}^{(k)}
+       \bigl(K_{a,+}^{(k)}f(x)-f(x)\bigr) \notag\\
+&+\sum_{d=1}^2\lambda_{d,-}^{(k)}
+       \bigl(K_{d,-}^{(k),D}f(x)-f(x)\bigr),
+\qquad x>0.                                      \label{eq:killed-generator}
+\end{align}
+Here all phase intensities are positive, and
+\begin{align}
+K_{a,+}^{(k)}f(x)
+&:=\int_0^\infty f(x+y)r_{a,+}^{(k)}e^{-r_{a,+}^{(k)}y}\,\diff y,
+                                                        \label{eq:up-op}\\
+K_{d,-}^{(k),D}f(x)
+&:=\int_0^x f(x-y)r_{d,-}^{(k)}e^{-r_{d,-}^{(k)}y}\,\diff y.
+                                                        \label{eq:down-killed}
+\end{align}
+The upper limit $x$ in \eqref{eq:down-killed} is essential: a downward jump
+larger than $x$ crosses the liquidation barrier, where the payoff is zero.
+
+The drift $\mu^{(k)}$ and diffusion variance $\sigma_Z^2$ are the corresponding
+tilted quantities.  In particular, $\sigma_Z>0$ means that absorption requires
+the ordinary boundary condition $u(q,0)=0$.
+
+The paper's rational characteristic function $\psi_Z^{(k)}(\beta)$ is useful,
+but it must be interpreted carefully.  It is obtained by replacing each phase
+operator acting on $e^{\beta x}$ by a rational multiplier.  It is an algebraic
+device for finding exponentials that solve the interior equation.  It is not
+the result of applying the killed operator at the boundary.
+
+\section{The missing truncation identity}
+
+\begin{lemma}[Truncated downward phase]\label{lem:truncated}
+Let $r>0$ and let $\beta\in\mathbb{C}\setminus\{-r\}$.  On $x>0$,
+\begin{equation}\label{eq:truncated-exp}
+\int_0^x e^{\beta(x-y)}r e^{-ry}\,\diff y
+=\frac{r}{r+\beta}e^{\beta x}
+ -\frac{r}{r+\beta}e^{-rx}.
+\end{equation}
+The identity holds for every such $\beta$; no condition
+$\Rea(\beta)>-r$ is required because the integral is over the finite interval
+$[0,x]$.
+\end{lemma}
+
+\begin{proof}
+Direct integration gives
+\[
+e^{\beta x}r\int_0^x e^{-(r+\beta)y}\,\diff y
+=e^{\beta x}\frac{r}{r+\beta}
+  \bigl(1-e^{-(r+\beta)x}\bigr),
+\]
+which is \eqref{eq:truncated-exp}.
+\end{proof}
+
+For a finite exponential sum
+\[
+v(x)=\sum_{\beta\in\mathcal E}a_\beta e^{\beta x},
+\]
+define its \emph{truncation-correction coefficient}
+\begin{equation}\label{eq:phase-functional}
+C_r[v]
+:=\sum_{\beta\in\mathcal E}a_\beta\frac{r}{r+\beta}.
+\end{equation}
+This is simply a number calculated from the coefficients of the interior
+formula $v$.  It is not the value of a jump integral at the boundary.
+Lemma~\ref{lem:truncated} gives
+\begin{equation}\label{eq:phase-decomposition}
+K_{r,-}^{D}v(x)
+=\sum_{\beta\in\mathcal E}
+  a_\beta\frac{r}{r+\beta}e^{\beta x}
+ -C_r[v]e^{-rx}.
+\end{equation}
+The first term is the expression produced by the rational calculation used in
+the paper.  The second term is what that calculation omits when jumps crossing
+the barrier are killed.  This omitted term is the key to the repair.
+
+For example, if $v(x)=1/q$, then $C_r[v]=1/q$ and
+\begin{equation}\label{eq:constant-truncated}
+K_{r,-}^{D}v(x)=\frac1q-\frac1q e^{-rx}.
+\end{equation}
+This tends to zero as $x\downarrow0$, as it must.  The old proof kept the first
+$1/q$ but did not explicitly derive the cancelling second term.
+
+\section{The proposed repair}
+
+The proposal has four steps.
+\begin{enumerate}
+\item Work only on the alive half-line $x>0$.
+\item Use the rational equation to construct an interior candidate $v(q,x)$.
+\item Apply the \emph{true truncated} downward operators to this candidate.
+This produces two extra terms, one proportional to
+$e^{-r_{1,-}^{(k)}x}$ and one proportional to
+$e^{-r_{2,-}^{(k)}x}$.
+\item Choose the three homogeneous coefficients so that the value at the
+barrier is zero and both extra terms vanish.
+\end{enumerate}
+
+The next proposition carries out these steps.
+
+Let $k\geq1$ be the integer moment order, let $b\in(0,1)$ be the liquidation
+threshold parameter, and let $q$ be the time-Laplace variable.  Translation
+removes $h_0$ from the forcing:
+\[
+G_k(x):=(e^x-b)^k
+=\sum_{j=0}^k d_{k,j}e^{jx},
+\qquad
+d_{k,j}:=\binom{k}{j}(-b)^{k-j}.
+\]
+Assume that all exponentials in the forcing are in the positive-moment
+domain.  In the bivariate Kou model this requires, in particular,
+\begin{equation}\label{eq:moment-domain}
+k\eta_{1,+}<1,
+\qquad
+k\eta_{2,+}<1.
+\end{equation}
+The second condition makes the $k$-tilt well defined; the first ensures that
+the long-leg exponential moments and $\psi_Z^{(k)}(j)$ for $j\leq k$ are
+finite.
+
+Let $q$ initially lie to the right of the time-Laplace abscissa of convergence
+and suppose $q\neq\psi_Z^{(k)}(j)$ for $j=0,\ldots,k$.  Define the algebraic
+particular solution
+\begin{equation}\label{eq:particular}
+P_k(q,x):=
+\sum_{j=0}^k
+\frac{d_{k,j}}{q-\psi_Z^{(k)}(j)}e^{jx}.
+\end{equation}
+Suppose the rational characteristic equation
+\[
+\psi_Z^{(k)}(\gamma)=q
+\]
+has three simple roots $\gamma_4,\gamma_5,\gamma_6$ with negative real part,
+none equal to a phase pole.  Consider
+\begin{equation}\label{eq:interior-ansatz}
+v_k(q,x):=P_k(q,x)+\sum_{m=4}^6B_m^{(k)}(q)e^{\gamma_m(q)x},
+\qquad x>0.
+\end{equation}
+
+\begin{proposition}[Correct barrier conditions]\label{prop:correct}
+Assume $\sigma_Z>0$ and
+$r_{1,-}^{(k)}\neq r_{2,-}^{(k)}$.  The function
+\begin{equation}\label{eq:killed-candidate}
+\widehat U_k(q,x):=
+\begin{cases}
+v_k(q,x),&x>0,\\
+0,&x\leq0,
+\end{cases}
+\end{equation}
+solves
+\begin{equation}\label{eq:killed-resolvent}
+(q-\cL^{(k),D})\widehat U_k(q,x)=G_k(x),
+\qquad x>0,
+\end{equation}
+with an absorbing boundary if and only if
+\begin{equation}\label{eq:three-conditions}
+v_k(q,0)=0,
+\qquad
+C_{r_{1,-}^{(k)}}[v_k]=0,
+\qquad
+C_{r_{2,-}^{(k)}}[v_k]=0.
+\end{equation}
+These conditions give the $3\times3$ system
+\begin{equation}\label{eq:matrix-system}
+\begin{pmatrix}
+1&1&1\\[5pt]
+\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_4}&
+\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_5}&
+\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_6}\\[11pt]
+\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_4}&
+\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_5}&
+\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_6}
+\end{pmatrix}
+\begin{pmatrix}B_4^{(k)}\\B_5^{(k)}\\B_6^{(k)}\end{pmatrix}
+=-
+\begin{pmatrix}
+P_k(q,0)\\[3pt]
+C_{r_{1,-}^{(k)}}[P_k]\\[3pt]
+C_{r_{2,-}^{(k)}}[P_k]
+\end{pmatrix},
+\end{equation}
+where
+\begin{equation}\label{eq:particular-functional}
+C_r[P_k]
+=\sum_{j=0}^k
+\frac{d_{k,j}}{q-\psi_Z^{(k)}(j)}\frac{r}{r+j}.
+\end{equation}
+Thus \eqref{eq:matrix-system} is algebraically the same system as in the
+paper, after substituting $x=z+h_0$.
+\end{proposition}
+
+\begin{proof}
+Apply the killed generator \eqref{eq:killed-generator} to the interior ansatz
+\eqref{eq:interior-ansatz}.  Upward phase integrals are not truncated by the
+lower barrier.  For the positive forcing exponents they converge under
+\eqref{eq:moment-domain}; for the negative characteristic roots they converge
+automatically.  Their action is therefore the usual rational-symbol action.
+
+For each downward phase, use \eqref{eq:phase-decomposition}.  Define
+$\cL^{(k),\mathrm{rat}}$ to be the algebraic operator that keeps the first
+term in \eqref{eq:phase-decomposition} but not its truncation correction.  It
+is exactly the operator represented by the rational function
+$\psi_Z^{(k)}$.  For $x>0$,
+\begin{equation}\label{eq:operator-correction}
+\cL^{(k),D}v_k(x)
+=\cL^{(k),\mathrm{rat}}v_k(x)
+-\sum_{d=1}^2\lambda_{d,-}^{(k)}
+  C_{r_{d,-}^{(k)}}[v_k]e^{-r_{d,-}^{(k)}x}.
+\end{equation}
+By construction of $P_k$ and the characteristic roots,
+\[
+(q-\cL^{(k),\mathrm{rat}})v_k(x)=G_k(x).
+\]
+It follows from \eqref{eq:operator-correction} that
+\begin{align}
+(q-\cL^{(k),D})v_k(x)
+=G_k(x)
+ +\sum_{d=1}^2\lambda_{d,-}^{(k)}
+  C_{r_{d,-}^{(k)}}[v_k]e^{-r_{d,-}^{(k)}x}.
+                                                        \label{eq:residual}
+\end{align}
+Because the two rates are distinct and their intensities are positive, the
+two extra exponentials are linearly independent.  They cannot cancel each
+other for every $x>0$.  Equation \eqref{eq:killed-resolvent} therefore holds
+exactly if and only if each correction coefficient is zero:
+\[
+C_{r_{1,-}^{(k)}}[v_k]=C_{r_{2,-}^{(k)}}[v_k]=0.
+\]
+
+Since $\sigma_Z>0$, the lower boundary is regular for the Brownian component
+and killing imposes the Dirichlet condition $v_k(q,0)=0$.  These are the three
+conditions in \eqref{eq:three-conditions}.  Applying them to
+\eqref{eq:interior-ansatz} gives \eqref{eq:matrix-system} and
+\eqref{eq:particular-functional}.  Standard uniqueness of the killed
+resolvent in the relevant exponential-growth class then identifies the
+candidate with the probabilistic resolvent.
+\end{proof}
+
+\section{Survival probability}
+
+For survival, set $k=0$ and $G_0\equiv1$.  The algebraic particular solution
+is $P_0=1/q$, hence
+\[
+P_0(0)=\frac1q,
+\qquad
+C_r[P_0]=\frac1q.
+\]
+The right-hand side of the survival system is therefore
+$-(1/q,1/q,1/q)^\top$, exactly as in the paper.  The correct explanation is
+not that the downward convolution of the killed resolvent at the barrier is
+$1/q$; it is that the constant \emph{interior particular solution} produces a
+barrier-truncation residual of size $(1/q)e^{-rx}$, which the homogeneous
+terms must cancel.
+
+\section{Why the proposal works while the old argument does not}
+
+There are five concrete differences.
+\begin{enumerate}
+\item \emph{Below the barrier.}  The current proof uses the zero extension
+when stating the boundary condition, but full-line exponential extensions when
+evaluating its pieces.  The corrected proof never extends the interior
+candidate below the barrier.
+
+\item \emph{The constant particular solution.}  The current proof combines a
+zero killed-boundary integral with the full-line identity $K[1/q]=1/q$.  The
+corrected proof instead derives
+\[
+K^D[1/q](x)=q^{-1}(1-e^{-rx}),
+\]
+which tends to zero at the barrier without contradiction.
+
+\item \emph{Roots beyond a phase pole.}  The full-line integral can diverge
+when $\Rea(\gamma)\leq-r$.  The corrected integral is over the finite interval
+$[0,x]$ and is valid for every $\gamma\neq-r$.
+
+\item \emph{Meaning of the matrix.}  The current proof presents the last two
+rows as jump-operator values at the boundary.  The corrected proof shows that
+they cancel the coefficients of the two omitted functions
+$e^{-r_{1,-}^{(k)}x}$ and $e^{-r_{2,-}^{(k)}x}$.
+
+\item \emph{Direct verification.}  The corrected proof substitutes the
+candidate into the true generator with truncated downward jumps.  The result
+is the desired forcing plus two explicit error terms, and the matrix makes
+both errors zero.
+\end{enumerate}
+
+The corrected proof works for a concrete reason that can be checked line by
+line.  Start with the interior candidate $v_k$.  The rational construction
+guarantees
+\[
+(q-\cL^{(k),\mathrm{rat}})v_k=G_k.
+\]
+The true killed generator differs from the rational calculation only by the
+two truncation terms displayed in \eqref{eq:operator-correction}.  Therefore
+substitution into the true equation gives
+\[
+(q-\cL^{(k),D})v_k
+=G_k
++\lambda_{1,-}^{(k)}C_{r_{1,-}^{(k)}}[v_k]e^{-r_{1,-}^{(k)}x}
++\lambda_{2,-}^{(k)}C_{r_{2,-}^{(k)}}[v_k]e^{-r_{2,-}^{(k)}x}.
+\]
+The second and third matrix rows set the two $C$ coefficients to zero, so the
+candidate satisfies the true killed PIDE on every $x>0$.  The first row gives
+$v_k(q,0)=0$, so it also satisfies absorption.  Finally, uniqueness of the
+killed resolvent identifies this verified candidate with the probabilistic
+expectation.  Unlike the old proof, no step changes the function being used
+below the barrier.
+
+\section{Translation back to the paper's notation}
+
+The original paper works in $z$ and writes
+\[
+c_{k,j}(h_0)e^{jz}
+=\binom{k}{j}(-b)^{k-j}e^{jh_0}e^{jz}.
+\]
+At $x=z+h_0$, this becomes simply $d_{k,j}e^{jx}$.  Evaluation at the initial
+state $z=0$ corresponds to $x=h_0$, so
+\begin{equation}\label{eq:evaluate-initial}
+\widehat U_k(q,0;h_0)
+=P_k(q,h_0)+\sum_{m=4}^6B_m^{(k)}(q)e^{\gamma_m(q)h_0}.
+\end{equation}
+This also shows that, after translation, the barrier coefficients $B_m^{(k)}$
+do not depend on $h_0$; the initial buffer enters only through evaluation at
+$x=h_0$.
+
+\section{Replacement guidance for the manuscript}
+
+The revised paper should make the following changes.
+\begin{enumerate}
+\item Translate the barrier to zero with $x=z+h_0$ before deriving the
+resolvent.
+\item Define the killed downward operator with upper limit $x$, as in
+\eqref{eq:down-killed}.
+\item Replace the claim
+``$K_{d,-}[\widehat U](0^+)=0$ and linearity gives conditions on the
+particular and homogeneous pieces'' by Lemma~\ref{lem:truncated} and the
+residual calculation \eqref{eq:residual}.
+\item Call $C_r[v]$ a truncation-correction coefficient.  Do not identify it
+with the value of the killed jump operator at the boundary.
+\item State the additional long-leg moment condition $k\eta_{1,+}<1$.
+\item Initially derive the time-Laplace transform for $q$ to the right of its
+abscissa of convergence.  Treat continuation to the complex Talbot contour as
+a separate numerical-analytic step.
+\end{enumerate}
+
+\begin{remark}[Coincident downward rates]
+If $r_{1,-}^{(k)}=r_{2,-}^{(k)}$, the two downward exponential kernels combine
+into a single phase.  The two residual functions in \eqref{eq:residual} are
+then identical, so one should reduce the rational symbol and solve the
+lower-dimensional system.  Describing this case only as a singular
+$3\times3$ matrix obscures the probabilistic reason for the degeneracy.
+\end{remark}
+
+\section{Conclusion}
+
+The original $3\times3$ coefficients can survive the correction, but the
+boundary proof cannot.  The matrix rows involving
+$r/(r+\gamma)$ are cancellation conditions for barrier-truncation residuals,
+not values of the killed phase operator at the barrier.  This distinction
+removes the extension inconsistency and remains valid for characteristic
+roots lying beyond a downward phase pole, where the full-line convolution
+interpretation is unavailable.
+
+\end{document}

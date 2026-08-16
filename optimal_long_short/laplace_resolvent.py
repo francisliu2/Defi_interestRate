@@ -12,8 +12,12 @@ from optimal_long_short.strategy import UnitExposureLongShortStrategy
 @dataclass
 class ParticularSolution:
     """
-    Particular solution to the resolvent equation (q - L^(k)) U = g_k(z; h0)
-    on the survival domain z > -h0.
+    Algebraic particular solution for the rational-symbol resolvent equation.
+
+    The true killed downward jump operators are truncated at the barrier.  The
+    exponential ansatz below solves the corresponding rational-symbol equation;
+    the barrier system cancels the truncation residuals so that the completed
+    solution solves the killed resolvent on ``z > -h0``.
 
     Because b in (0,1) and z > -h0 imply e^{h0+z} > 1 > b, the payoff kernel
 
@@ -29,9 +33,8 @@ class ParticularSolution:
 
         U_part(q, z; h0) = sum_{j=0}^{k} c_{k,j}(h0) / (q - psi_Z^(k)(j)) * e^{j*z}.
 
-    Applying the downward phase operator K_{j,-}^(k) at z = -h0
-    (using eq. (6): K_{j,-}^(k)[e^{gamma*z}](z) = r/(r+gamma) * e^{gamma*z})
-    gives the entries of the forcing vector b^(k) in the barrier linear system:
+    The downward-phase truncation-correction functional at the translated
+    barrier gives the last two entries of the forcing vector ``b^(k)``:
 
         K_{r,-}[U_part](-h0) = sum_{j=0}^{k} c_{k,j} / (q - psi(j))
                                               * r / (r + j) * e^{-j*h0}.
@@ -41,7 +44,7 @@ class ParticularSolution:
     dynamics : KouZTiltedDynamics
         Lévy exponent and phase rates of Z under P^(2,k).
     strategy : UnitExposureLongShortStrategy
-        Supplies h0 and the collateral factor b.
+        Supplies h0 and the liquidation-threshold weight b.
     """
     dynamics: KouZTiltedDynamics
     strategy: UnitExposureLongShortStrategy
@@ -100,10 +103,14 @@ class ParticularSolution:
 
     def phase_op_neg_at_barrier(self, q: complex, phase_rate: float) -> complex:
         """
-        Apply the downward phase operator K_{-}^(k) with rate r to U_part at z = -h0.
+        Evaluate the downward-phase truncation-correction coefficient.
 
-            K_{r,-}[U_part](-h0) = sum_j c_{k,j} / (q - psi(j))
-                                           * r / (r + j) * exp(-j * h0).
+            C_r[U_part] = sum_j c_{k,j} / (q - psi(j))
+                                  * r / (r + j) * exp(-j * h0).
+
+        This is not the value of the killed downward jump integral at the
+        barrier (that integral is zero); it is the coefficient of the
+        exponential residual created by truncating the jump operator.
 
         Parameters
         ----------
@@ -129,8 +136,8 @@ class ParticularSolution:
         M_bar * B = -b^(k):
 
             b^(k) = [U_part(-h0),
-                     K_{r1_neg,-}[U_part](-h0),
-                     K_{r2_neg,-}[U_part](-h0)].
+                     C_{r1_neg}[U_part],
+                     C_{r2_neg}[U_part]].
 
         Returns
         -------

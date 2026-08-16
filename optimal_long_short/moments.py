@@ -1,10 +1,15 @@
 from dataclasses import dataclass
+import math
 from typing import Callable
 
 import numpy as np
 
 from optimal_long_short.inversion import LaplaceInverter, TalbotInverter
-from optimal_long_short.kou_model import BivariateKouModel, KouZTiltedDynamics
+from optimal_long_short.kou_model import (
+    BivariateKouModel,
+    KouZTiltedDynamics,
+    validate_moment_admissibility,
+)
 from optimal_long_short.laplace_resolvent import (
     GeneralSolution,
     HomogeneousSolution,
@@ -31,10 +36,12 @@ class SurvivalResolvent:
         U_surv(q, z) = 0,                z <= -h0.
 
     Particular solution:  U_part = 1/q  (since psi_Z^(0)(0) = 0).
-    Homogeneous solution: same three negative-root modes as the payoff case.
-    Boundary system:      same M_bar structure with k=0 phase rates, and
-                          forcing vector b = (1/q, 1/q, 1/q) because
-                          K_{j,-}^(0)[1/q](-h0) = 1/q.
+    Homogeneous solution: three negative-root modes generically, reduced to
+                          two when the downward phase rates coincide.
+    Boundary system:      the corresponding 3x3 or 2x2 M_bar structure with
+                          constant forcing entries 1/q. These entries are
+                          truncation-correction coefficients; the killed
+                          downward integral itself is zero at the barrier.
 
     Parameters
     ----------
@@ -52,28 +59,56 @@ class SurvivalResolvent:
                 f"SurvivalResolvent requires k=0, got k={self.dynamics.k}"
             )
 
-    def _barrier_matrix(self, q: complex) -> np.ndarray:
-        neg_roots = CharacteristicRootFinder(self.dynamics).find(q).negative
+    @property
+    def _degenerate(self) -> bool:
+        """Whether the two downward phase rates coincide."""
         dyn = self.dynamics
-        M = np.zeros((3, 3), dtype=complex)
+        return abs(dyn.r1_neg - dyn.r2_neg) < 1e-8
+
+    def _genuine_negative_roots(self, q: complex) -> tuple:
+        """
+        Return three negative modes generically and two when phase rates coincide.
+
+        In the coincident-rate case the polynomial used by the root finder has
+        a removable factor at the shared pole.  The root nearest that pole is
+        therefore discarded before the reduced barrier system is assembled.
+        """
+        neg_roots = list(CharacteristicRootFinder(self.dynamics).find(q).negative)
+        if not self._degenerate:
+            return tuple(neg_roots)
+
+        shared_rate = self.dynamics.r1_neg
+        spurious_idx = int(
+            np.argmin([abs(gamma + shared_rate) for gamma in neg_roots])
+        )
+        return tuple(
+            gamma for idx, gamma in enumerate(neg_roots) if idx != spurious_idx
+        )
+
+    def _barrier_matrix(self, q: complex) -> np.ndarray:
+        neg_roots = self._genuine_negative_roots(q)
+        dyn = self.dynamics
+        n_modes = len(neg_roots)
+        M = np.zeros((n_modes, n_modes), dtype=complex)
         for m, gamma in enumerate(neg_roots):
             M[0, m] = 1.0
             M[1, m] = dyn.r1_neg / (dyn.r1_neg + gamma)
-            M[2, m] = dyn.r2_neg / (dyn.r2_neg + gamma)
+            if n_modes == 3:
+                M[2, m] = dyn.r2_neg / (dyn.r2_neg + gamma)
         return M
 
     def coefficients(self, q: complex) -> np.ndarray:
-        """Solve M_bar * C = -(1/q, 1/q, 1/q) and return C = (C1, C2, C3)."""
+        """Solve the generic 3x3 or coincident-rate 2x2 barrier system."""
         M = self._barrier_matrix(q)
-        b = np.array([1.0 / q, 1.0 / q, 1.0 / q], dtype=complex)
+        b = np.full(M.shape[0], 1.0 / q, dtype=complex)
         return np.linalg.solve(M, -b)
 
     def evaluate_at_origin(self, q: complex) -> complex:
         """
-        U_surv(q, 0; h0) = 1/q + sum_{m=1}^{3} C_m * exp(gamma_{m+3} * h0).
+        U_surv(q, 0; h0) = 1/q + sum_m C_m * exp(gamma_m * h0).
         """
         C = self.coefficients(q)
-        neg_roots = CharacteristicRootFinder(self.dynamics).find(q).negative
+        neg_roots = self._genuine_negative_roots(q)
         h0 = self.strategy.h0
         result = 1.0 / q
         for Cm, gamma in zip(C, neg_roots):
@@ -88,9 +123,9 @@ class SurvivalResolvent:
 @dataclass
 class KilledMoments:
     """
-    Computes the killed moments m_k(T; h0) = E^{(2,k)}[g_k(Z_T) 1_{tau > T}]
-    for k = 1, 2 and the survival probability p_surv(T, 0; h0) via Laplace
-    inversion of the respective resolvents.
+    Computes the killed moment m_k(T; h0) = E^{(2,k)}[g_k(Z_T) 1_{tau > T}]
+    for any fixed admissible positive integer k, and the survival probability
+    p_surv(T, 0; h0), by Laplace inversion of the respective resolvents.
 
     Parameters
     ----------
@@ -122,15 +157,40 @@ class KilledMoments:
         Parameters
         ----------
         k : int
-            Moment order, 1 or 2.
+            Any admissible positive integer moment order.
 
         Returns
         -------
         float
         """
+        validate_moment_admissibility(self.params, k)
+        if k == 0:
+            raise ValueError("m requires a positive integer moment order, got 0")
         sol = self._general_solution(k)
+        dynamics = sol.particular.dynamics
+        forcing_poles = [float(np.real(dynamics(j))) for j in range(k + 1)]
+        abscissa = max(forcing_poles)
+        if not math.isfinite(abscissa):
+            raise ValueError(
+                f"Killed-moment Laplace abscissa must be finite, got {abscissa}"
+            )
+
         F: Callable[[complex], complex] = lambda q: sol.evaluate_at_origin(q)
-        return self.inverter.invert(F, self.strategy.T)
+        if abscissa <= 0.0:
+            return self.inverter.invert(F, self.strategy.T)
+
+        # Move every forcing pole into the left half-plane before numerical
+        # inversion.  If G(q)=F(q+a), then L^{-1}[G](T)=exp(-aT)f(T).
+        # A margin of 1/T leaves the rightmost shifted pole at -1/T and avoids
+        # silently applying an unshifted Talbot contour to a growing moment.
+        shift = abscissa + 1.0 / self.strategy.T
+        shifted_F: Callable[[complex], complex] = (
+            lambda q: sol.evaluate_at_origin(q + shift)
+        )
+        return math.exp(shift * self.strategy.T) * self.inverter.invert(
+            shifted_F,
+            self.strategy.T,
+        )
 
     def p_surv(self) -> float:
         """
@@ -209,6 +269,9 @@ class ConditionalMoments:
         """
         E[Pi_T^k * 1_{tau > T}] = scale_k * A_k * m_k(T; h0).
         """
+        validate_moment_admissibility(self.params, k)
+        if k == 0:
+            raise ValueError("killed_moment requires a positive integer order, got 0")
         return self._scale(k) * self._A(k) * self._km.m(k)
 
     def p_surv(self) -> float:
@@ -232,15 +295,15 @@ class ConditionalMoments:
         """
         E[Pi_T^k | tau > T] for any k >= 1.
 
-        Uses the Laplace-resolvent for k=1,2 (and k=3,4 where the resolvent
-        remains valid).  The k=4 degenerate case (r1_neg == r2_neg) is handled
-        automatically by HomogeneousSolution via the 2x2 barrier system.
+        Uses the same Laplace-resolvent construction for each admissible
+        positive integer order. Coincident downward phase rates are handled
+        by ``HomogeneousSolution`` through the reduced 2x2 barrier system.
 
         Parameters
         ----------
         k : int
-            Moment order.  Requires k * eta2_pos < 1 for the tilt to be
-            well-defined, and q > k/a for the GB2 moment to exist.
+            Moment order. Requires both k * eta1_pos < 1 and
+            k * eta2_pos < 1 for the killed payoff moment to be finite.
 
         Returns
         -------

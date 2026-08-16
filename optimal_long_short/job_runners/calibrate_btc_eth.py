@@ -81,7 +81,7 @@ EWM_DEMEAN_SPAN = 30
 
 # Calibration bounds: use a broad search box for empirical 4h data.  The only
 # hard economic/numerical constraint kept here is the moment-admissibility cap
-# on eta2_pos implied by max_moment_order.
+# on both positive-jump means implied by max_moment_order.
 CALIB_BOUNDS = ParameterBounds(
     max_moment_order=4,
     lambda_max=5000.0,

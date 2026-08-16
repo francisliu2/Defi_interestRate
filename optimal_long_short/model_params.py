@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass, field
 
 
@@ -38,7 +39,7 @@ class KouParams:
     sigma1: float    # volatility of X_1
     lam1: float      # jump intensity of X_1
     p1: float        # probability of an upward jump in X_1
-    eta1_pos: float  # mean of upward jump size in X_1  (eta_{1,+}; requires < 1)
+    eta1_pos: float  # mean upward jump size (also requires < 1/k for moment order k)
     eta1_neg: float  # mean of downward jump size in X_1 (eta_{1,-})
 
     # --- Asset 2 ---
@@ -46,7 +47,7 @@ class KouParams:
     sigma2: float    # volatility of X_2
     lam2: float      # jump intensity of X_2
     p2: float        # probability of an upward jump in X_2
-    eta2_pos: float  # mean of upward jump size in X_2  (eta_{2,+}; requires < 1/k for tilt order k)
+    eta2_pos: float  # mean upward jump size (also requires < 1/k for moment order k)
     eta2_neg: float  # mean of downward jump size in X_2 (eta_{2,-})
 
     # --- Correlation ---
@@ -59,6 +60,35 @@ class KouParams:
     muX2: float = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        values = {
+            name: getattr(self, name)
+            for name in (
+                "mu1", "sigma1", "lam1", "p1", "eta1_pos", "eta1_neg",
+                "mu2", "sigma2", "lam2", "p2", "eta2_pos", "eta2_neg", "rho",
+            )
+        }
+        nonfinite = [name for name, value in values.items() if not math.isfinite(value)]
+        if nonfinite:
+            raise ValueError(f"Kou parameters must be finite; invalid: {', '.join(nonfinite)}")
+        for index in (1, 2):
+            sigma = getattr(self, f"sigma{index}")
+            intensity = getattr(self, f"lam{index}")
+            probability = getattr(self, f"p{index}")
+            eta_pos = getattr(self, f"eta{index}_pos")
+            eta_neg = getattr(self, f"eta{index}_neg")
+            if sigma <= 0.0:
+                raise ValueError(f"sigma{index} must be positive, got {sigma}")
+            if intensity <= 0.0:
+                raise ValueError(f"lam{index} must be positive, got {intensity}")
+            if not 0.0 < probability < 1.0:
+                raise ValueError(f"p{index} must lie in (0, 1), got {probability}")
+            if not 0.0 < eta_pos < 1.0:
+                raise ValueError(f"eta{index}_pos must lie in (0, 1), got {eta_pos}")
+            if eta_neg <= 0.0:
+                raise ValueError(f"eta{index}_neg must be positive, got {eta_neg}")
+        if not -1.0 < self.rho < 1.0:
+            raise ValueError(f"rho must lie in (-1, 1), got {self.rho}")
+
         # chi_i = E[exp(J_i) - 1] = M_i(1) - 1
         chi1 = self.p1 / (1.0 - self.eta1_pos) + (1.0 - self.p1) / (1.0 + self.eta1_neg) - 1.0
         chi2 = self.p2 / (1.0 - self.eta2_pos) + (1.0 - self.p2) / (1.0 + self.eta2_neg) - 1.0

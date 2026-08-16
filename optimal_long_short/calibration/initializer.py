@@ -126,7 +126,9 @@ def pot_init_one_asset(
 
     eta_pos = float(np.mean(exc_pos)) if n_pos > 0 else 0.05
     eta_neg = float(np.mean(exc_neg)) if n_neg > 0 else 0.05
-    eta_pos = float(np.clip(eta_pos, bounds.eta_pos1_min, bounds.eta_pos1_max))
+    eta_pos = float(
+        np.clip(eta_pos, bounds.eta_pos1_min, bounds.eta_pos1_admissible_max)
+    )
     eta_neg = float(np.clip(eta_neg, bounds.eta_neg_min, bounds.eta_neg_max))
 
     lam_pos_exc = n_pos / (N * dt)
@@ -300,6 +302,7 @@ def build_multistart_cloud(
     starts = np.empty((n_starts, 13))
     starts[0] = nat_to_unc(theta_nat, bounds)
 
+    eta1_max = bounds.eta_pos1_admissible_max
     eta2_max = bounds.eta_pos2_max
     mu1, s1, l1, p1, ep1, en1, mu2, s2, l2, p2, ep2, en2, rho = theta_nat
 
@@ -309,7 +312,7 @@ def build_multistart_cloud(
         sq = float(np.sqrt(c))
         l1_r  = float(np.clip(l1  * c,   bounds.lambda_min,  bounds.lambda_max))
         l2_r  = float(np.clip(l2  * c,   bounds.lambda_min,  bounds.lambda_max))
-        ep1_r = float(np.clip(ep1 / sq,  bounds.eta_pos1_min, bounds.eta_pos1_max))
+        ep1_r = float(np.clip(ep1 / sq,  bounds.eta_pos1_min, eta1_max))
         en1_r = float(np.clip(en1 / sq,  bounds.eta_neg_min,  bounds.eta_neg_max))
         ep2_r = float(np.clip(ep2 / sq,  bounds.eta_pos2_min, eta2_max))
         en2_r = float(np.clip(en2 / sq,  bounds.eta_neg_min,  bounds.eta_neg_max))
@@ -325,7 +328,7 @@ def build_multistart_cloud(
 
         s1_p  = float(np.clip(s1  * sc["sigma"] * np.exp(noise[0]), bounds.sigma_min,   bounds.sigma_max))
         l1_p  = float(np.clip(l1  * sc["lam"]   * np.exp(noise[1]), bounds.lambda_min,  bounds.lambda_max))
-        ep1_p = float(np.clip(ep1 * sc["eta"]   * np.exp(noise[2]), bounds.eta_pos1_min, bounds.eta_pos1_max))
+        ep1_p = float(np.clip(ep1 * sc["eta"]   * np.exp(noise[2]), bounds.eta_pos1_min, eta1_max))
         en1_p = float(np.clip(en1 * sc["eta"]   * np.exp(noise[3]), bounds.eta_neg_min,  bounds.eta_neg_max))
         s2_p  = float(np.clip(s2  * sc["sigma"] * np.exp(noise[4]), bounds.sigma_min,   bounds.sigma_max))
         l2_p  = float(np.clip(l2  * sc["lam"]   * np.exp(noise[5]), bounds.lambda_min,  bounds.lambda_max))

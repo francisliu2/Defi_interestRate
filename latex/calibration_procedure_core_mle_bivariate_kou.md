@@ -382,7 +382,7 @@ E[\Pi_T\mid \tau>T],
 h_0^\star.
 $$
 
-Bayesian calibration is not used as the baseline. It is a possible extension if the goal is to report posterior credible intervals for liquidation probabilities or optimal health buffers. It is not necessary for the main calibration because the target model is already parametric and likelihood-estimable.
+Bayesian calibration is not used as the baseline. It is a possible extension if the goal is to report posterior credible intervals for liquidation probabilities or objective-specific health-buffer selections. It is not necessary for the main calibration because the target model is already parametric and likelihood-estimable.
 
 ---
 

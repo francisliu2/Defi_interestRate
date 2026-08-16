@@ -13,7 +13,10 @@ from optimal_long_short.kou_model import BivariateKouModel
 from optimal_long_short.market_params import MarketParams
 from optimal_long_short.model_params import KouParams
 from optimal_long_short.moments import ConditionalMoments
-from optimal_long_short.strategy import UnitExposureLongShortStrategy
+from optimal_long_short.strategy import (
+    UnitExposureLongShortStrategy,
+    minimum_feasible_h0,
+)
 from optimal_long_short.drift import apply_price_drift_view
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -96,7 +99,7 @@ def dt_from_freq(freq: str) -> float:
 
 def aave_constraint(b: float, ltv_max: float, liq_bonus: float) -> dict[str, float]:
     """Return the AAVE health-buffer constraint dictionary used by jobs."""
-    h0_min = math.log(b / ltv_max)
+    h0_min = minimum_feasible_h0(b, ltv_max)
     return {
         "b": b,
         "ltv_max": ltv_max,
