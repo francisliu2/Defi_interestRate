@@ -131,14 +131,13 @@ factor and whose payoff is killed when that factor crosses a liquidation
 boundary. Sizing such a position requires the survival probability and
 killed-payoff moments at every candidate initial buffer. We derive a
 semi-analytic Laplace-domain method for these quantities under bivariate Kou
-double-exponential jump--diffusion dynamics. Compared with Monte Carlo
-simulation, the method is free of sampling noise, stays accurate near the
-liquidation boundary where discretely monitored simulation is least reliable,
-and evaluates orders of magnitude faster, making repeated evaluation across
-candidate buffers practical. We use these outputs to solve the initial-buffer
-sizing problem under alternative liquidation constraints and moment-based
-objectives, and a paired moving-block bootstrap shows that the selected buffer
-is sensitive to calibration uncertainty.
+double-exponential jump--diffusion dynamics. The resulting finite-dimensional
+system is evaluated by numerical Laplace inversion, avoiding path-sampling noise
+and making repeated evaluation across candidate buffers practical. We calibrate
+the model to four-hour WETH/WBTC returns from AAVE v3 Ethereum and construct a
+health-buffer evaluation map linking the initial buffer to leverage, liquidation probability,
+and surviving-path payoff moments. We use this map to illustrate sizing under
+alternative liquidation constraints and moment-based objectives.
 \end{abstract}
 
 \begin{keywords}
@@ -208,11 +207,13 @@ position, the liquidation barrier, and the health-buffer parameterization.
 Section~\ref{sec:model} specifies the bivariate Kou model and its tilted dynamics.
 Section~\ref{sec:moments} reduces payoff moments to one-dimensional killed expectations,
 and Section~\ref{sec:resolvent} derives their time-Laplace transforms and finite-dimensional
-evaluation system. Section~\ref{sec:numerical} validates the numerical method, and
-Section~\ref{sec:application} illustrates the initial-buffer sizing problem.
-Section~\ref{sec:discussion} concludes. Appendix~\ref{sec:calibration} describes the
-empirical calibration estimator, Appendix~\ref{app:downward-phases} derives the
-downward-phase boundary conditions, and Appendix~\ref{app:proofs} collects the proofs.
+evaluation system. Section~\ref{sec:empirical} illustrates the framework with an empirical
+calibration and health-buffer evaluation map, and Section~\ref{sec:application} applies that map
+to initial-buffer sizing rules.
+Section~\ref{sec:discussion} concludes. The accompanying
+\emph{Empirical Calibration of the Bivariate Kou Model: Companion Note} describes the
+calibration estimator; Appendix~\ref{app:downward-phases} derives the downward-phase
+boundary conditions, and Appendix~\ref{app:proofs} collects the proofs.
 
 % ============================================================
 \section{Leveraged Long--Short Position and Health-Factor Barrier}\label{sec:setup}
@@ -471,9 +472,12 @@ Here $\eta_{i,+}$ and $\eta_{i,-}$ are the \emph{means} of the positive and nega
 (not exponential rates); the corresponding rates are $1/\eta_{i,+}$ and $1/\eta_{i,-}$.
 The constraint $\eta_{i,+}<1$ is required for the price-jump compensator $\chi_i$ defined below to be finite.
 
-The parameter $\mu_i$ is the \emph{continuously compounded expected asset-price growth rate},
-i.e.\ $\E_\P[S_{i,t}/S_{i,0}]=e^{\mu_i t}$.
-Define the price-jump compensator
+For each asset, we use a single free drift parameter, the \emph{expected-price growth exponent}
+$\mu_i$, defined by
+\begin{equation}\label{eq:expected-price-growth}
+\E_\P[S_{i,t}/S_{i,0}]=e^{\mu_i t}.
+\end{equation}
+This is not the mean log-return rate. Define the price-jump compensator
 \begin{equation}\label{eq:chi}
 \chi_i
 :=
@@ -484,11 +488,12 @@ M_i(1)-1
 \frac{p_i}{1-\eta_{i,+}}+\frac{1-p_i}{1+\eta_{i,-}}-1.
 \end{equation}
 Since $\E_\P[e^{X_{i,t}}]=\exp(t[\mu_i^X+\tfrac12\sigma_i^2+\lambda_i\chi_i])$,
-matching to $e^{\mu_i t}$ gives the log-price drift coefficient
+matching \eqref{eq:expected-price-growth} gives the drift coefficient in the log-price SDE,
 \begin{equation}\label{eq:muX-drift}
 \mu_i^X := \mu_i - \tfrac12\sigma_i^2 - \lambda_i\chi_i.
 \end{equation}
-All analytical and numerical objects in the sequel use $\mu_i^X$.
+Thus $\mu_i^X$ is a derived shorthand used in the characteristic exponent and subsequent
+calculations, not an additional model parameter.
 
 The bivariate process $(X_1,X_2)$ is a L\'evy process with joint characteristic exponent
 \begin{equation}\label{eq:Psi}
@@ -511,7 +516,7 @@ Table~\ref{tab:params} collects all model parameters and their roles.
 \hline
 Symbol & Asset & Economic meaning / role & Constraint \\
 \hline
-$\mu_i$ & $i=1,2$ & Continuously compounded expected price growth rate: $\E[S_{i,t}/S_{i,0}]=e^{\mu_i t}$ & \\
+$\mu_i$ & $i=1,2$ & Expected-price growth exponent: $\E[S_{i,t}/S_{i,0}]=e^{\mu_i t}$ & \\
 $\sigma_i$ & $i=1,2$ & Diffusion volatility of log-price $X_i$ & $\sigma_i>0$ \\
 $\rho$ & --- & Correlation between the two Brownian drivers & $|\rho|<1$ \\
 $\lambda_i$ & $i=1,2$ & Jump arrival intensity (expected jumps per unit time) & $\lambda_i>0$ \\
@@ -520,7 +525,7 @@ $\eta_{i,+}$ & $i=1,2$ & Mean size of upward jumps in $X_i$ & $0<\eta_{i,+}<1$ \
 $\eta_{i,-}$ & $i=1,2$ & Mean size of downward jumps in $X_i$ & $\eta_{i,-}>0$ \\
 \hline
 $\chi_i$ & $i=1,2$ & Price-jump compensator $M_i(1)-1=\E[e^{J_i}-1]$; enters $\mu_i^X$ via \eqref{eq:muX-drift} & \\
-$\mu_i^X$ & $i=1,2$ & Actual drift coefficient in the log-price SDE \eqref{eq:log-price-sde} & \\
+$\mu_i^X$ & $i=1,2$ & Derived drift coefficient in the log-price SDE \eqref{eq:log-price-sde} & \\
 $\Psi(u,v)$ & --- & Joint characteristic exponent; $e^{T\Psi(0,-ik)}=\E[e^{kX_{2,T}}]$ appears in the moment formula & \\
 \hline
 $S_{i,0}$ & $i=1,2$ & Initial price of asset $i$ & $S_{i,0}>0$ \\
@@ -931,343 +936,116 @@ If the two untilted downward rates coincide, the $k=0$ instance of
 Appendix~\ref{app:downward-phases}, Remark~\ref{rem:coincident-rates}, gives the corresponding
 $2\times2$ system.
 
+\clearpage
+% Additional numerical implementation and validation material is retained in
+% section6_numerical_implementation_validation_reference.tex.
 % ============================================================
-\section{Numerical Implementation and Validation}\label{sec:numerical}
+\section{Empirical Illustration: Calibration and Health-Buffer Evaluation Map}\label{sec:empirical}
 % ============================================================
 
-\subsection{Validation design and empirical parameters}
+We illustrate the framework with a one-month position that is long WETH collateral and
+short WBTC debt on AAVE v3 Ethereum. The bivariate Kou model is fitted by the penalized ECF
+criterion described in the accompanying empirical-calibration note to 540 four-hour return
+pairs, with drifts adjusted for average AAVE supply and borrowing rates. The terminal-block WETH threshold $b=0.83$ and
+maximum LTV $0.805$ imply $h_0^{\min}=\log(0.83/0.805)\approx0.0306$. Table~\ref{tab:num-params}
+reports the resulting benchmark. The fitted $\mu_i$ are the expected-price growth exponents defined in
+\eqref{eq:expected-price-growth}, but they should not be read as robust directional forecasts
+because first moments are weakly identified in high-frequency ECF matching.
 
-We validate survival ($k=0$) and killed moments of orders $k=1,2,3,4$, examine
-Talbot-order and Monte Carlo monitoring convergence, and verify the analytical no-shorting
-limit as $h_0\to\infty$. The moment representation is defined for any fixed integer order
-satisfying the two tail conditions in \eqref{eq:moment-admissibility}; the numerical evidence in
-this section is deliberately limited to orders zero through four. We make no numerical
-stability claim for all higher orders allowed by the formal moment domain.
-
-Time-domain quantities are recovered with the Talbot deformed-contour algorithm
-\citep{Talbot1979}. The resolvent is derived first to the right of its Laplace abscissa and
-then continued to nonsingular contour nodes. The Monte Carlo comparison uses a finite
-monitoring grid, so it is a discretization benchmark rather than a continuous-time ground
-truth.
-
-\begin{remark}[Continuation to a Talbot contour]\label{rem:talbot-continuation}
-Talbot inversion evaluates \eqref{eq:Uhat-zero} at complex $q$ reached by analytic
-continuation. A valid contour deformation avoids transform poles, phase poles, and root
-collisions, continuing each characteristic-root branch from its right-half-plane value at
-real $q$. The sign classification in Assumption~\ref{ass:six-root} is therefore an initial
-labeling, not a fresh test at every complex contour node.
-\end{remark}
-
-The Kou model and contract parameters are given in Table~\ref{tab:num-params}.
-Parameters are calibrated by the penalized ECF criterion in Appendix~\ref{sec:calibration}
-using 540 four-hour WBTC (asset~1) and
-WETH (asset~2) log-returns on AAVE v3 Ethereum after subtracting an exponentially
-weighted return mean; the drifts $\mu_i$ are adjusted for AAVE supply/borrow
-APRs (see caption). The AAVE liquidation threshold $b=0.78$ and maximum origination LTV
-$0.73$ impose a minimum feasible log-buffer $h_0^{\min}=\log(0.78/0.73)\approx0.066$.
-WBTC and WETH have distinct downward phase rates for the validated orders
-$k=0,\ldots,4$, so the generic barrier system applies in the reported calculations.
-Because the first moment is weakly identified in high-frequency ECF matching,
-the fitted $\mu_i$ values in Table~\ref{tab:num-params} should be read as model
-price-growth normalizers rather than directional forecasts; user views can replace
-them in downstream moment and liquidation calculations.
-
-\begin{table}[ht]
-\centering
-\renewcommand{\arraystretch}{1.3}
+\begin{table}[t]
+\centering\small
+\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{llcc}
 \toprule
-Group & Parameter & WBTC & WETH \\
+Group & Parameter & WETH & WBTC \\
 \midrule
-\multirow{9}{*}{Kou}
- & ECF price-growth normalizer $\mu_i$ & $0.487$ & $1.200$ \\
- & Log-price drift $\mu_i^X$ & $-0.305$ & $0.257$ \\
- & Model log-return drift $\E[\diff X_i]/\diff t$ & $0.425$ & $1.111$ \\
- & Empirical de-meaned log drift & $0.352$ & $0.606$ \\
- & Diffusion volatility $\sigma_i$ & $0.241$ & $0.307$ \\
- & Jump intensity $\lambda_i$ & $372.95$ & $588.95$ \\
- & Upward-jump probability $p_i$ & $0.508$ & $0.357$ \\
- & Mean upward-jump size $\eta_{i,+}$ & $0.0111$ & $0.0125$ \\
- & Mean downward-jump size $\eta_{i,-}$ & $0.00743$ & $0.00469$ \\
+\multirow{6}{*}{Kou}
+ & Expected-price growth exponent $\mu_i$ & $1.194$ & $0.491$ \\
+ & Diffusion volatility $\sigma_i$ & $0.307$ & $0.241$ \\
+ & Jump intensity $\lambda_i$ & $588.95$ & $372.95$ \\
+ & Upward-jump probability $p_i$ & $0.357$ & $0.508$ \\
+ & Mean upward-jump size $\eta_{i,+}$ & $0.0125$ & $0.0111$ \\
+ & Mean downward-jump size $\eta_{i,-}$ & $0.00469$ & $0.00743$ \\
 \midrule
-\multirow{2}{*}{Correlation / contract}
+\multirow{3}{*}{Correlation / contract}
  & Brownian correlation $\rho$ & \multicolumn{2}{c}{$0.858$} \\
- & Liquidation threshold $b$ & \multicolumn{2}{c}{$0.78$} \\
+ & WETH liquidation threshold $b$ & \multicolumn{2}{c}{$0.83$} \\
+ & WETH maximum origination LTV & \multicolumn{2}{c}{$0.805$} \\
 \midrule
 \multirow{2}{*}{Portfolio}
- & Initial price $S_{i,0}$ & $75{,}060.57$ & $2{,}060.33$ \\
+ & Initial price $S_{i,0}$ & $2{,}060.33$ & $75{,}060.57$ \\
  & Horizon $T$ & \multicolumn{2}{c}{$1/12$ (one month)} \\
 \bottomrule
 \end{tabular}
-\caption{Kou model and contract parameters calibrated by penalized ECF matching to four-hour
-WBTC/WETH log-returns on AAVE v3 Ethereum
-(2026-02-26 -- 2026-05-27), after EWM de-meaning with span 30. Drifts adjusted
-for AAVE average APRs: $\mu_1 {+}{=}\, 0.0056\%\,\mathrm{yr}^{-1}$ (WBTC supply),
-$\mu_2 {+}{=}\, 2.7855\%\,\mathrm{yr}^{-1}$ (WETH borrow). Jump intensities are
-estimated under the broad calibration bound $\lambda_{\max}=5000$.
-AAVE liquidation threshold $b=0.78$; maximum origination LTV $0.73$ gives
-$h_0^{\min}\approx0.066$. Derived quantities:
-$\lambda_1\chi_1+\tfrac12\sigma_1^2\approx0.793$,
-$\lambda_2\chi_2+\tfrac12\sigma_2^2\approx0.943$,
-$\mu_1^X\approx-0.305$, $\mu_2^X\approx0.257$. The empirical de-meaned
-price-growth normalizers are $0.432$ (WBTC) and $0.755$ (WETH), so the fitted
-WETH $\mu_2$ is a weakly identified ECF normalizer rather than a robust return forecast.
-Initial prices are the last aligned AAVE sample, at block $25{,}189{,}091$.}
+\caption{Penalized ECF calibration to four-hour WETH/WBTC returns
+(2026-02-26--2026-05-27), after EWM de-meaning with span 30. The reported $\mu_i$ include
+sample-average AAVE rates of $2.1901\%$ for WETH supply and $0.3479\%$ for WBTC variable
+borrowing. Contract terms and initial prices are measured at terminal block $25{,}189{,}091$.}
 \label{tab:num-params}
 \end{table}
 
-\subsection{Survival, killed moments, and the no-shorting limit}
+Table~\ref{tab:sa-mc-comparison} compares the semi-analytical (SA) calculation with a
+discretely monitored Monte Carlo (MC) benchmark at selected points on the plotted
+health-factor range. The conditional statistics are computed given survival to $T$.
 
-For each initial health factor $H_0=e^{h_0}$, with
-$h_0\in\{h_0^{\min},0.10,0.25,0.50,0.75,1.00,1.50,2.00\}$ and
-$h_0^{\min}=0.066249$, we report the survival
-probability $p_{\mathrm{surv}}$ and the following conditional statistics of $\Pi_T\mid\{\tau>T\}$,
-where $\mu_k:=\E[\Pi_T^k\mid\tau>T]$:
-\begin{equation}\label{eq:stdmom}
-\begin{aligned}
-&\text{mean}:=\mu_1,\qquad
-\text{variance}:=\mu_2-\mu_1^2,\\
-&\text{skewness}:=\frac{\mu_3-3\mu_1\mu_2+2\mu_1^3}{(\mu_2-\mu_1^2)^{3/2}},\qquad
-\text{ex.\ kurt}:=\frac{\mu_4-4\mu_1\mu_3+6\mu_1^2\mu_2-3\mu_1^4}{(\mu_2-\mu_1^2)^{2}}-3.
-\end{aligned}
-\end{equation}
-
-Table~\ref{tab:killed-moments} reports the objective-independent quantities that are the
-paper's primary numerical output. The identity
-$M_k=p_{\mathrm{surv}}\E[\Pi_T^k\mid\tau>T]$ also provides a direct implementation
-check at each buffer.
-
-\begin{table}[ht]
-\centering\small
-\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{rrrrrr}
-\toprule
-$h_0$ & $p_{\mathrm{surv}}$ & $M_1$ & $M_2$
-& $\E[\Pi_T\mid\tau>T]$ & $\E[\Pi_T^2\mid\tau>T]$ \\
-\midrule
-$0.0662$ & $0.306293$ & $0.385094$ & $0.507211$ & $1.257274$ & $1.655967$ \\
-$0.1000$ & $0.461481$ & $0.536822$ & $0.655481$ & $1.163260$ & $1.420385$ \\
-$0.2500$ & $0.912938$ & $0.898984$ & $0.934991$ & $0.984716$ & $1.024156$ \\
-$0.5000$ & $0.999613$ & $0.984080$ & $1.003811$ & $0.984461$ & $1.004199$ \\
-$1.0000$ & $1.000000$ & $1.015788$ & $1.050402$ & $1.015788$ & $1.050402$ \\
-$2.0000$ & $1.000000$ & $1.033907$ & $1.081910$ & $1.033907$ & $1.081910$ \\
-\bottomrule
-\end{tabular}
-\caption{Laplace--resolvent survival probabilities, killed raw moments, and conditional
-raw moments for selected feasible buffers under Table~\ref{tab:num-params}. The first row
-uses the protocol origination bound $h_0^{\min}=\log(0.78/0.73)$. Values are generated by
-\texttt{h0\_liquidation\_moment\_report}, which exposes killed and conditional outputs
-separately.}
-\label{tab:killed-moments}
-\end{table}
-
-As $h_0\to\infty$ the short holding $n_2\to 0$ and the portfolio converges to a unit long
-position in asset $1$ (Remark~\ref{rem:no-shorting}), so all conditional statistics
-converge to those of $e^{X_{1,T}}$ under $\P$:
-\[
-\lim_{h_0\to\infty}\mu_k = \E_\P\!\left[e^{kX_{1,T}}\right]
-= \exp\!\bigl(T\,\Psi(-ik,0)\bigr).
-\]
-Table~\ref{tab:results} reports all statistics together with these analytical limits.
-
-\begin{table}[ht]
-\centering\small
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{cc cc cccc}
-\toprule
-& & \multicolumn{2}{c}{$p_{\mathrm{surv}}$} & & & & \\
-\cmidrule(lr){3-4}
-$h_0$ & $H_0$ & Lap. & MC & Mean & Variance & Skewness & Ex.\ Kurt. \\
-\midrule
-$0.066$ & $1.068$ & $0.3063$ & $0.3171$ & $1.2573$ & $0.0752$ & $0.8766$ & $1.0991$ \\
-$0.10$ & $1.11$ & $0.4615$ & $0.4750$ & $1.1633$ & $0.0672$ & $0.8525$ & $1.0083$ \\
-$0.25$ & $1.28$ & $0.9129$ & $0.9156$ & $0.9847$ & $0.0545$ & $0.5676$ & $0.3668$ \\
-$0.50$ & $1.65$ & $0.9996$ & $0.9995$ & $0.9845$ & $0.0350$ & $0.3132$ & $0.3565$ \\
-$0.75$ & $2.12$ & $1.0000$ & $1.0000$ & $1.0043$ & $0.0236$ & $0.3791$ & $0.4093$ \\
-$1.00$ & $2.72$ & $1.0000$ & $1.0000$ & $1.0158$ & $0.0186$ & $0.4158$ & $0.4234$ \\
-$1.50$ & $4.48$ & $1.0000$ & $1.0000$ & $1.0280$ & $0.0145$ & $0.4318$ & $0.4187$ \\
-$2.00$ & $7.39$ & $1.0000$ & $1.0000$ & $1.0339$ & $0.0130$ & $0.4263$ & $0.4017$ \\
-\midrule
-$\infty$ & $\infty$ & $1.0000$ & --- & $1.0414$ & $0.0114$ & $0.4052$ & $0.3612$ \\
-\bottomrule
-\end{tabular}
-\caption{Laplace--resolvent conditional statistics and the no-shorting analytical limit
-for WBTC/WETH calibrated parameters (Table~\ref{tab:num-params}).
-Mean, variance, skewness, and excess kurtosis are conditional on survival ($\tau>T$)
-and computed via the resolvent method (Laplace); MC benchmark uses $10^5$ Euler--Poisson
-paths (252 monitoring intervals over the one-month horizon, seed 42). The smallest tabulated
-buffer is the exact AAVE-feasible minimum
-($h_0^{\min}=0.066249$, $H_0^{\min}=1.068493$); at this value
-Laplace gives $p_{\mathrm{surv}}=0.3063$
-versus MC $0.3171$ --- the $1.08$ percentage-point gap reflects discrete-time MC missing intra-period
-liquidation events at high jump intensity
-($\lambda_1\approx373$, $\lambda_2\approx589$), not path scarcity
-($\approx\!32{,}000$ surviving MC paths).
-The bottom row gives the analytical limits as $h_0\to\infty$; Laplace at $h_0=100$ matches
-these values to relative error $<10^{-6}$, confirming internal consistency of the
-resolvent construction, Talbot inversion, and the drift normalisation
-$\mu_i^X=\mu_i-\tfrac{1}{2}\sigma_i^2-\lambda_i\chi_i$.}
-\label{tab:results}
-\end{table}
-
-\begin{table}[ht]
-\centering\small
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{cc rrrrr rr}
-\toprule
-& & \multicolumn{5}{c}{Laplace $-$ MC} & \multicolumn{2}{c}{CPU time (s)} \\
-\cmidrule(lr){3-7}\cmidrule(lr){8-9}
-$h_0$ & $H_0$ & $\Delta p_{\mathrm{surv}}$ & $\Delta$Mean & $\Delta$Var.\ & $\Delta$Skew.\ & $\Delta$Kurt.\ & Lap.\ & MC \\
-\midrule
-$0.066$ & $1.068$ & $-0.0108$ & $\phantom{-}0.0040$ & $-0.0019$ & $-0.0236$ & $-0.1965$ & $0.06$ & $48.67$ \\
-$0.10$ & $1.11$ & $-0.0136$ & $\phantom{-}0.0042$ & $-0.0013$ & $-0.0230$ & $-0.1499$ & $0.10$ & $49.15$ \\
-$0.25$ & $1.28$ & $-0.0026$ & $-0.0001$ & $-0.0007$ & $-0.0054$ & $-0.0563$ & $0.10$ & $48.90$ \\
-$0.50$ & $1.65$ & $\phantom{-}0.0001$ & $-0.0005$ & $-0.0003$ & $-0.0110$ & $-0.0347$ & $0.10$ & $49.11$ \\
-$0.75$ & $2.12$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0107$ & $-0.0382$ & $0.10$ & $49.49$ \\
-$1.00$ & $2.72$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0123$ & $-0.0378$ & $0.10$ & $49.46$ \\
-$1.50$ & $4.48$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0001$ & $-0.0144$ & $-0.0369$ & $0.10$ & $49.94$ \\
-$2.00$ & $7.39$ & $\phantom{-}0.0000$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0152$ & $-0.0362$ & $0.10$ & $49.76$ \\
-\bottomrule
-\end{tabular}
-\caption{Laplace minus MC differences ($\Delta = \text{Lap.} - \text{MC}$) and wall-clock
-computation time. The persistent $\Delta p_{\mathrm{surv}}<0$ reflects the discretely
-monitored Euler--Poisson scheme (252 intervals over $[0,T]$) missing intra-interval
-liquidation events; the
-effect is strongest near $H_0^{\min}\approx1.068$ where paths frequently approach the barrier.
-Higher-moment differences shrink as $H_0$ increases and more paths survive into the interior.
-The Laplace timing covers five Talbot inversions ($k=0,\ldots,4$). On the reported host it
-is roughly 490 times smaller than the particular $10^5$-path MC run; this ratio is
-hardware-, implementation-, path-count-, and monitoring-grid-dependent, not a universal
-speed-up constant.}
-\label{tab:diff}
-\end{table}
-
-\subsection{Monitoring and inversion diagnostics}
-
-Table~\ref{tab:mc-convergence} isolates monitoring error at $h_0=0.10$. Refining the
-Euler--Poisson grid moves the MC survival estimate toward the Laplace value
-$0.461481$; at 1008 intervals the latter lies inside the reported binomial interval. This
-does not turn the simulation into exact continuous monitoring---jump ordering and Brownian
-crossings within an interval remain approximated---but it supports the interpretation of
-the coarse-grid discrepancy in Table~\ref{tab:diff}.
-
-\begin{table}[ht]
-\centering\small
-\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{rrrrr}
-\toprule
-Intervals over $[0,T]$ & MC $p_{\mathrm{surv}}$ & Binomial s.e. & Approx. 95\% interval & Time (s) \\
-\midrule
-$63$   & $0.47712$ & $0.00316$ & $[0.47093,0.48331]$ & $10.54$ \\
-$252$  & $0.47356$ & $0.00316$ & $[0.46737,0.47975]$ & $12.36$ \\
-$1008$ & $0.46328$ & $0.00315$ & $[0.45710,0.46946]$ & $13.35$ \\
-\bottomrule
-\end{tabular}
-\caption{Discrete-monitoring convergence for $h_0=0.10$, $T=1/12$, 25,000 paths,
-and seed 42. The interval is the normal binomial interval for survival incidence and does
-not include time-discretization uncertainty.}
-\label{tab:mc-convergence}
-\end{table}
-
-For the feasible lower buffer $h_0=0.066249$, changing the Talbot order from 12 to 40
-changes $p_{\mathrm{surv}}$ and $M_1,M_2$ only beyond the eighth reported decimal; the
-largest relative change between $M=32$ and $M=40$ among $k=0,\ldots,4$ is
-$4.0\times10^{-8}$ (for $M_4$). Over the $M=32$ contour nodes and the same orders, the
-maximum relative characteristic-root residual is $1.4\times10^{-13}$, the minimum
-root-to-pole distance is $3.51$, and the largest barrier-matrix condition number is $23.54$.
-The maximum linear-system residual is $3.6\times10^{-18}$.
-
-These quantities are reported by \texttt{jobs/numerical\_diagnostics.py}. The current
-implementation selects the three root branches by real-part rank at each contour node rather
-than by a global nearest-branch continuation algorithm. The residual, separation, pole, and
-conditioning checks support that selection for this calibration and $k=0,\ldots,4$; they do
-not justify extrapolation to every formally admissible higher order.
-
-\subsection{Parameter sensitivity}\label{sec:sensitivity}
-
-Figure~\ref{fig:sensitivity} shows how $p_{\mathrm{surv}}$ (left column) and the conditional
-mean $\E[\Pi_T\mid\tau>T]$ (right column) vary with $H_0$ as each parameter is swept in turn.
-For the liquidation threshold $b$ (row~e--f), survival probability is independent of $b$ at fixed
-$H_0$ — only the payoff kernel changes — so the left panel shows the initial leverage
-$L_0 = H_0/(H_0-b)$ instead.
-
-Three patterns dominate. (i)~\emph{Volatility} is the strongest driver: at $0.3\times$ scale,
-almost all paths survive for $H_0\gtrsim1.35$; at $2\times$ scale, the same cushion yields
-survival below 40\%. (ii)~\emph{Correlation} acts through the effective variance of
-$Z=X_1-X_2$: the calibrated benchmark already sits at $\rho=0.858$, where the spread
-variance is small; moving to lower $\rho$ sharply depresses the survival curve, while its
-effect on the plotted conditional mean is small for this calibration. Thus the numerical
-impact is primarily reflected in survival here, without implying a general separation.
-(iii)~\emph{Jump intensity} and \emph{horizon} compress survival
-monotonically, while increasing the conditional mean at low $H_0$ through selective survivor
-effects. For $b$, initial leverage $L_0=H_0/(H_0-b)$ reaches ${\approx}6.3\times$
-at the AAVE minimum $H_0^{\min}\approx1.068$ for $b=0.90$, explaining the strong sensitivity
-of the conditional mean to $b$ near the minimum buffer.
-
-\begin{figure}[p]
+\begin{table}[t]
 \centering
-\includegraphics[width=\linewidth,height=0.80\textheight,keepaspectratio]{fig_sensitivity.pdf}
-\caption{Left column: survival probability $p_{\mathrm{surv}}$ (rows~a--d) and initial
-leverage $L_0$ (row~e, log scale) versus $H_0$. Right column: conditional mean
-$\E[\Pi_T\mid\tau>T]$. Each row varies one parameter; all others fixed at
-Table~\ref{tab:num-params}. Encoding: colour and line style identify parameter values
-(solid/green = benchmark); the heavier line is the baseline.
-Laplace--resolvent, $H_0\in[1.068,2.000]$, 40 points per curve.}
-\label{fig:sensitivity}
-\end{figure}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}cc*{4}{rr}@{}}
+\toprule
+& & \multicolumn{2}{c}{$p_{\mathrm{liq}}$}
+& \multicolumn{2}{c}{Conditional mean}
+& \multicolumn{2}{c}{Conditional variance}
+& \multicolumn{2}{c}{Time (s)} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}
+$h_0$ & $H_0$ & SA & MC & SA & MC & SA & MC & SA & MC \\
+\midrule
+$0.0306$ & $1.0311$ & $0.6430$ & $0.6298$ & $1.8103$ & $1.8097$ & $0.2765$ & $0.2816$ & $0.040$ & $13.70$ \\
+$0.0953$ & $1.1000$ & $0.2517$ & $0.2436$ & $1.4660$ & $1.4699$ & $0.1895$ & $0.1912$ & $0.038$ & $13.52$ \\
+$0.1823$ & $1.2000$ & $0.0507$ & $0.0485$ & $1.2815$ & $1.2865$ & $0.1420$ & $0.1437$ & $0.038$ & $13.67$ \\
+$0.4055$ & $1.5000$ & $1.34\!\times\!10^{-4}$ & $1.20\!\times\!10^{-4}$ & $1.1826$ & $1.1867$ & $0.0754$ & $0.0764$ & $0.038$ & $13.88$ \\
+$0.6931$ & $2.0000$ & $2.47\!\times\!10^{-9}$ & $0^{\ast}$ & $1.1492$ & $1.1524$ & $0.0445$ & $0.0451$ & $0.038$ & $13.70$ \\
+\bottomrule
+\end{tabular}
+\caption{Semi-analytical and Monte Carlo calculations for the benchmark in
+Table~\ref{tab:num-params}, with $T=1/12$. SA uses Talbot inversion with $M=32$ and
+times the survival probability and killed moments $k=1,2$. MC uses $25{,}000$ paths,
+$1{,}008$ monitoring intervals, and seed 42. Times are single-run wall-clock seconds
+and are implementation- and machine-dependent. $0^{\ast}$ means that no liquidation was
+observed in the simulated sample, not that the underlying probability is zero.}
+\label{tab:sa-mc-comparison}
+\end{table}
+
+Conditional moments are close. MC is lower near the barrier because monitoring is
+discrete. Runtime is about $0.04$ seconds for SA and $14$ seconds for MC.
 
 \clearpage
-\subsection{Calibration and sizing uncertainty}\label{sec:calibration-uncertainty}
+Applying the resolvent map to this benchmark over $H_0\in[1.031,2.000]$ gives the
+health-buffer evaluation map in Figure~\ref{fig:health-buffer-map}. Before imposing an
+investor objective, the three-dimensional curve shows how the initial buffer jointly changes
+liquidation probability and the conditional mean and variance of the surviving payoff.
 
-Pointwise parameter sweeps do not quantify joint sampling variation. We therefore apply a
-paired circular moving-block percentile bootstrap to the 540 four-hour return pairs. Each
-replicate resamples the same contiguous index blocks for WBTC and WETH, preserving their
-contemporaneous pairing and short-range ordering, then repeats ECF calibration, the fixed
-AAVE rate adjustment, the fourth-moment admissibility check, and the downstream sizing
-rule. The experiment uses 40 replicates, nine-observation blocks (1.5 days), a fixed seed,
-and two calibration starts per replicate. All 40 calibrations converged and all 40 sizing
-problems were feasible. Two starts make this a tractable uncertainty illustration; the
-point calibration itself uses the more extensive 30-start search described in
-Appendix~\ref{sec:ecf-init}.
-
-Table~\ref{tab:bootstrap-uncertainty} propagates each recalibration through the rule that
-maximizes initial leverage subject to $p_{\mathrm{liq}}\leq0.10$ on the same 200-point
-$H_0\in[1.068,2.000]$ grid used below. At the point-selected reference buffer
-$H_0=1.274$, survival is $0.902$, while its bootstrap interval is wide. The selected buffer
-and leverage also vary materially across recalibrations. By contrast, selected liquidation
-probabilities cluster just below 10\% because that is the imposed grid constraint, not
-because liquidation risk is precisely estimated.
-
-\begin{table}[ht]
-\centering\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{lrr}
-\toprule
-Quantity & Point estimate & 90\% percentile interval \\
-\midrule
-$p_{\mathrm{surv}}$ at reference $H_0=1.274$ & $0.902$ & $[0.483,\,0.978]$ \\
-Selected $H_0$ & $1.274$ & $[1.175,\,1.536]$ \\
-Selected initial leverage $L_0$ & $2.577$ & $[2.032,\,2.974]$ \\
-Selected $p_{\mathrm{liq}}$ & $0.0980$ & $[0.0943,\,0.0997]$ \\
-\bottomrule
-\end{tabular}
-\caption{Paired circular moving-block bootstrap, conditional on the Kou specification,
-penalized ECF criterion, EWM preprocessing, fixed AAVE rates and protocol terms, chosen
-block length, and discrete sizing grid. These descriptive intervals measure within-model
-sampling variability; they are neither model-selection nor out-of-sample forecast
-intervals. Script \texttt{jobs/calibration\_uncertainty.py}.}
-\label{tab:bootstrap-uncertainty}
-\end{table}
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth,height=0.64\textheight,keepaspectratio]{fig_health_buffer_evaluation_map.pdf}
+\caption{Health-buffer evaluation map for the calibrated long-WETH/short-WBTC benchmark in
+Table~\ref{tab:num-params}. Axes: $x=\mathrm{Var}(\Pi_T\mid\tau>T)$,
+$y=p_{\mathrm{liq}}=1-p_{\mathrm{surv}}$, and
+$z=\mathrm{E}[\Pi_T\mid\tau>T]$. The curve is parametrised and coloured by
+$H_0\in[1.031,2.000]$; labelled points identify representative initial health factors.
+Grey curves are orthogonal guides on the coordinate planes.}
+\label{fig:health-buffer-map}
+\end{figure}
 
 \clearpage
 % ============================================================
 \section{Application: Initial Health-Buffer Sizing}\label{sec:application}
 % ============================================================
 
-The map in \eqref{eq:evaluation-map} can support different initial-buffer rules without
-changing the underlying moment calculation. This section gives three examples. They are
-deliberately stylized decision rules, not competing claims about the uniquely correct
-investor objective.
+Using the empirical benchmark and evaluation map in Section~\ref{sec:empirical}, we now give
+three stylized initial-buffer rules. They illustrate how the common evaluation map supports
+different preferences, not competing claims about a uniquely correct objective.
 
 Write
 \[
@@ -1322,15 +1100,12 @@ The paper does not claim that any one of \eqref{eq:rule-constrained}--\eqref{eq:
 universally correct. Their purpose is to show how the same semi-analytic outputs enter
 different ex-ante preferences.
 
-\subsection{Illustrative evaluation frontier and selected buffers}
+\subsection{Illustrative rule-specific selections}
 
-Figure~\ref{fig:frontier} reports the baseline evaluation curve. Its primary output is the
-mapping from $H_0$ to conditional mean, variance, liquidation probability, and leverage.
-The penalized criterion in panel~(d) is one marked use of that curve, rather than the paper's
-central result. Table~\ref{tab:objective-comparison} compares several rules on the same
-baseline calibration and makes their preference parameters explicit. A selected value at a
-candidate-set endpoint is reported as such; it should not be read as an interior or universal
-optimum.
+Table~\ref{tab:objective-comparison} applies the preceding rules to the empirical benchmark
+in Table~\ref{tab:num-params} and the same buffer grid used for Figure~\ref{fig:health-buffer-map}.
+A value selected at a grid endpoint is reported as such; it should not be read as an interior
+or universal optimum.
 
 \begin{table}[ht]
 \centering\small
@@ -1339,40 +1114,27 @@ optimum.
 \toprule
 Rule & Parameters & Selected $H_0$ & Initial $L_0$ & $p_{\mathrm{liq}}$ \\
 \midrule
-Maximum leverage under risk limit & $\bar p=0.05$ & $1.331$ & $2.417$ & $0.0478$ \\
-Maximum leverage under risk limit & $\bar p=0.10$ & $1.274$ & $2.577$ & $0.0980$ \\
-Maximum leverage under risk limit & $\bar p=0.20$ & $1.214$ & $2.799$ & $0.1976$ \\
-Unconditional mean--variance & $\alpha=0.5$ & $2.000$ & $1.639$ & $<10^{-4}$ \\
-Unconditional mean--variance & $\alpha=1$ & $2.000$ & $1.639$ & $<10^{-4}$ \\
-Unconditional mean--variance & $\alpha=5$ & $2.000$ & $1.639$ & $<10^{-4}$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0)$ & $1.068$ & $3.704$ & $0.6937$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(20,0)$ & $2.000$ & $1.639$ & $<10^{-4}$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.25)$ & $1.068$ & $3.704$ & $0.6937$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.5)$ & $2.000$ & $1.639$ & $<10^{-4}$ \\
+Maximum leverage under risk limit & $\bar p=0.05$ & $1.201$ & $3.234$ & $0.0494$ \\
+Maximum leverage under risk limit & $\bar p=0.10$ & $1.163$ & $3.496$ & $0.0954$ \\
+Maximum leverage under risk limit & $\bar p=0.20$ & $1.119$ & $3.875$ & $0.1905$ \\
+Unconditional mean--variance & $\alpha=0.5$ & $1.284$ & $2.827$ & $0.0110$ \\
+Unconditional mean--variance & $\alpha=1$ & $1.338$ & $2.634$ & $0.0039$ \\
+Unconditional mean--variance & $\alpha=5$ & $2.000$ & $1.709$ & $<10^{-4}$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0)$ & $1.031$ & $5.128$ & $0.6430$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(20,0)$ & $2.000$ & $1.709$ & $<10^{-4}$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.25)$ & $1.031$ & $5.128$ & $0.6430$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.5)$ & $1.031$ & $5.128$ & $0.6430$ \\
 \bottomrule
 \end{tabularx}
-\caption{Objective-specific selections and preference-parameter sensitivity for the
-baseline WBTC/WETH illustration over a 200-point grid on
-$H_0\in[1.068,2.000]$. Values are computed from the same survival and moment map; only
-the decision rule or its stated parameters change. Grid-endpoint selections show why the
-table is an illustration rather than evidence of a preferred practical buffer. The
-liquidation-constrained rows maximize $L_0$ subject to the stated budget.}
+\caption{Objective-specific selections for the calibrated long-WETH/short-WBTC benchmark
+over the 200-point grid $H_0\in[1.031,2.000]$. Only the decision rule or its stated
+parameters change. Endpoint selections underscore that this is an illustration rather than
+a preferred practical buffer; the constrained rows maximize $L_0$ subject to the stated
+liquidation budget.}
 \label{tab:objective-comparison}
 \end{table}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.92\linewidth]{fig_frontier.pdf}
-\caption{Evaluation map for the benchmark parametrisation.
-Axes: $x=\mathrm{Var}(\Pi_T\mid\tau>T)$, $y=p_\ell=1-p_{\mathrm{surv}}$,
-$z=\mathrm{E}[\Pi_T\mid\tau>T]$ (vertical).
-The curve is parametrised by $H_0\in[1.068,2.000]$; the projections show the
-mean--liquidation, risk--liquidation, and mean--leverage relationships. Panel~(d) illustrates
-the conditional criterion \eqref{eq:Phi} for $(\alpha,\delta)=(1,0.5)$; it is not designated
-as the preferred rule. Script \texttt{jobs/frontier\_analysis.py}.}
-\label{fig:frontier}
-\end{figure}
-
+\clearpage
 % ============================================================
 \section{Conclusion and Discussion}\label{sec:discussion}
 % ============================================================
@@ -1388,13 +1150,11 @@ conditions give a $3\times3$ resolvent system.
 
 These objective-independent quantities turn initial-buffer sizing into a one-dimensional
 optimization: rapid evaluation of survival and killed-moment outputs supports buffer
-selection under alternative liquidation constraints and moment-based preferences. The
-numerical results compare the resolvent output with discretely monitored Monte Carlo,
-verify the analytical no-shorting limit, and illustrate sensitivity across model and
-contract inputs. The paired block bootstrap further shows that within-model calibration
-uncertainty can materially shift the selected buffer, so the optimal buffer moves with the
-objective, its risk parameters, the loss convention, and the calibration itself; no single
-selection should be read as a universal practical optimum.
+selection under alternative liquidation constraints and moment-based preferences. For the
+calibrated long-WETH/short-WBTC benchmark, the health-buffer evaluation map displays the trade-off
+between the initial health buffer, leverage, liquidation probability, and surviving-path
+payoff moments. The selected buffer moves with the objective, its risk parameters, and the
+loss convention; no single selection should be read as a universal practical optimum.
 
 The model omits liquidation recovery, dynamic collateral intervention, oracle and keeper
 delays, stochastic borrowing rates, execution costs, and market impact. Incorporating these
@@ -1406,239 +1166,6 @@ control model, ultimately needs to solve for the optimal buffer.
 
 \clearpage
 \appendices
-
-% ============================================================
-\section{Empirical Calibration}\label{sec:calibration}
-% ============================================================
-
-\subsection{Estimator}\label{sec:ecf-estimator}
-
-The bivariate Kou model admits the closed-form Lévy--Khintchine exponent
-$\Psi(u,v)$ derived in Section~\ref{sec:model}, so no numerical density
-inversion is required to compute the model-implied characteristic function
-\begin{equation}\label{eq:model-cf}
-\phi_\theta(u,v;\Delta)
-=
-\exp\!\bigl(\Delta\,\Psi_\theta(u,v)\bigr),
-\end{equation}
-where $\Delta$ is the observation interval.
-Given $N$ observed bivariate log-return pairs $(r_{1,n},r_{2,n})_{n=1}^N$,
-the empirical characteristic function is
-\begin{equation}\label{eq:ecf}
-\widehat{\phi}_N(u,v)
-=
-\frac{1}{N}\sum_{n=1}^N
-\exp\!\bigl(i(u\,r_{1,n}+v\,r_{2,n})\bigr).
-\end{equation}
-The ECF component of the estimator is the normalized weighted squared distance
-between \eqref{eq:ecf} and \eqref{eq:model-cf} over a discrete frequency grid
-$\mathcal{G}$:
-\begin{equation}\label{eq:ecf-objective}
-Q_N^{\mathrm{ECF}}(\theta)
-=
-\frac{\displaystyle\sum_{(u,v)\in\mathcal{G}}w(u,v)
-\,\bigl|\widehat{\phi}_N(u,v)-\phi_\theta(u,v;\Delta)\bigr|^2}
-{\displaystyle\sum_{(u,v)\in\mathcal{G}}w(u,v)}.
-\end{equation}
-Because finite high-frequency samples leave a pronounced intensity--jump-size ridge, the
-reported calibration uses two transparent soft anchoring terms:
-\begin{equation}\label{eq:ecf-penalized-objective}
-\begin{aligned}
-\widehat{\theta}
-&=\arg\min_{\theta\in\Theta}\mathcal{Q}_N(\theta),\\
-\mathcal{Q}_N(\theta)
-&=Q_N^{\mathrm{ECF}}(\theta)
-+\omega_\lambda\sum_{i=1}^{2}(\log\lambda_i-\log\widetilde\lambda_i)^2\\
-&\quad+\omega_\eta\sum_{i=1}^{2}\sum_{s\in\{+,-\}}
-(\log\eta_{i,s}-\log\widetilde\eta_{i,s})^2.
-\end{aligned}
-\end{equation}
-Here $\widetilde\lambda_i$ is the variance/fourth-cumulant initializer and
-$\widetilde\eta_{i,s}$ is the peak-over-threshold (POT) mean-excess initializer described
-below. The application uses $(\omega_\lambda,\omega_\eta)=(0.05,0.02)$. These are soft
-penalties, not equality restrictions; setting both weights to zero recovers pure ECF
-matching.
-This is the empirical-characteristic-function approach of
-\citet{Singleton2001}, which is particularly natural for affine and
-Lévy-based asset-pricing models whose characteristic functions are known in
-closed form.
-\citet{FeuervergerMcDunnough1981} establish that ECF estimators over a
-rich grid can attain maximum-likelihood efficiency.
-The procedure avoids evaluating the bivariate transition density, which would
-require a two-dimensional numerical Fourier inversion inside every optimizer
-call.
-For background on DEJD likelihood estimation in the univariate case
-see \citet{RamezaniZeng2007}.
-
-\subsection{Frequency grid}\label{sec:ecf-grid}
-
-The parameter vector $\theta$ has $13$ free components; see Table~\ref{tab:params}.
-Raw return magnitudes depend on the sampling interval, so fixed raw Fourier frequencies
-are poorly portable. Let $s_1$, $s_2$, and $s_Z$ be IQR-based robust scales,
-$s=\max\{(q_{0.75}-q_{0.25})/1.349,10^{-8}\}$, for $r_1$, $r_2$, and $r_1-r_2$. Dimensionless base
-frequencies are mapped to raw frequencies by division by the corresponding scale. The
-grid contains the following groups, with every point accompanied by its conjugate
-$(-u,-v)$:
-\begin{itemize}
-  \item marginal points $(a/s_1,0)$ and $(0,a/s_2)$ for
-    $a\in\mathcal{A}_{\mathrm{marg}}$;
-  \item same-sign and mixed-sign joint points
-    $(a/s_1,b/s_2)$ and $(a/s_1,-b/s_2)$ for
-    $a,b\in\mathcal{A}_{\mathrm{joint}}$, which are informative about $\rho$;
-  \item spread points $(a/s_Z,-a/s_Z)$ for $a\in\mathcal{A}_Z$, which directly
-    match the log-ratio process governing liquidation; and
-  \item high-base marginal and spread points for $a\in\mathcal{A}_{\mathrm{tail}}$,
-    included to retain information about jump-tail shape.
-\end{itemize}
-The dimensionless base nodes are
-\begin{align*}
-\mathcal{A}_{\mathrm{marg}}&=\{0.1,0.2,0.5,0.75,1,1.5,2,3,5,7.5,10\},\\
-\mathcal{A}_{\mathrm{joint}}&=\{0.25,0.5,1,2,3,5\},\\
-\mathcal{A}_{Z}&=\{0.1,0.2,0.5,0.75,1,1.5,2,3,5\},\\
-\mathcal{A}_{\mathrm{tail}}&=\{8,12,16,20,25\}.
-\end{align*}
-Points whose absolute raw coordinate exceeds $5{,}000$ are discarded to avoid numerical
-aliasing. Including conjugate pairs, the unfiltered construction has 236 frequency
-evaluations; this cap leaves 234 for the application sample. Weights depend on dimensionless
-rather than raw frequency:
-\[
-w(a,b)=\exp\{-0.02(a^2+b^2)\}.
-\]
-The ordinary spread group receives an additional factor of two. Thus the criterion
-emphasizes the barrier-driving ratio without making the choice of observation interval
-determine the effective frequency weights.
-
-\subsection{Reparameterisation and initialisation}\label{sec:ecf-init}
-
-\paragraph{Unconstrained reparameterisation.}
-Constraints in Table~\ref{tab:params} are enforced automatically via the
-change of variables
-\begin{equation}\label{eq:reparam}
-\sigma_i=e^{a_i},\quad
-\lambda_i=e^{b_i},\quad
-p_i=\mathrm{sigmoid}(c_i),\quad
-\eta_{i,+}=\eta_{i,+}^{\max}\mathrm{sigmoid}(d_i),\quad
-\eta_{i,-}=e^{e_i},\quad
-\rho=\tanh(f),
-\end{equation}
-where sigmoid$(x)=(1+e^{-x})^{-1}$.
-The unconstrained vector $\tau=({\mu_1,a_1,b_1,c_1,d_1,e_1,\mu_2,\ldots,f})$
-is optimized with box bounds in this transformed space. For both assets the code uses
-a scaled sigmoid with
-\[
-\eta_{i,+}^{\max}\le (1-\varepsilon)/K,
-\qquad i=1,2,
-\]
-so that both moment-admissibility conditions in \eqref{eq:moment-admissibility}
-are enforced directly through order $K$.
-
-\paragraph{Threshold initialiser.}
-The characteristic-function objective is non-linear and non-convex,
-so the optimisation is initialised by a threshold-based decomposition
-following the logic of \citet{Mancini2009} for discretely observed
-jump-diffusions.
-Let $m_i=\mathrm{median}(r_{i,n})$ and let $s_i$ be the IQR robust scale.
-For a frequency-aware threshold constant $c\in[3,5]$, define candidate
-jump observations
-\[
-\mathcal{J}_i=\{n:|r_{i,n}-m_i|>c\,s_i\},
-\qquad
-\mathcal{C}_i=\{1,\ldots,N\}\setminus\mathcal{J}_i.
-\]
-Initial volatility and correlation values use the continuous subset
-$\mathcal{C}_i$, while the jump-size means are anchored by peak-over-threshold
-excess means and the intensities are corrected by a variance/fourth-cumulant
-estimate.  Schematically:
-\begin{align*}
-p_i^{(0)}&=\frac{|\mathcal{J}_{i,+}|}{|\mathcal{J}_i|}
-  \quad\text{clamped to the admissible probability range},\\
-\eta_{i,+}^{(0)},\,\eta_{i,-}^{(0)}&=\text{POT mean-excess estimates},\\
-\lambda_i^{(0)}&=\text{two-moment estimate from variance and fourth cumulant},\\
-\sigma_i^{(0)}&=\mathrm{sd}(r_{i,n}:\,n\in\mathcal{C}_i)/\sqrt{\Delta},
-&
-\rho^{(0)}&=\mathrm{corr}(r_1,r_2)_{n\in\mathcal{C}_1\cap\mathcal{C}_2}.
-\end{align*}
-The initializer first estimates the annualized log-process drift with a damped
-mean-jump correction,
-\[
-\mu_i^{X,(0)}=\bar{r}_i/\Delta
--0.25\,\lambda_i^{(0)}
-\left[p_i^{(0)}\eta_{i,+}^{(0)}-(1-p_i^{(0)})\eta_{i,-}^{(0)}\right],
-\]
-then stores the result in the paper's price-growth convention,
-\[
-\mu_i^{(0)}=\operatorname{clip}_{[\mu_{\min},\mu_{\max}]}
-\!\left(\mu_i^{X,(0)}+\tfrac12(\sigma_i^{(0)})^2
-+\lambda_i^{(0)}\chi_i^{(0)}\right).
-\]
-The threshold filter is not the final estimator.
-It is a warm start that places the optimizer in a sensible region of
-parameter space; see the remark in \citet{Mancini2009}.
-
-\paragraph{Multi-start cloud.}
-Because $\mathcal{Q}_N(\tau)$ may have local minima, the optimizer is run from a
-structured cloud. It contains the unperturbed initializer and six deterministic
-intensity--size ridge starts with
-\[
-\lambda_i\mapsto c\lambda_i,\qquad
-\eta_{i,\pm}\mapsto\eta_{i,\pm}/\sqrt{c},qquad
-c\in\{0.1,0.25,0.5,2,4,8\}.
-\]
-Remaining starts cycle through four high-jump/high-diffusion scenarios and add bounded
-random perturbations to scale, probability, correlation, and drift parameters. The
-application calibration uses 30 starts (the library default is 20) and returns the bounded
-L-BFGS-B minimizer with the lowest penalized objective.
-
-\subsection{Identifiability and model-comparison protocol}\label{sec:ecf-ident}
-
-The penalized criterion $\mathcal{Q}_N(\theta)$ is non-convex.
-Jump-diffusion models possess approximate ridges along directions that
-preserve the compound-Poisson variance contribution
-$\lambda_i\E[J_i^2]=2\lambda_i(p_i\eta_{i,+}^2+(1-p_i)\eta_{i,-}^2)$
-\citep{RamezaniZeng2007}.
-The diffusion volatilities $\sigma_i$ and the Brownian correlation $\rho$
-are generally better identified from short samples than jump-size and intensity
-parameters, which carry larger finite-sample uncertainty unless the observation
-window contains many jump events. Because $\lambda_i$ is annualized, a one-year
-window contains $\lambda_i$ jumps in expectation, irrespective of whether prices
-are sampled hourly or daily. Finer sampling can make individual jumps easier to
-separate from aggregated returns, but it does not multiply the underlying annual
-Poisson count.
-
-For descriptive fit comparisons on a common grid, compare the unpenalized component
-$Q_N^{\mathrm{ECF}}(\widehat\theta)$ across nested models (GBM, Merton, bivariate Kou),
-rather than the penalized values $\mathcal{Q}_N(\widehat\theta)$ whose anchors differ.
-Such comparisons should be accompanied by liquidation-relevant diagnostics:
-empirical versus model $Z$-tail quantiles, empirical versus model
-barrier-crossing frequencies, and simulated versus observed drawdowns of $Z$.
-These are more directly informative for the sizing application than
-standard likelihood-based criteria.
-The present numerical illustration does not carry out a formal GBM--Merton--Kou selection
-exercise. It does propagate within-model sampling variability through the paired circular
-moving-block bootstrap reported in Section~\ref{sec:calibration-uncertainty}. Those intervals
-remain conditional on the selected Kou model and stated empirical choices; they are not
-evidence of model dominance or parameter-robust recommendations.
-
-The repository's calibration package contains the implementation. The
-synthetic calibration job shows parameter recovery and produces
-Figure~\ref{fig:ecf-fit}.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.85\linewidth]{fig_ecf_fit.pdf}
-\caption{ECF fit along the spread direction $(s,-s)$ for $N=4{,}000$
-synthetic daily log-return observations.
-Left: modulus $|\phi(s,-s)|$; right: phase $\arg\phi(s,-s)$.
-Dots: empirical CF $\widehat\phi_N$; dashed: true model CF;
-solid red: ECF estimate.
-The close agreement in modulus and phase documents the fit along the
-liquidation-relevant spread direction; this plot alone does not assess every component of
-the full-grid criterion.
-Script \texttt{jobs/calibrate\_kou.py}.}
-\label{fig:ecf-fit}
-\end{figure}
-
-\clearpage
 % ============================================================
 \section{Killing at the Barrier and Downward-Phase Corrections}
 \label{app:downward-phases}

@@ -453,7 +453,12 @@ def write_numerical_diagnostics_csv(
         records.append(record)
 
     with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=_CSV_FIELDS, extrasaction="ignore")
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=_CSV_FIELDS,
+            extrasaction="ignore",
+            lineterminator="\n",
+        )
         writer.writeheader()
         for record in records:
             writer.writerow({field: record.get(field, "") for field in _CSV_FIELDS})

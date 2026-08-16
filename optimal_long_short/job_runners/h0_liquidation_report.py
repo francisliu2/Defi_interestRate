@@ -16,11 +16,11 @@ from optimal_long_short.risk_report import h0_liquidation_moment_report
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Apply an annualized price-drift view to calibrated WBTC/WETH "
+            "Apply an annualized price-drift view to calibrated WETH/WBTC "
             "parameters and report moments/liquidation probabilities over h0."
         )
     )
-    parser.add_argument("--params", type=Path, default=RESULTS_DIR / "params_WBTC_WETH.json")
+    parser.add_argument("--params", type=Path, default=RESULTS_DIR / "params_WETH_WBTC.json")
     parser.add_argument("--h0-min", type=float, default=None)
     parser.add_argument("--h0-max", type=float, default=2.0)
     parser.add_argument("--h0-count", type=int, default=20)
@@ -61,7 +61,11 @@ def main() -> None:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(
+            fh,
+            fieldnames=list(rows[0].keys()),
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(rows)
 

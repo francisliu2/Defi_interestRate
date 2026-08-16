@@ -45,7 +45,7 @@ def kou_params_to_dict(params: KouParams) -> dict[str, float]:
 
 
 def load_calibrated_params(
-    path: Path = RESULTS_DIR / "params_WBTC_WETH.json",
+    path: Path = RESULTS_DIR / "params_WETH_WBTC.json",
     price_drift_view: dict[str, float] | None = None,
 ) -> tuple[KouParams, dict[str, float]]:
     """Load saved rate-adjusted KouParams and AAVE constraints.
@@ -56,7 +56,7 @@ def load_calibrated_params(
     """
     if not path.exists():
         raise FileNotFoundError(
-            f"{path} not found. Run  python jobs/calibrate_btc_eth.py  first."
+            f"{path} not found. Run  python jobs/calibrate_eth_btc.py  first."
         )
     payload = json.loads(path.read_text())
     p = payload["params"]
@@ -76,10 +76,26 @@ def load_calibrated_params(
         rho=p["rho"],
     )
     constraint = dict(payload["aave_constraint"])
-    initial_prices = payload.get("meta", {}).get("initial_prices", {})
+    meta = payload.get("meta", {})
+    asset1 = meta.get("asset1")
+    asset2 = meta.get("asset2")
+    if asset1 is not None:
+        constraint["asset1"] = str(asset1)
+    if asset2 is not None:
+        constraint["asset2"] = str(asset2)
+    initial_prices = meta.get("initial_prices", {})
     if initial_prices:
-        constraint["S10"] = float(initial_prices["WBTC"])
-        constraint["S20"] = float(initial_prices["WETH"])
+        if not asset1 or not asset2:
+            raise ValueError(
+                "Calibration metadata with initial_prices must define asset1 and asset2"
+            )
+        try:
+            constraint["S10"] = float(initial_prices[asset1])
+            constraint["S20"] = float(initial_prices[asset2])
+        except KeyError as exc:
+            raise ValueError(
+                f"initial_prices is missing the calibrated asset {exc.args[0]!r}"
+            ) from exc
         constraint["initial_price_datetime"] = initial_prices.get("datetime")
         constraint["initial_price_block"] = initial_prices.get("block")
     else:

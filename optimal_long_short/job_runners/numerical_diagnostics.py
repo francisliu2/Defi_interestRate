@@ -39,7 +39,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--params",
         type=Path,
-        default=RESULTS_DIR / "params_WBTC_WETH.json",
+        default=RESULTS_DIR / "params_WETH_WBTC.json",
     )
     parser.add_argument(
         "--h0",

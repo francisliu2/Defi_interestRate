@@ -78,7 +78,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--params",
         type=Path,
-        default=RESULTS_DIR / "params_WBTC_WETH.json",
+        default=RESULTS_DIR / "params_WETH_WBTC.json",
     )
     parser.add_argument("--H0-min", type=float, default=None)
     parser.add_argument("--H0-max", type=float, default=2.0)
@@ -278,7 +278,11 @@ def main() -> None:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=OUTPUT_FIELDS)
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=OUTPUT_FIELDS,
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(output_rows)
 

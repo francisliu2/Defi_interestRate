@@ -30,8 +30,8 @@ visualisations:
    - Standardized ECF frequency grid
    - Spread-direction ECF and tail diagnostics
 
-The notebooks load the saved WBTC/WETH calibration from
-`results/params_WBTC_WETH.json`. They are stored with executed outputs.
+The notebooks load the saved long-WETH/short-WBTC calibration from
+`results/params_WETH_WBTC.json`. They are stored with executed outputs.
 
 To rerun all notebooks from the repository root:
 

@@ -1,4 +1,4 @@
-"""Generate a 3D-only mean-variance-liquidation frontier figure."""
+"""Generate a 3D-only health-buffer evaluation-map figure."""
 from __future__ import annotations
 
 import sys
@@ -15,7 +15,7 @@ from matplotlib.colors import Normalize
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 from optimal_long_short.job_runners.common import LATEX_DIR, load_calibrated_params
-from optimal_long_short.job_runners.frontier_analysis import BASE_T, compute
+from optimal_long_short.job_runners.health_buffer_evaluation_map import BASE_T, compute
 
 
 OUT = LATEX_DIR / "fig_frontier_3d.pdf"
@@ -102,7 +102,7 @@ def main() -> None:
     ax.tick_params(axis="x", labelsize=12, pad=3)
     ax.tick_params(axis="y", labelsize=12, pad=3)
     ax.tick_params(axis="z", labelsize=12, pad=6)
-    ax.text2D(0.06, 0.92, r"Efficient frontier, coloured by $H_0$",
+    ax.text2D(0.06, 0.92, r"Health-buffer evaluation map, coloured by $H_0$",
               transform=ax.transAxes, fontsize=17, color="0.30")
 
     cbar = fig.colorbar(line, ax=ax, shrink=0.58, pad=0.02, fraction=0.035)

@@ -1,10 +1,10 @@
 {
-  "run_at": "2026-07-15T20:48:10.464009+00:00",
+  "run_at": "2026-08-16T15:17:58.871606+00:00",
   "method": "paired circular moving-block percentile bootstrap",
-  "interpretation": "Descriptive sampling uncertainty conditional on the Kou model, ECF criterion, EWM preprocessing, fixed AAVE rates/protocol terms, block length, and discrete health-factor sizing grid; not a model-selection or out-of-sample forecast interval.",
+  "interpretation": "Descriptive sampling uncertainty conditional on the Kou model, ECF criterion, EWM preprocessing, fixed AAVE rates and terminal-block protocol terms, block length, and discrete health-factor sizing grid; not a model-selection or out-of-sample forecast interval.",
   "data": {
-    "asset1": "WBTC",
-    "asset2": "WETH",
+    "asset1": "WETH",
+    "asset2": "WBTC",
     "date_range": [
       "2026-02-26T16:28:59.000Z",
       "2026-05-27T20:34:47.000Z"
@@ -32,12 +32,12 @@
     "rule": "maximize initial leverage subject to p_liq <= pbar",
     "pbar": 0.1,
     "T": 0.08333333333333333,
-    "reference_H0": 1.2744544641013287,
-    "H0_min": 1.0684931506849316,
+    "reference_H0": 1.1625206779237804,
+    "H0_min": 1.031055900621118,
     "H0_max": 2.0,
     "H0_count": 200
   },
-  "runtime_seconds": 48.80103095799859,
+  "runtime_seconds": 49.93346645899874,
   "outputs": {
     "replicates": "/Users/francis/Defi_interestRate/results/calibration_uncertainty_bootstrap.csv",
     "summary": "/Users/francis/Defi_interestRate/results/calibration_uncertainty_summary.csv"

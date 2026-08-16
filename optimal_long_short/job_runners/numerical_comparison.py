@@ -7,12 +7,12 @@ range of initial log-health values h0, reporting H0 = exp(h0) alongside
 them where space allows. Also verifies the analytical
 no-shorting limit at h0 = 100.
 
-Parameters are loaded from results/params_WBTC_WETH.json (produced by
-jobs/calibrate_btc_eth.py).  Re-running calibrate_btc_eth.py then this
+Parameters are loaded from results/params_WETH_WBTC.json (produced by
+jobs/calibrate_eth_btc.py).  Re-running calibrate_eth_btc.py then this
 script fully reproduces all tables.
 
 Usage:
-    python jobs/calibrate_btc_eth.py   # calibrate once
+    python jobs/calibrate_eth_btc.py   # calibrate once
     python jobs/numerical_comparison.py
 
 Output:
@@ -45,9 +45,12 @@ T      = 1.0 / 12.0
 
 
 def main() -> None:
-    print(f"Loaded WBTC/WETH calibrated params  "
+    print(f"Loaded {_CONSTRAINT.get('asset1', 'WETH')}/{_CONSTRAINT.get('asset2', 'WBTC')} calibrated params  "
           f"(b={_CONSTRAINT['b']:.2f}, h0_min={_CONSTRAINT['h0_min']:.4f})")
-    print(f"Initial prices: WBTC S10={MARKET.S10:.6f}, WETH S20={MARKET.S20:.6f}")
+    print(
+        f"Initial prices: {_CONSTRAINT.get('asset1', 'asset 1')} S10={MARKET.S10:.6f}, "
+        f"{_CONSTRAINT.get('asset2', 'asset 2')} S20={MARKET.S20:.6f}"
+    )
     print(f"Horizon T={T:.6f} yr (1 month = 1/12)")
 
     H0_LOG_GRID = [_CONSTRAINT["h0_min"], 0.10, 0.25, 0.50, 0.75, 1.00, 1.50, 2.00]

@@ -1,6 +1,6 @@
 """Paired moving-block bootstrap for calibration and sizing uncertainty.
 
-This job conditions on the current WBTC/WETH Kou specification and return
+This job conditions on the current WETH/WBTC Kou specification and return
 preprocessing.  It resamples paired, contiguous return blocks; recalibrates the
 ECF model; reapplies fixed AAVE carry rates; and propagates each estimate to a
 reference survival probability and an explicitly liquidation-constrained
@@ -30,7 +30,7 @@ from optimal_long_short.calibration_uncertainty import (
     moving_block_bootstrap_indices,
     summarize_bootstrap_records,
 )
-from optimal_long_short.job_runners.calibrate_btc_eth import (
+from optimal_long_short.job_runners.calibrate_eth_btc import (
     CALIB_BOUNDS,
     compute_returns,
     ewm_demean_returns,
@@ -88,7 +88,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--params",
         type=Path,
-        default=RESULTS_DIR / "params_WBTC_WETH.json",
+        default=RESULTS_DIR / "params_WETH_WBTC.json",
     )
     parser.add_argument("--bootstrap-replicates", type=int, default=40)
     parser.add_argument(
@@ -196,7 +196,12 @@ def _validate_args(args: argparse.Namespace) -> None:
 def _write_csv(path: Path, fields: tuple[str, ...], rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=fields,
+            extrasaction="ignore",
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(rows)
 
@@ -210,8 +215,8 @@ def main() -> None:
     point_params, constraint = load_calibrated_params(args.params)
     raw_point = _params_from_mapping(payload.get("params_raw_ecf", payload["params"]))
     rates = payload.get("aave_rates", {})
-    supply_rate = float(rates.get("supply_btc", 0.0))
-    borrow_rate = float(rates.get("borrow_eth", 0.0))
+    supply_rate = float(rates["supply_eth"])
+    borrow_rate = float(rates["borrow_btc"])
 
     data, data_meta = load_aave_data()
     expected_sources = payload.get("meta", {}).get("source_files", {})
@@ -340,13 +345,14 @@ def main() -> None:
         "method": "paired circular moving-block percentile bootstrap",
         "interpretation": (
             "Descriptive sampling uncertainty conditional on the Kou model, ECF "
-            "criterion, EWM preprocessing, fixed AAVE rates/protocol terms, block "
+            "criterion, EWM preprocessing, fixed AAVE rates and terminal-block "
+            "protocol terms, block "
             "length, and discrete health-factor sizing grid; not a model-selection "
             "or out-of-sample forecast interval."
         ),
         "data": {
-            "asset1": "WBTC",
-            "asset2": "WETH",
+            "asset1": payload.get("meta", {}).get("asset1", "WETH"),
+            "asset2": payload.get("meta", {}).get("asset2", "WBTC"),
             "date_range": [date0, date1],
             "n_obs": len(r1),
             "dt_years": dt_years,

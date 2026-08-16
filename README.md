@@ -2,7 +2,8 @@
 
 This repository studies leveraged long-short positions on AAVE using a
 bivariate Kou jump-diffusion model.  The current empirical workflow calibrates
-WBTC/WETH dynamics from AAVE v3 Ethereum on-chain data, then uses a
+WETH/WBTC dynamics from AAVE v3 Ethereum on-chain data, with WETH as the
+long collateral leg and WBTC as the short borrowed leg, then uses a
 Laplace-resolvent method to compute liquidation probabilities, killed payoff
 moments, and conditional surviving-path moments over admissible initial health
 factors.
@@ -91,14 +92,14 @@ aave-ts/data/AAVE/manifest.csv
 The manifest records fetch parameters, realized block/date ranges, frequency,
 asset, chain, RPC host hash, and the parquet ID.  When multiple assets are
 passed in a single history fetch, the TypeScript fetcher uses the same target
-block schedule across assets, so WBTC/WETH rows can be aligned by block.
+block schedule across assets, so WETH/WBTC rows can be aligned by block.
 
 ## Empirical Calibration
 
-The main empirical calibration is WBTC collateral versus WETH borrow:
+The main empirical calibration is WETH collateral versus WBTC borrow:
 
 ```bash
-.venv/bin/python jobs/calibrate_btc_eth.py
+.venv/bin/python jobs/calibrate_eth_btc.py
 ```
 
 This reads the latest WBTC and WETH rows from `aave-ts/data/AAVE/manifest.csv`,
@@ -109,7 +110,7 @@ normalized ECF criterion plus disclosed soft moment/POT anchors.
 Outputs:
 
 ```text
-results/params_WBTC_WETH.json
+results/params_WETH_WBTC.json
 latex/fig_ecf_empirical.pdf
 ```
 
@@ -117,8 +118,8 @@ The saved JSON includes:
 
 - rate-adjusted calibrated parameters for downstream analysis
 - raw ECF parameters before AAVE rate adjustment
-- AAVE constraints (`b`, maximum LTV, `h0_min`, `H0_min`)
-- last aligned WBTC/WETH prices used as initial prices
+- terminal-block WETH collateral constraints (`b`, maximum LTV, `h0_min`, `H0_min`)
+- last aligned WETH/WBTC prices used as initial prices
 - drift summaries and first-moment diagnostics
 
 ## Drift Convention
@@ -150,8 +151,8 @@ empirical first-moment diagnostics to make this visible.
 Run from the repository root.
 
 ```bash
-# Calibrate WBTC/WETH from AAVE history
-.venv/bin/python jobs/calibrate_btc_eth.py
+# Calibrate long-WETH/short-WBTC from AAVE history
+.venv/bin/python jobs/calibrate_eth_btc.py
 
 # Numerical comparison table: Laplace-resolvent vs Monte Carlo
 .venv/bin/python jobs/numerical_comparison.py
@@ -159,8 +160,8 @@ Run from the repository root.
 # Parameter sensitivity figure
 .venv/bin/python jobs/sensitivity_analysis.py
 
-# Mean-variance-liquidation frontier figure
-.venv/bin/python jobs/frontier_analysis.py
+# Health-buffer evaluation-map figure
+.venv/bin/python jobs/health_buffer_evaluation_map.py
 
 # CSV report over h0 / H0 grid
 .venv/bin/python jobs/h0_liquidation_report.py
@@ -190,10 +191,10 @@ These intervals describe sampling variability conditional on the Kou model,
 ECF criterion, return preprocessing, block length, protocol terms, and sizing
 grid. They are not model-selection or out-of-sample forecast intervals.
 
-`frontier_analysis.py` and `sensitivity_analysis.py` load
-`results/params_WBTC_WETH.json` by default, including the same calibrated
+`health_buffer_evaluation_map.py` and `sensitivity_analysis.py` load
+`results/params_WETH_WBTC.json` by default, including the same calibrated
 parameters, AAVE constraints, initial prices, and one-month horizon used in the
-empirical paper section.  Optional drift views can be passed to frontier jobs
+empirical paper section. Optional drift views can be passed to the evaluation-map job
 with `--mu1`, `--mu2`, `--delta-mu1`, and `--delta-mu2`.
 
 ## Illustration Notebooks
@@ -202,7 +203,7 @@ The executed notebooks in `notebooks/` provide focused package walkthroughs:
 
 - health factor, holdings, and leverage
 - survival probability and integer-order moments
-- sizing frontiers, objectives, and drift views
+- sizing maps, objectives, and drift views
 - Kou calibration and spread-direction ECF diagnostics
 
 See `notebooks/README.md` for the notebook index and rerun command.
@@ -232,7 +233,7 @@ Generated figures used by the paper include:
 latex/fig_ecf_empirical.pdf
 latex/fig_ecf_fit.pdf
 latex/fig_sensitivity.pdf
-latex/fig_frontier.pdf
+latex/fig_health_buffer_evaluation_map.pdf
 ```
 
 ## Notes
