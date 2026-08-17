@@ -133,11 +133,7 @@ killed-payoff moments at every candidate initial buffer. We derive a
 semi-analytic Laplace-domain method for these quantities under bivariate Kou
 double-exponential jump--diffusion dynamics. The resulting finite-dimensional
 system is evaluated by numerical Laplace inversion, avoiding path-sampling noise
-and making repeated evaluation across candidate buffers practical. We calibrate
-the model to four-hour WETH/WBTC returns from AAVE v3 Ethereum and construct a
-health-buffer evaluation map linking the initial buffer to leverage, liquidation probability,
-and surviving-path payoff moments. We use this map to illustrate sizing under
-alternative liquidation constraints and moment-based objectives.
+and making repeated evaluation across candidate buffers practical. [Discussion of the sizing analysis]
 \end{abstract}
 
 \begin{keywords}
@@ -507,46 +503,6 @@ The bivariate process $(X_1,X_2)$ is a L\'evy process with joint characteristic 
 \end{equation}
 so that $\E_\P[e^{i(uX_{1,t}+vX_{2,t})}]=e^{t\Psi(u,v)}$.
 
-Table~\ref{tab:params} collects all model parameters and their roles.
-
-\begin{table}[ht]
-\centering\small
-\renewcommand{\arraystretch}{1.35}
-\begin{tabularx}{\linewidth}{l l X l}
-\hline
-Symbol & Asset & Economic meaning / role & Constraint \\
-\hline
-$\mu_i$ & $i=1,2$ & Expected-price growth exponent: $\E[S_{i,t}/S_{i,0}]=e^{\mu_i t}$ & \\
-$\sigma_i$ & $i=1,2$ & Diffusion volatility of log-price $X_i$ & $\sigma_i>0$ \\
-$\rho$ & --- & Correlation between the two Brownian drivers & $|\rho|<1$ \\
-$\lambda_i$ & $i=1,2$ & Jump arrival intensity (expected jumps per unit time) & $\lambda_i>0$ \\
-$p_i$ & $i=1,2$ & Probability that a jump in $X_i$ is upward & $p_i\in(0,1)$ \\
-$\eta_{i,+}$ & $i=1,2$ & Mean size of upward jumps in $X_i$ & $0<\eta_{i,+}<1$ \\
-$\eta_{i,-}$ & $i=1,2$ & Mean size of downward jumps in $X_i$ & $\eta_{i,-}>0$ \\
-\hline
-$\chi_i$ & $i=1,2$ & Price-jump compensator $M_i(1)-1=\E[e^{J_i}-1]$; enters $\mu_i^X$ via \eqref{eq:muX-drift} & \\
-$\mu_i^X$ & $i=1,2$ & Derived drift coefficient in the log-price SDE \eqref{eq:log-price-sde} & \\
-$\Psi(u,v)$ & --- & Joint characteristic exponent; $e^{T\Psi(0,-ik)}=\E[e^{kX_{2,T}}]$ appears in the moment formula & \\
-\hline
-$S_{i,0}$ & $i=1,2$ & Initial price of asset $i$ & $S_{i,0}>0$ \\
-$b$ & --- & Liquidation threshold: maximum borrow-to-collateral ratio $V_2/V_1$ before forced liquidation (Aave v3 liquidation threshold; distinct from maximum LTV) & $b\in(0,1)$ \\
-$\ell_{\max}$ & --- & Optional maximum loan-to-value ratio $V_{2,0}/V_{1,0}$ permitted at origination & $0<\ell_{\max}<b$ \\
-$T$ & --- & Investment horizon & $T>0$ \\
-$n_i$ & $i=1,2$ & Number of coins held: $n_1>0$ long in $S_1$, $n_2>0$ short in $S_2$ & $n_i>0$ \\
-\hline
-$H_t$ & --- & Health factor: $b\,n_1 S_{1,t}/(n_2 S_{2,t})$; liquidated when $H_t<1$ & \\
-$h_t$ & --- & Log health factor: $h_t=\log H_t=h_0+Z_t$ & \\
-$h_0$ & --- & Initial log health factor; evaluation and sizing parameter; determines $n_i$ via \eqref{eq:n-from-h0} & $h_0\in\mathcal H(b,\ell_{\max})$ \\
-$\tau$ & --- & Liquidation time: $\tau=\inf\{t\ge 0: H_t<1\}$ & \\
-$\Pi_T$ & --- & Killed terminal payoff: $(n_1 S_{1,T}-n_2 S_{2,T})\,\one_{\{\tau>T\}}$ & \\
-\hline
-\end{tabularx}
-\caption{Model parameters and derived quantities. The first block contains freely chosen Kou model
-inputs; the second block contains derived model quantities; the third block contains portfolio and
-contract inputs; the fourth block contains derived portfolio quantities.}
-\label{tab:params}
-\end{table}
-
 % ============================================================
 \subsection{Tilted dynamics}\label{sec:tilted}
 % ============================================================
@@ -659,11 +615,6 @@ as the known scalar $e^{T\Psi(0,-ik)}=\E_\P[e^{kX_{2,T}}]$ times the barrier-kil
 $m_k(T;h_0)$ under $\P^{(k)}$, which is computed via the Laplace--resolvent of
 Section~\ref{sec:resolvent}.
 
-The argument below is order-generic and is applied independently at each desired integer
-$k$. With distinct downward phase rates, the resulting resolvent has a $3\times3$ barrier
-system; coincident rates reduce it to $2\times2$. Higher integer orders enlarge only the
-finite forcing sum from $j=0,\ldots,k$ and do not enlarge either system.
-
 Define
 \[
 g_k(z;h_0):=(e^{h_0+z}-b)^k.
@@ -757,7 +708,7 @@ Appendix~\ref{app:downward-phases}.
 
 \subsection{Target Transform and Resolvent}
 
-Fix an integer $k\ge0$ satisfying \eqref{eq:moment-admissibility} (automatic at $k=0$), and
+Fix an integer $k\ge0$ satisfying \eqref{eq:moment-admissibility}, and
 define
 \begin{equation}\label{eq:forcing-expansion}
 G_k(x):=(e^x-b)^k
@@ -765,14 +716,16 @@ G_k(x):=(e^x-b)^k
 \qquad
 d_{k,j}:=\binom{k}{j}(-b)^{k-j}.
 \end{equation}
-For a starting distance $x>0$ above the translated barrier, let
+For a starting distance $x>0$ above the translated barrier, define the killed moment function
+directly by
 \[
-\tau_0^{(x)}:=\inf\{s\ge0:x+Z_s\le0\},
-\qquad
 \widetilde U_k(t,x)
-:=\E_{\P^{(k)}}\!\left[G_k(x+Z_t)\one_{\{\tau_0^{(x)}>t\}}\right].
+:=\E_{\P^{(k)}}\!\left[
+G_k(x+Z_t)
+\one_{\left\{\inf_{0\le s\le t}(x+Z_s)>0\right\}}
+\right].
 \]
-In the non-degenerate diffusion regime of Assumption~\ref{ass:six-root}, this entrance time
+Because $\sigma_Z>0$, zero is regular for the negative half-line, so this survival event
 agrees almost surely with the strict-breach convention $x+Z_s<0$ used in
 Section~\ref{sec:setup}. Then $m_k(t;h_0)=\widetilde U_k(t,h_0)$ for $k\ge1$. For uniform
 notation, set $p_{\mathrm{surv}}(t,h_0):=\P(\tau>t)$ and
@@ -789,9 +742,8 @@ For $q$ to the right of the time-Laplace abscissa of convergence, define
 \end{equation}
 At $k=0$, \eqref{eq:target-transform} is the Laplace transform of the survival probability.
 
-We henceforth regard $\widetilde U_k(t,\cdot)$ as a function on $\R$ by setting it equal to
-zero on $(-\infty,0]$. With killing encoded by this convention, no second generator is
-needed, and
+We regard $\widetilde U_k(t,\cdot)$ as a function on $\R$ by setting it equal to
+zero on $(-\infty,0]$. With killing encoded by this convention,
 \begin{equation}\label{eq:killed-pide}
 \partial_t\widetilde U_k(t,x)
 =\mathcal L^{(k)}\!\left[\widetilde U_k(t,\cdot)\right](x),
@@ -842,9 +794,13 @@ The forcing expansion \eqref{eq:forcing-expansion} and generator eigenrelation
 +\sum_{m=1}^{3}B_m^{(k)}(q)e^{\gamma_{m+3}^{(k)}(q)x},
 \qquad x>0.
 \end{equation}
-The first sum is the particular response to the forcing $G_k$. The second is a homogeneous
-barrier correction. As the starting distance $x\to+\infty$, the effect of the lower barrier
-must vanish and the killed resolvent must approach its unrestricted counterpart. A term
+The exponential-root structure of \eqref{eq:interior-ansatz} closely follows the
+Laplace-transform construction of \citet{Sepp2004} for barrier options under
+double-exponential jump diffusion, adapted here to a forced resolvent for killed moments.
+In this adaptation, the first sum is the particular response to the forcing $G_k$, while the
+second is a homogeneous barrier correction. As the starting distance $x\to+\infty$, the
+effect of the lower barrier must vanish and the killed resolvent must approach its
+unrestricted counterpart. A term
 $e^{\gamma x}$ with $\Rea(\gamma)>0$ would instead diverge, so the three positive-real-part
 roots are inadmissible. The ansatz therefore retains only the three roots with negative real
 part, whose exponentials decay. Their coefficients $B_m^{(k)}(q)$ remain to be determined.
@@ -886,7 +842,7 @@ and
 \frac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+j}
 \end{pmatrix}.
 \end{equation}
-The matrix \eqref{eq:barrier-matrix} is invertible, so
+By Lemma~\ref{lem:Mbar-inv}, the matrix \eqref{eq:barrier-matrix} is invertible, so
 \[
 \mathbf{B}^{(k)}(q)
 =-\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\bigr)^{-1}\mathbf{b}^{(k)}(q).
@@ -901,6 +857,15 @@ The Laplace-transformed killed moment is therefore
 \end{equation}
 \end{proposition}
 \proofref{proof:prop:Ubar}
+
+\begin{lemma}[Invertibility of $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$]\label{lem:Mbar-inv}
+Under Assumption~\ref{ass:six-root} and condition~\eqref{eq:nondeg-bar}, the barrier matrix
+$\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ in \eqref{eq:barrier-matrix} is invertible.
+\end{lemma}
+\proofref{proof:lem:Mbar-inv}
+
+The lemma ensures that the absorption condition and the two downward-phase cancellation
+conditions determine the three decaying-mode coefficients uniquely.
 
 The generic system \eqref{eq:barrier-system} assumes distinct downward rates. If the two
 rates coincide, they form one phase and the reduced construction is $2\times2$; the details
@@ -944,9 +909,14 @@ $2\times2$ system.
 % ============================================================
 
 We illustrate the framework with a one-month position that is long WETH collateral and
-short WBTC debt on AAVE v3 Ethereum. The bivariate Kou model is fitted by the penalized ECF
-criterion described in the accompanying empirical-calibration note to 540 four-hour return
-pairs, with drifts adjusted for average AAVE supply and borrowing rates. The terminal-block WETH threshold $b=0.83$ and
+short WBTC debt on AAVE v3 Ethereum. The bivariate Kou model is fitted to 540 four-hour
+return pairs by a penalized empirical characteristic function (ECF) criterion. This criterion
+matches the sample characteristic function of the bivariate returns to its closed-form model
+counterpart over a frequency grid, following the ECF methodology of
+\citet{FeuervergerMcDunnough1981} and its application to affine asset-pricing models by
+\citet{Singleton2001}. The accompanying empirical-calibration note gives the estimator,
+frequency grid, and penalty terms. The fitted drifts are adjusted for average AAVE supply and
+borrowing rates. The terminal-block WETH threshold $b=0.83$ and
 maximum LTV $0.805$ imply $h_0^{\min}=\log(0.83/0.805)\approx0.0306$. Table~\ref{tab:num-params}
 reports the resulting benchmark. The fitted $\mu_i$ are the expected-price growth exponents defined in
 \eqref{eq:expected-price-growth}, but they should not be read as robust directional forecasts
@@ -1323,12 +1293,6 @@ and, for $d=1,2$,
   \frac{r_{d,-}^{(k)}}{r_{d,-}^{(k)}+j}.
 \]
 These are precisely the three rows of \eqref{eq:barrier-system}.
-
-\begin{lemma}[Invertibility of $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$]\label{lem:Mbar-inv}
-Under Assumption~\ref{ass:six-root} and condition~\eqref{eq:nondeg-bar}, the barrier matrix
-$\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ in \eqref{eq:barrier-matrix} is invertible.
-\end{lemma}
-\proofref{proof:lem:Mbar-inv}
 
 \begin{remark}[Coincident downward rates]\label{rem:coincident-rates}
 If $r_{1,-}^{(k)}=r_{2,-}^{(k)}=:r$, the two downward kernels combine into a single phase.
