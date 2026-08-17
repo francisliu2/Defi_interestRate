@@ -3,62 +3,98 @@ import math
 
 import pytest
 
-from optimal_long_short.kou_model import BivariateKouModel
 from optimal_long_short.job_runners.calibrate_eth_btc import (
-    AAVE_B,
     AAVE_CONFIG_BLOCK,
-    AAVE_LIQ_BONUS,
-    AAVE_LTV_MAX,
+    AAVE_RISK,
+    ASSET_RATE_SUFFIX,
 )
-from optimal_long_short.job_runners.common import RESULTS_DIR, load_calibrated_params
+from optimal_long_short.job_runners.common import (
+    DEFAULT_EMPIRICAL_PARAMS,
+    load_calibrated_params,
+)
+from optimal_long_short.kou_model import BivariateKouModel
 
 
-def test_primary_empirical_artifact_is_long_weth_short_wbtc():
-    path = RESULTS_DIR / "params_WETH_WBTC.json"
-    payload = json.loads(path.read_text())
+def _payload() -> dict:
+    return json.loads(DEFAULT_EMPIRICAL_PARAMS.read_text())
 
-    assert payload["meta"]["asset1"] == "WETH"
-    assert payload["meta"]["asset2"] == "WBTC"
-    assert payload["aave_constraint"]["collateral_asset"] == "WETH"
-    assert payload["aave_constraint"]["debt_asset"] == "WBTC"
-    assert payload["aave_constraint"]["emode_applied"] is False
-    assert payload["aave_constraint"]["configuration_block"] == AAVE_CONFIG_BLOCK
 
+def test_primary_empirical_artifact_follows_data_selected_orientation():
+    payload = _payload()
+    meta = payload["meta"]
+    selection = payload["orientation_selection"]
+    constraint = payload["aave_constraint"]
+
+    assert meta["asset1"] == selection["long_asset"] == constraint["collateral_asset"]
+    assert meta["asset2"] == selection["short_asset"] == constraint["debt_asset"]
+    candidates = selection["candidate_assignments"]
+    selected_spread = candidates[meta["asset1"]]["mu_spread"]
+    assert selected_spread == max(row["mu_spread"] for row in candidates.values())
+    assert selected_spread > 0.0
+    assert payload["params"]["mu1"] > payload["params"]["mu2"]
+    assert constraint["emode_applied"] is False
+    assert constraint["configuration_block"] == AAVE_CONFIG_BLOCK
+
+
+def test_final_mu_decomposition_and_zero_mean_residuals():
+    payload = _payload()
     params = payload["params"]
-    raw = payload["params_raw_ecf"]
+    residual = payload["params_residual_ecf_oriented"]
+    components = payload["drift_components_by_asset"]
+    asset1 = payload["meta"]["asset1"]
+    asset2 = payload["meta"]["asset2"]
+
+    assert params["mu1"] == pytest.approx(
+        residual["mu1"]
+        + components[asset1]["ewm_expected_log_drift"]
+        + components[asset1]["role_carry"]
+    )
+    assert params["mu2"] == pytest.approx(
+        residual["mu2"]
+        + components[asset2]["ewm_expected_log_drift"]
+        + components[asset2]["role_carry"]
+    )
+    assert payload["residual_expected_log_drift_oriented"] == pytest.approx(
+        (0.0, 0.0), abs=1e-12
+    )
+
+
+def test_selected_role_rates_are_asset_specific():
+    payload = _payload()
+    selection = payload["orientation_selection"]
     rates = payload["aave_rates"]
-    assert params["mu1"] - raw["mu1"] == pytest.approx(rates["supply_eth"])
-    assert params["mu2"] - raw["mu2"] == pytest.approx(rates["borrow_btc"])
+    long_suffix = ASSET_RATE_SUFFIX[selection["long_asset"]]
+    short_suffix = ASSET_RATE_SUFFIX[selection["short_asset"]]
+    assert selection["long_supply_rate"] == pytest.approx(rates[f"supply_{long_suffix}"])
+    assert selection["short_borrow_rate"] == pytest.approx(rates[f"borrow_{short_suffix}"])
 
 
-def test_loader_maps_initial_prices_in_calibrated_asset_order():
-    path = RESULTS_DIR / "params_WETH_WBTC.json"
-    payload = json.loads(path.read_text())
-    _, constraint = load_calibrated_params(path)
-
+def test_loader_maps_initial_prices_in_selected_asset_order():
+    payload = _payload()
+    _, constraint = load_calibrated_params(DEFAULT_EMPIRICAL_PARAMS)
     prices = payload["meta"]["initial_prices"]
-    assert constraint["asset1"] == "WETH"
-    assert constraint["asset2"] == "WBTC"
-    assert constraint["S10"] == pytest.approx(prices["WETH"])
-    assert constraint["S20"] == pytest.approx(prices["WBTC"])
+    assert constraint["S10"] == pytest.approx(prices[payload["meta"]["asset1"]])
+    assert constraint["S20"] == pytest.approx(prices[payload["meta"]["asset2"]])
 
 
-def test_weth_collateral_terms_and_origination_boundary():
-    _, constraint = load_calibrated_params(RESULTS_DIR / "params_WETH_WBTC.json")
+def test_selected_collateral_terms_and_origination_boundary():
+    payload = _payload()
+    _, constraint = load_calibrated_params(DEFAULT_EMPIRICAL_PARAMS)
+    collateral = payload["meta"]["asset1"]
+    risk = AAVE_RISK[collateral]
 
-    assert constraint["b"] == pytest.approx(AAVE_B)
-    assert constraint["ltv_max"] == pytest.approx(AAVE_LTV_MAX)
-    assert constraint["liq_bonus"] == pytest.approx(AAVE_LIQ_BONUS)
-    assert constraint["h0_min"] == pytest.approx(math.log(AAVE_B / AAVE_LTV_MAX))
-    assert constraint["H0_min"] == pytest.approx(AAVE_B / AAVE_LTV_MAX)
+    assert constraint["b"] == pytest.approx(risk["b"])
+    assert constraint["ltv_max"] == pytest.approx(risk["ltv_max"])
+    assert constraint["liq_bonus"] == pytest.approx(risk["liq_bonus"])
+    assert constraint["h0_min"] == pytest.approx(math.log(risk["b"] / risk["ltv_max"]))
+    assert constraint["H0_min"] == pytest.approx(risk["b"] / risk["ltv_max"])
 
 
-def test_no_short_mean_is_long_weth_price_growth():
-    params, _ = load_calibrated_params(RESULTS_DIR / "params_WETH_WBTC.json")
+def test_no_short_mean_uses_selected_long_asset_growth():
+    params, _ = load_calibrated_params(DEFAULT_EMPIRICAL_PARAMS)
     horizon = 1.0 / 12.0
     model = BivariateKouModel(params)
-    long_weth_mean = math.exp(params.mu1 * horizon)
     characteristic_mean = complex(
         math.e ** (horizon * model.levy_khintchine(-1j, 0))
     ).real
-    assert characteristic_mean == pytest.approx(long_weth_mean)
+    assert characteristic_mean == pytest.approx(math.exp(params.mu1 * horizon))

@@ -15,7 +15,13 @@ from __future__ import annotations
 import numpy as np
 
 from optimal_long_short.kou_model import BivariateKouModel
-from .transforms import ParameterBounds, unc_to_params, unc_to_nat, _DEFAULT_BOUNDS
+from .transforms import (
+    ParameterBounds,
+    _DEFAULT_BOUNDS,
+    shape_unc_to_params,
+    unc_to_nat,
+    unc_to_params,
+)
 
 
 def empirical_cf(r1: np.ndarray, r2: np.ndarray, freqs: np.ndarray) -> np.ndarray:
@@ -64,6 +70,27 @@ def model_cf(
     return out
 
 
+def model_cf_shape_zero_mean(
+    tau_shape: np.ndarray,
+    dt: float,
+    freqs: np.ndarray,
+    bounds: ParameterBounds = _DEFAULT_BOUNDS,
+) -> np.ndarray:
+    """Model CF for an 11-D shape vector with zero residual log means."""
+    try:
+        params = shape_unc_to_params(tau_shape, bounds)
+    except Exception:
+        return np.full(len(freqs), 1e10 + 0j)
+
+    model = BivariateKouModel(params)
+    out = np.empty(len(freqs), dtype=complex)
+    for index, (u, v) in enumerate(freqs):
+        out[index] = np.exp(dt * model.levy_khintchine(u, v))
+    if not (np.all(np.isfinite(out.real)) and np.all(np.isfinite(out.imag))):
+        return np.full(len(freqs), 1e10 + 0j)
+    return out
+
+
 def objective_unc(
     tau: np.ndarray,
     phi_hat: np.ndarray,
@@ -78,6 +105,23 @@ def objective_unc(
         Q_N = sum_m w_m * |phi_hat_m - phi_model_m|^2  /  sum_m w_m
     """
     diff = phi_hat - model_cf(tau, dt, freqs, bounds)
+    val = float(np.real(np.dot(weights, diff * np.conj(diff))))
+    if not np.isfinite(val):
+        return 1e100
+    w_sum = float(np.sum(weights))
+    return val / w_sum if w_sum > 0 else 1e100
+
+
+def objective_shape_unc(
+    tau_shape: np.ndarray,
+    phi_hat: np.ndarray,
+    dt: float,
+    freqs: np.ndarray,
+    weights: np.ndarray,
+    bounds: ParameterBounds = _DEFAULT_BOUNDS,
+) -> float:
+    """Normalized ECF objective for the zero-log-mean residual shape."""
+    diff = phi_hat - model_cf_shape_zero_mean(tau_shape, dt, freqs, bounds)
     val = float(np.real(np.dot(weights, diff * np.conj(diff))))
     if not np.isfinite(val):
         return 1e100
@@ -138,6 +182,47 @@ def objective_unc_pot_anchored(
     return val if np.isfinite(val) else 1e100
 
 
+def objective_shape_unc_pot_anchored(
+    tau_shape: np.ndarray,
+    phi_hat: np.ndarray,
+    dt: float,
+    freqs: np.ndarray,
+    weights: np.ndarray,
+    log_lam1_anch: float,
+    log_lam2_anch: float,
+    lam_anchor_weight: float,
+    log_ep1_anch: float,
+    log_en1_anch: float,
+    log_ep2_anch: float,
+    log_en2_anch: float,
+    eta_anchor_weight: float,
+    bounds: ParameterBounds = _DEFAULT_BOUNDS,
+) -> float:
+    """Shape-only ECF objective with the same POT soft anchors."""
+    ecf = objective_shape_unc(tau_shape, phi_hat, dt, freqs, weights, bounds)
+    try:
+        params = shape_unc_to_params(tau_shape, bounds)
+        log_lam1 = np.log(max(params.lam1, 1e-12))
+        log_lam2 = np.log(max(params.lam2, 1e-12))
+        log_ep1 = np.log(max(params.eta1_pos, 1e-12))
+        log_en1 = np.log(max(params.eta1_neg, 1e-12))
+        log_ep2 = np.log(max(params.eta2_pos, 1e-12))
+        log_en2 = np.log(max(params.eta2_neg, 1e-12))
+    except Exception:
+        return ecf + 1e100
+    lam_pen = lam_anchor_weight * (
+        (log_lam1 - log_lam1_anch) ** 2 + (log_lam2 - log_lam2_anch) ** 2
+    )
+    eta_pen = eta_anchor_weight * (
+        (log_ep1 - log_ep1_anch) ** 2
+        + (log_en1 - log_en1_anch) ** 2
+        + (log_ep2 - log_ep2_anch) ** 2
+        + (log_en2 - log_en2_anch) ** 2
+    )
+    value = ecf + float(lam_pen) + float(eta_pen)
+    return value if np.isfinite(value) else 1e100
+
+
 def objective_by_group(
     tau: np.ndarray,
     phi_hat: np.ndarray,
@@ -164,4 +249,34 @@ def objective_by_group(
         result[label] = float(np.sum(sq[mask])) / w_g if w_g > 0 else float("nan")
 
     result["total"] = float(np.sum(sq)) / w_total if w_total > 0 else float("nan")
+    return result
+
+
+def objective_by_group_shape(
+    tau_shape: np.ndarray,
+    phi_hat: np.ndarray,
+    dt: float,
+    freqs: np.ndarray,
+    weights: np.ndarray,
+    groups: np.ndarray,
+    bounds: ParameterBounds = _DEFAULT_BOUNDS,
+) -> dict[str, float]:
+    """Group-decomposed objective for the zero-log-mean shape fit."""
+    phi_model = model_cf_shape_zero_mean(tau_shape, dt, freqs, bounds)
+    squared = weights * np.abs(phi_hat - phi_model) ** 2
+    weight_total = float(np.sum(weights))
+    result: dict[str, float] = {}
+    for label in sorted(np.unique(groups)):
+        mask = groups == label
+        group_weight = float(np.sum(weights[mask]))
+        result[label] = (
+            float(np.sum(squared[mask])) / group_weight
+            if group_weight > 0
+            else float("nan")
+        )
+    result["total"] = (
+        float(np.sum(squared)) / weight_total
+        if weight_total > 0
+        else float("nan")
+    )
     return result

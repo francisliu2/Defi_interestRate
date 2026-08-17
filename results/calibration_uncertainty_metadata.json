@@ -1,21 +1,43 @@
 {
-  "run_at": "2026-08-16T15:17:58.871606+00:00",
+  "run_at": "2026-08-17T13:45:55.202285+00:00",
   "method": "paired circular moving-block percentile bootstrap",
-  "interpretation": "Descriptive sampling uncertainty conditional on the Kou model, ECF criterion, EWM preprocessing, fixed AAVE rates and terminal-block protocol terms, block length, and discrete health-factor sizing grid; not a model-selection or out-of-sample forecast interval.",
+  "interpretation": "Descriptive sampling uncertainty conditional on the Kou model, ECF criterion, centered causal-EWM preprocessing, point-selected asset roles, fixed endpoint EWM trends, fixed role carry, terminal-block protocol terms, block length, and discrete health-factor sizing grid; not a model-selection or out-of-sample forecast interval.",
   "data": {
-    "asset1": "WETH",
-    "asset2": "WBTC",
+    "asset1": "WBTC",
+    "asset2": "WETH",
+    "market_calibration_order": [
+      "WETH",
+      "WBTC"
+    ],
     "date_range": [
       "2026-02-26T16:28:59.000Z",
       "2026-05-27T20:34:47.000Z"
     ],
-    "n_obs": 540,
+    "n_obs": 539,
     "dt_years": 0.00045662100456621003,
-    "ewm_demean_span": 30,
+    "returns_preprocessing": {
+      "method": "centered_lagged_normalized_ewm_innovations",
+      "ewm_half_life_years": 0.08333333333333333,
+      "ewm_half_life_periods": 182.5,
+      "replicate_centering": true
+    },
     "source_files": {
       "WBTC": "hist_c66c279c1c66.parquet",
       "WETH": "hist_2a02b96136bc.parquet"
     }
+  },
+  "fixed_empirical_inputs": {
+    "orientation_rule": "maximize the positive role-adjusted empirical-mu spread",
+    "long_asset": "WBTC",
+    "short_asset": "WETH",
+    "endpoint_ewm_expected_log_drift": {
+      "WETH": -0.5558943181987739,
+      "WBTC": 0.09508907333348318
+    },
+    "long_supply_rate": 5.559014622294604e-05,
+    "short_borrow_rate": 0.02785524539223205,
+    "residual_drift_mode": "zero_expected_log_return",
+    "orientation_reselected_per_replicate": false
   },
   "bootstrap": {
     "replicates": 40,
@@ -32,12 +54,12 @@
     "rule": "maximize initial leverage subject to p_liq <= pbar",
     "pbar": 0.1,
     "T": 0.08333333333333333,
-    "reference_H0": 1.1625206779237804,
-    "H0_min": 1.031055900621118,
+    "reference_H0": 1.1621119295105666,
+    "H0_min": 1.0684931506849316,
     "H0_max": 2.0,
     "H0_count": 200
   },
-  "runtime_seconds": 49.93346645899874,
+  "runtime_seconds": 33.25541191700904,
   "outputs": {
     "replicates": "/Users/francis/Defi_interestRate/results/calibration_uncertainty_bootstrap.csv",
     "summary": "/Users/francis/Defi_interestRate/results/calibration_uncertainty_summary.csv"

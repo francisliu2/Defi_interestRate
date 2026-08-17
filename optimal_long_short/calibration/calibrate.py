@@ -21,14 +21,26 @@ import numpy as np
 from scipy.optimize import minimize
 
 from optimal_long_short.model_params import KouParams
+from optimal_long_short.drift import with_zero_expected_log_return
 from .transforms import (
     ParameterBounds, _DEFAULT_BOUNDS,
-    unc_to_params, theta_to_params, params_to_theta, nat_to_unc,
+    SHAPE_UNC_INDICES,
+    params_to_theta,
+    shape_unc_bounds,
+    shape_unc_to_params,
+    theta_to_params,
+    unc_to_params,
 )
 from .frequency_grid import StandardizedCalibrationGrid
 from .initializer import initialize, build_multistart_cloud, pot_anchors, _lambda_from_moments
 from .ecf_objective import (
-    empirical_cf, model_cf, objective_unc, objective_unc_pot_anchored, objective_by_group,
+    empirical_cf,
+    objective_by_group,
+    objective_by_group_shape,
+    objective_shape_unc,
+    objective_shape_unc_pot_anchored,
+    objective_unc,
+    objective_unc_pot_anchored,
 )
 from .time_grid import prepare_returns
 
@@ -86,6 +98,7 @@ class ECFCalibrationResult:
     weights: np.ndarray
     groups: np.ndarray
     scale_info: dict
+    drift_mode: str = "free"
     diagnostics: dict = field(default_factory=dict)
 
 
@@ -106,6 +119,7 @@ def calibrate_ecf(
     max_moment_order: int = 4,
     moment_anchor_weight: float = 0.05,
     eta_anchor_weight: float = 0.02,
+    drift_mode: str = "free",
     seed: int | None = None,
     run_diagnostics: bool = True,
 ) -> ECFCalibrationResult:
@@ -140,6 +154,10 @@ def calibrate_ecf(
     moment_anchor_weight : Weight of the log-lambda POT soft penalty.
     eta_anchor_weight    : Weight of the log-eta POT soft penalty (lambda-eta
                            degeneracy guard; default 0.02).
+    drift_mode           : ``"free"`` estimates both price-growth exponents.
+                           ``"zero_expected_log_return"`` estimates only the
+                           11 diffusion/jump/dependence shape parameters and
+                           imposes zero expected log drift on both residuals.
     seed               : RNG seed for the multi-start perturbation cloud.
     run_diagnostics    : Whether to call diagnose_calibration after fitting.
 
@@ -169,6 +187,11 @@ def calibrate_ecf(
         raise ValueError("r1 and r2 must be 1-D arrays of equal length.")
     if dt_years is None or dt_years <= 0:
         raise ValueError(f"dt_years must be positive, got {dt_years!r}.")
+    if drift_mode not in {"free", "zero_expected_log_return"}:
+        raise ValueError(
+            "drift_mode must be 'free' or 'zero_expected_log_return', "
+            f"got {drift_mode!r}"
+        )
 
     # ------------------------------------------------------------------
     # 2. Build grid, empirical CF, and initial parameter cloud
@@ -190,9 +213,21 @@ def calibrate_ecf(
     theta_nat0 = theta0 if theta0 is not None else initialize(
         r1, r2, dt_years, bounds, threshold
     )
+    theta_nat0 = np.asarray(theta_nat0, dtype=float)
+    if theta_nat0.shape != (13,):
+        raise ValueError("theta0 must be a 13-element natural-space vector")
+    if drift_mode == "zero_expected_log_return":
+        theta_nat0 = params_to_theta(
+            with_zero_expected_log_return(theta_to_params(theta_nat0))
+        )
     rng = np.random.default_rng(seed)
-    starts_unc = build_multistart_cloud(theta_nat0, n_starts, rng, bounds)
-    unc_bds = bounds.unc_bounds()
+    starts_full = build_multistart_cloud(theta_nat0, n_starts, rng, bounds)
+    if drift_mode == "zero_expected_log_return":
+        starts_unc = [start[SHAPE_UNC_INDICES] for start in starts_full]
+        unc_bds = shape_unc_bounds(bounds)
+    else:
+        starts_unc = starts_full
+        unc_bds = bounds.unc_bounds()
 
     # ------------------------------------------------------------------
     # 3. Multi-start L-BFGS-B optimization
@@ -207,14 +242,22 @@ def calibrate_ecf(
         log_lam2_anch = float(np.log(max(lam2_anchor, 1e-12)))
         # Eta anchor: POT excess means (unbiased for exponential, prevents eta collapse)
         eta_anch = pot_anchors(r1, r2, dt_years, bounds=bounds)
-        obj_fn = objective_unc_pot_anchored
+        obj_fn = (
+            objective_shape_unc_pot_anchored
+            if drift_mode == "zero_expected_log_return"
+            else objective_unc_pot_anchored
+        )
         opt_args = (phi_hat, dt_years, freqs, weights,
                     log_lam1_anch, log_lam2_anch, moment_anchor_weight,
                     eta_anch["log_ep1"], eta_anch["log_en1"],
                     eta_anch["log_ep2"], eta_anch["log_en2"],
                     eta_anchor_weight, bounds)
     else:
-        obj_fn = objective_unc
+        obj_fn = (
+            objective_shape_unc
+            if drift_mode == "zero_expected_log_return"
+            else objective_unc
+        )
         opt_args = (phi_hat, dt_years, freqs, weights, bounds)
 
     best_fun  = np.inf
@@ -244,10 +287,16 @@ def calibrate_ecf(
     # ------------------------------------------------------------------
     # 4. Assemble result
     # ------------------------------------------------------------------
-    best_params = unc_to_params(best_res.x, bounds)
-    grp_obj     = objective_by_group(
-        best_res.x, phi_hat, dt_years, freqs, weights, groups, bounds
-    )
+    if drift_mode == "zero_expected_log_return":
+        best_params = shape_unc_to_params(best_res.x, bounds)
+        grp_obj = objective_by_group_shape(
+            best_res.x, phi_hat, dt_years, freqs, weights, groups, bounds
+        )
+    else:
+        best_params = unc_to_params(best_res.x, bounds)
+        grp_obj = objective_by_group(
+            best_res.x, phi_hat, dt_years, freqs, weights, groups, bounds
+        )
     theta0_params = theta_to_params(theta_nat0)
 
     result = ECFCalibrationResult(
@@ -267,6 +316,7 @@ def calibrate_ecf(
         weights            = weights,
         groups             = groups,
         scale_info         = scale_info,
+        drift_mode         = drift_mode,
     )
 
     if run_diagnostics:

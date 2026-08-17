@@ -30,8 +30,10 @@ visualisations:
    - Standardized ECF frequency grid
    - Spread-direction ECF and tail diagnostics
 
-The notebooks load the saved long-WETH/short-WBTC calibration from
-`results/params_WETH_WBTC.json`. They are stored with executed outputs.
+The notebooks load the data-selected WETH/WBTC empirical showcase from
+`results/params_empirical_showcase.json`. The saved metadata defines asset 1 as
+the selected long/collateral leg and asset 2 as the selected short/borrowed leg.
+The notebooks are stored with executed outputs.
 
 To rerun all notebooks from the repository root:
 

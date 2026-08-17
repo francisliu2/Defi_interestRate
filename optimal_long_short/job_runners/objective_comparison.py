@@ -13,7 +13,11 @@ from pathlib import Path
 
 import numpy as np
 
-from optimal_long_short.job_runners.common import RESULTS_DIR, load_calibrated_params
+from optimal_long_short.job_runners.common import (
+    DEFAULT_EMPIRICAL_PARAMS,
+    RESULTS_DIR,
+    load_calibrated_params,
+)
 from optimal_long_short.risk_report import h0_liquidation_moment_report
 from optimal_long_short.sizing import (
     ObjectiveSpecificSelection,
@@ -78,7 +82,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--params",
         type=Path,
-        default=RESULTS_DIR / "params_WETH_WBTC.json",
+        default=DEFAULT_EMPIRICAL_PARAMS,
     )
     parser.add_argument("--H0-min", type=float, default=None)
     parser.add_argument("--H0-max", type=float, default=2.0)

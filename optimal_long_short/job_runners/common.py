@@ -22,6 +22,7 @@ from optimal_long_short.drift import apply_price_drift_view
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LATEX_DIR = REPO_ROOT / "latex"
 RESULTS_DIR = REPO_ROOT / "results"
+DEFAULT_EMPIRICAL_PARAMS = RESULTS_DIR / "params_empirical_showcase.json"
 
 
 class NpEncoder(json.JSONEncoder):
@@ -45,7 +46,7 @@ def kou_params_to_dict(params: KouParams) -> dict[str, float]:
 
 
 def load_calibrated_params(
-    path: Path = RESULTS_DIR / "params_WETH_WBTC.json",
+    path: Path = DEFAULT_EMPIRICAL_PARAMS,
     price_drift_view: dict[str, float] | None = None,
 ) -> tuple[KouParams, dict[str, float]]:
     """Load saved rate-adjusted KouParams and AAVE constraints.

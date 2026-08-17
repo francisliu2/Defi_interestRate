@@ -5,7 +5,11 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from optimal_long_short.job_runners.common import RESULTS_DIR, load_calibrated_params
+from optimal_long_short.job_runners.common import (
+    DEFAULT_EMPIRICAL_PARAMS,
+    RESULTS_DIR,
+    load_calibrated_params,
+)
 from optimal_long_short.market_params import MarketParams
 from optimal_long_short.numerical_diagnostics import (
     MonteCarloMonitoringDiagnostic,
@@ -39,7 +43,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--params",
         type=Path,
-        default=RESULTS_DIR / "params_WETH_WBTC.json",
+        default=DEFAULT_EMPIRICAL_PARAMS,
     )
     parser.add_argument(
         "--h0",

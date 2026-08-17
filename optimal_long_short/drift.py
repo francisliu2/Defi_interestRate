@@ -134,6 +134,84 @@ def expected_log_return_drift(params: KouParams) -> tuple[float, float]:
     )
 
 
+def residual_price_growth_correction(
+    sigma: float,
+    lam: float,
+    p: float,
+    eta_pos: float,
+    eta_neg: float,
+) -> float:
+    """Price-growth exponent of a Kou residual with zero expected log drift.
+
+    If ``E[X(t)]/t = 0``, the paper's expected-price-growth convention implies
+
+    ``mu = 0.5*sigma**2 + lam*(chi - E[J])``.
+
+    This is a Jensen/jump correction determined by the residual distribution's
+    shape; it is not a directional return forecast.
+    """
+    mean_jump = p * eta_pos - (1.0 - p) * eta_neg
+    chi = p / (1.0 - eta_pos) + (1.0 - p) / (1.0 + eta_neg) - 1.0
+    return 0.5 * sigma**2 + lam * (chi - mean_jump)
+
+
+def with_expected_log_return_drift(
+    params: KouParams,
+    *,
+    drift1: float,
+    drift2: float,
+) -> KouParams:
+    """Set annualized expected log-return drifts while preserving shape.
+
+    ``drift1`` and ``drift2`` are rates of ``E[X_i(t)]/t``. They are
+    converted to the stored expected-price-growth convention by adding the
+    diffusion/jump correction implied by each fitted marginal law.
+    """
+    correction1 = residual_price_growth_correction(
+        params.sigma1,
+        params.lam1,
+        params.p1,
+        params.eta1_pos,
+        params.eta1_neg,
+    )
+    correction2 = residual_price_growth_correction(
+        params.sigma2,
+        params.lam2,
+        params.p2,
+        params.eta2_pos,
+        params.eta2_neg,
+    )
+    return _copy_with(
+        params,
+        mu1=float(drift1) + correction1,
+        mu2=float(drift2) + correction2,
+    )
+
+
+def with_zero_expected_log_return(params: KouParams) -> KouParams:
+    """Normalize both residual marginals to zero expected log drift."""
+    return with_expected_log_return_drift(params, drift1=0.0, drift2=0.0)
+
+
+def swap_asset_order(params: KouParams) -> KouParams:
+    """Exchange asset-1 and asset-2 marginal parameters; preserve ``rho``."""
+    return KouParams(
+        mu1=params.mu2,
+        sigma1=params.sigma2,
+        lam1=params.lam2,
+        p1=params.p2,
+        eta1_pos=params.eta2_pos,
+        eta1_neg=params.eta2_neg,
+        mu2=params.mu1,
+        sigma2=params.sigma1,
+        lam2=params.lam1,
+        p2=params.p1,
+        eta2_pos=params.eta1_pos,
+        eta2_neg=params.eta1_neg,
+        rho=params.rho,
+    )
+
+
 def drift_summary(params: KouParams) -> dict[str, dict[str, float] | str]:
     """Return a machine-readable summary of all drift conventions."""
     log1, log2 = expected_log_return_drift(params)

@@ -193,11 +193,6 @@ joint optimisation of long and short legs, and \citet{DangForsyth2016} study dyn
 mean--variance control under jump risk; our sizing problem is a static analogue, optimizing
 a single initial buffer against a killed-payoff distribution rather than a control process.
 
-The scope of this framework is as follows. It evaluates liquidation
-probabilities, killed payoff moments, and conditional surviving-path moments repeatedly
-across initial health buffers, and solves the resulting sizing problem for a stated
-objective.
-
 The remainder of the paper is organised as follows. Section~\ref{sec:setup} defines the
 position, the liquidation barrier, and the health-buffer parameterization.
 Section~\ref{sec:model} specifies the bivariate Kou model and its tilted dynamics.
@@ -207,8 +202,9 @@ evaluation system. Section~\ref{sec:empirical} illustrates the framework with an
 calibration and health-buffer evaluation map, and Section~\ref{sec:application} applies that map
 to initial-buffer sizing rules.
 Section~\ref{sec:discussion} concludes. The accompanying
-\emph{Empirical Calibration of the Bivariate Kou Model: Companion Note} describes the
-calibration estimator; Appendix~\ref{app:downward-phases} derives the downward-phase
+\emph{Residual-Shape Calibration and Empirical Drift Construction: Companion Note}
+describes the calibration estimator and drift construction;
+Appendix~\ref{app:downward-phases} derives the downward-phase
 boundary conditions, and Appendix~\ref{app:proofs} collects the proofs.
 
 % ============================================================
@@ -640,7 +636,7 @@ m_k(T;h_0):=\E_{\P^{(k)}}\!\Big[g_k(Z_T;h_0)\,\one_{\{\tau>T\}}\Big].
 \]
 Then
 \[
-\E[\Pi_T^k]:=\E_{\P}[\Pi_T^k]=\frac{e^{T\Psi(0,-ik)}}{(e^{h_0}-b)^k}\,m_k(T;h_0),
+\E_{\P}[\Pi_T^k]=\frac{e^{T\Psi(0,-ik)}}{(e^{h_0}-b)^k}\,m_k(T;h_0),
 \]
 where $m_k(T;h_0)$ is computed via the Laplace--resolvent method of
 Section~\ref{sec:resolvent}. Consequently, the method computes $\E[\Pi_T^k]$ for every
@@ -908,49 +904,55 @@ $2\times2$ system.
 \section{Empirical Illustration: Calibration and Health-Buffer Evaluation Map}\label{sec:empirical}
 % ============================================================
 
-We illustrate the framework with a one-month position that is long WETH collateral and
-short WBTC debt on AAVE v3 Ethereum. The bivariate Kou model is fitted to 540 four-hour
-return pairs by a penalized empirical characteristic function (ECF) criterion. This criterion
-matches the sample characteristic function of the bivariate returns to its closed-form model
-counterpart over a frequency grid, following the ECF methodology of
-\citet{FeuervergerMcDunnough1981} and its application to affine asset-pricing models by
-\citet{Singleton2001}. The accompanying empirical-calibration note gives the estimator,
-frequency grid, and penalty terms. The fitted drifts are adjusted for average AAVE supply and
-borrowing rates. The terminal-block WETH threshold $b=0.83$ and
-maximum LTV $0.805$ imply $h_0^{\min}=\log(0.83/0.805)\approx0.0306$. Table~\ref{tab:num-params}
-reports the resulting benchmark. The fitted $\mu_i$ are the expected-price growth exponents defined in
-\eqref{eq:expected-price-growth}, but they should not be read as robust directional forecasts
-because first moments are weakly identified in high-frequency ECF matching.
+We illustrate the framework with 540 four-hour WETH/WBTC return pairs and horizon
+$T=1/12$. A normalized, causal exponentially weighted mean (EWM) with half-life $T$
+produces 539 lagged-mean innovations, which are centered before fitting. A penalized
+empirical characteristic function (ECF) criterion estimates the eleven diffusion, jump, and
+dependence parameters from those innovations, following
+\citet{FeuervergerMcDunnough1981} and \citet{Singleton2001}; the residual expected log
+drifts are fixed at zero. The accompanying empirical-calibration note gives the complete
+construction.
 
-\begin{table}[t]
+For each asset, the endpoint EWM log drift is added to the residual-law price-growth
+correction. We then evaluate both role assignments using the applicable supply rate on the
+long leg and borrowing rate on the short leg, and choose the assignment with the larger
+positive empirical-$\mu$ spread. This selects long WBTC and short WETH. The terminal-block
+WBTC threshold $b=0.78$ and maximum LTV
+$0.73$ imply $h_0^{\min}=\log(0.78/0.73)\approx0.0662$. Table~\ref{tab:num-params}
+reports the resulting benchmark.
+
+\begin{table}[!h]
 \centering\small
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{llcc}
 \toprule
-Group & Parameter & WETH & WBTC \\
+Group & Parameter & Long $S_1$: WBTC & Short $S_2$: WETH \\
 \midrule
 \multirow{6}{*}{Kou}
- & Expected-price growth exponent $\mu_i$ & $1.194$ & $0.491$ \\
- & Diffusion volatility $\sigma_i$ & $0.307$ & $0.241$ \\
- & Jump intensity $\lambda_i$ & $588.95$ & $372.95$ \\
- & Upward-jump probability $p_i$ & $0.357$ & $0.508$ \\
- & Mean upward-jump size $\eta_{i,+}$ & $0.0125$ & $0.0111$ \\
- & Mean downward-jump size $\eta_{i,-}$ & $0.00469$ & $0.00743$ \\
+ & Expected-price growth exponent $\mu_i$ & $0.149$ & $-0.434$ \\
+ & Diffusion volatility $\sigma_i$ & $0.256$ & $0.313$ \\
+ & Jump intensity $\lambda_i$ & $321.41$ & $609.84$ \\
+ & Upward-jump probability $p_i$ & $0.497$ & $0.428$ \\
+ & Mean upward-jump size $\eta_{i,+}$ & $0.0106$ & $0.0113$ \\
+ & Mean downward-jump size $\eta_{i,-}$ & $0.00459$ & $0.00559$ \\
 \midrule
 \multirow{3}{*}{Correlation / contract}
- & Brownian correlation $\rho$ & \multicolumn{2}{c}{$0.858$} \\
- & WETH liquidation threshold $b$ & \multicolumn{2}{c}{$0.83$} \\
- & WETH maximum origination LTV & \multicolumn{2}{c}{$0.805$} \\
+ & Brownian correlation $\rho$ & \multicolumn{2}{c}{$0.842$} \\
+ & WBTC liquidation threshold $b$ & \multicolumn{2}{c}{$0.78$} \\
+ & WBTC maximum origination LTV & \multicolumn{2}{c}{$0.73$} \\
 \midrule
 \multirow{2}{*}{Portfolio}
- & Initial price $S_{i,0}$ & $2{,}060.33$ & $75{,}060.57$ \\
+ & Initial price $S_{i,0}$ & $75{,}060.57$ & $2{,}060.33$ \\
  & Horizon $T$ & \multicolumn{2}{c}{$1/12$ (one month)} \\
 \bottomrule
 \end{tabular}
-\caption{Penalized ECF calibration to four-hour WETH/WBTC returns
-(2026-02-26--2026-05-27), after EWM de-meaning with span 30. The reported $\mu_i$ include
-sample-average AAVE rates of $2.1901\%$ for WETH supply and $0.3479\%$ for WBTC variable
-borrowing. Contract terms and initial prices are measured at terminal block $25{,}189{,}091$.}
+\caption{Empirical benchmark from four-hour WETH/WBTC returns
+(2026-02-26--2026-05-27). Shape parameters are fitted by penalized ECF to
+centered causal-EWM innovations with half-life $T$. Each reported $\mu_i$ combines the
+endpoint EWM log drift, the zero-log-mean residual correction, and the sample-average AAVE
+rate over the observation window: $0.0056\%$ for WBTC supply and $2.7855\%$ for WETH
+variable borrowing.
+Contract terms and initial prices are measured at terminal block $25{,}189{,}091$.}
 \label{tab:num-params}
 \end{table}
 
@@ -971,11 +973,11 @@ health-factor range. The conditional statistics are computed given survival to $
 \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}
 $h_0$ & $H_0$ & SA & MC & SA & MC & SA & MC & SA & MC \\
 \midrule
-$0.0306$ & $1.0311$ & $0.6430$ & $0.6298$ & $1.8103$ & $1.8097$ & $0.2765$ & $0.2816$ & $0.040$ & $13.70$ \\
-$0.0953$ & $1.1000$ & $0.2517$ & $0.2436$ & $1.4660$ & $1.4699$ & $0.1895$ & $0.1912$ & $0.038$ & $13.52$ \\
-$0.1823$ & $1.2000$ & $0.0507$ & $0.0485$ & $1.2815$ & $1.2865$ & $0.1420$ & $0.1437$ & $0.038$ & $13.67$ \\
-$0.4055$ & $1.5000$ & $1.34\!\times\!10^{-4}$ & $1.20\!\times\!10^{-4}$ & $1.1826$ & $1.1867$ & $0.0754$ & $0.0764$ & $0.038$ & $13.88$ \\
-$0.6931$ & $2.0000$ & $2.47\!\times\!10^{-9}$ & $0^{\ast}$ & $1.1492$ & $1.1524$ & $0.0445$ & $0.0451$ & $0.038$ & $13.70$ \\
+$0.0662$ & $1.0685$ & $0.3863$ & $0.3812$ & $1.3091$ & $1.3058$ & $0.0778$ & $0.0773$ & $0.041$ & $13.53$ \\
+$0.0953$ & $1.1000$ & $0.2475$ & $0.2450$ & $1.2388$ & $1.2366$ & $0.0712$ & $0.0704$ & $0.036$ & $12.69$ \\
+$0.1823$ & $1.2000$ & $0.0510$ & $0.0488$ & $1.1270$ & $1.1245$ & $0.0585$ & $0.0586$ & $0.037$ & $12.68$ \\
+$0.4055$ & $1.5000$ & $1.76\!\times\!10^{-4}$ & $1.60\!\times\!10^{-4}$ & $1.0647$ & $1.0638$ & $0.0330$ & $0.0327$ & $0.035$ & $12.52$ \\
+$0.6931$ & $2.0000$ & $7.27\!\times\!10^{-9}$ & $0^{\ast}$ & $1.0433$ & $1.0427$ & $0.0196$ & $0.0194$ & $0.036$ & $12.47$ \\
 \bottomrule
 \end{tabular}
 \caption{Semi-analytical and Monte Carlo calculations for the benchmark in
@@ -987,11 +989,12 @@ observed in the simulated sample, not that the underlying probability is zero.}
 \label{tab:sa-mc-comparison}
 \end{table}
 
-Conditional moments are close. MC is lower near the barrier because monitoring is
-discrete. Runtime is about $0.04$ seconds for SA and $14$ seconds for MC.
+Conditional moments are close. The discretely monitored MC liquidation estimate is lower
+near the barrier, as expected when crossings between monitoring dates are missed. Runtime
+is about $0.04$ seconds for SA and $13$ seconds for MC on this implementation and host.
 
 \clearpage
-Applying the resolvent map to this benchmark over $H_0\in[1.031,2.000]$ gives the
+Applying the resolvent map to this benchmark over $H_0\in[1.068,2.000]$ gives the
 health-buffer evaluation map in Figure~\ref{fig:health-buffer-map}. Before imposing an
 investor objective, the three-dimensional curve shows how the initial buffer jointly changes
 liquidation probability and the conditional mean and variance of the surviving payoff.
@@ -999,11 +1002,11 @@ liquidation probability and the conditional mean and variance of the surviving p
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth,height=0.64\textheight,keepaspectratio]{fig_health_buffer_evaluation_map.pdf}
-\caption{Health-buffer evaluation map for the calibrated long-WETH/short-WBTC benchmark in
+\caption{Health-buffer evaluation map for the empirical long-WBTC/short-WETH benchmark in
 Table~\ref{tab:num-params}. Axes: $x=\mathrm{Var}(\Pi_T\mid\tau>T)$,
 $y=p_{\mathrm{liq}}=1-p_{\mathrm{surv}}$, and
 $z=\mathrm{E}[\Pi_T\mid\tau>T]$. The curve is parametrised and coloured by
-$H_0\in[1.031,2.000]$; labelled points identify representative initial health factors.
+$H_0\in[1.068,2.000]$; labelled points identify representative initial health factors.
 Grey curves are orthogonal guides on the coordinate planes.}
 \label{fig:health-buffer-map}
 \end{figure}
@@ -1016,6 +1019,48 @@ Grey curves are orthogonal guides on the coordinate planes.}
 Using the empirical benchmark and evaluation map in Section~\ref{sec:empirical}, we now give
 three stylized initial-buffer rules. They illustrate how the common evaluation map supports
 different preferences, not competing claims about a uniquely correct objective.
+
+\subsection{Drift construction and interpretation}
+
+The directional drift is deliberately kept outside the ECF optimization. High-frequency
+sampling sharpens volatility estimates much more than expected-return estimates
+\citep{Merton1980}; in a short sample, allowing the characteristic-function phase to select a
+free drift can therefore confound location with jump-shape discrepancies. Let
+$d_i^{\mathrm{EWM}}$ denote the annualized endpoint EWM log-return signal and
+$\bar J_i=p_i\eta_{i,+}-(1-p_i)\eta_{i,-}$. Normalizing the fitted residual law to zero
+expected log drift gives the shape-implied correction
+\[
+\mu_i^{\mathrm{res}}
+=\frac12\sigma_i^2+\lambda_i(\chi_i-\bar J_i),
+\qquad
+\nu_i=d_i^{\mathrm{EWM}}+\mu_i^{\mathrm{res}}.
+\]
+Because financing is role-dependent, the comparison is made for each complete ordered
+assignment $(L,S)$:
+\[
+\mu_L(L,S)=\nu_L+r_{\mathrm{supply},L},
+\qquad
+\mu_S(L,S)=\nu_S+r_{\mathrm{borrow},S}.
+\]
+Writing $\mathcal O=\{(\mathrm{WETH},\mathrm{WBTC}),
+(\mathrm{WBTC},\mathrm{WETH})\}$, the showcase selects
+\[
+(L^\star,S^\star)=\arg\max_{(L,S)\in\mathcal O}
+\{\mu_L(L,S)-\mu_S(L,S)\},
+\]
+provided that the maximum is positive. The selected exponents are then relabelled $\mu_1$
+and $\mu_2$ for the long and short legs, respectively. This makes the
+``larger empirical $\mu$ is long'' rule well-defined without treating a supply or borrowing
+rate as an asset characteristic before its role is known.
+
+Exponential-smoothing choices generally depend on the forecast horizon
+\citep{Cox1961,TiaoXu1993}; the half-life-$T$ specification used here is a transparent
+horizon-matching convention, not an estimated optimum. The 90-day sample contains only
+about three non-overlapping one-month forecast horizons, too few for a persuasive
+horizon-specific out-of-sample selection. A practical implementation should therefore
+compare half-lives $T/2$, $T$, and $2T$, as well as a zero-directional-trend, carry-only
+case. The reported benchmark is one empirical scenario rather than a claim that its
+$\mu_i$ are structural or precisely estimated expected returns.
 
 Write
 \[
@@ -1084,20 +1129,20 @@ or universal optimum.
 \toprule
 Rule & Parameters & Selected $H_0$ & Initial $L_0$ & $p_{\mathrm{liq}}$ \\
 \midrule
-Maximum leverage under risk limit & $\bar p=0.05$ & $1.201$ & $3.234$ & $0.0494$ \\
-Maximum leverage under risk limit & $\bar p=0.10$ & $1.163$ & $3.496$ & $0.0954$ \\
-Maximum leverage under risk limit & $\bar p=0.20$ & $1.119$ & $3.875$ & $0.1905$ \\
-Unconditional mean--variance & $\alpha=0.5$ & $1.284$ & $2.827$ & $0.0110$ \\
-Unconditional mean--variance & $\alpha=1$ & $1.338$ & $2.634$ & $0.0039$ \\
-Unconditional mean--variance & $\alpha=5$ & $2.000$ & $1.709$ & $<10^{-4}$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0)$ & $1.031$ & $5.128$ & $0.6430$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(20,0)$ & $2.000$ & $1.709$ & $<10^{-4}$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.25)$ & $1.031$ & $5.128$ & $0.6430$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.5)$ & $1.031$ & $5.128$ & $0.6430$ \\
+Maximum leverage under risk limit & $\bar p=0.05$ & $1.204$ & $2.839$ & $0.0474$ \\
+Maximum leverage under risk limit & $\bar p=0.10$ & $1.162$ & $3.041$ & $0.0953$ \\
+Maximum leverage under risk limit & $\bar p=0.20$ & $1.115$ & $3.326$ & $0.1974$ \\
+Unconditional mean--variance & $\alpha=0.5$ & $1.312$ & $2.466$ & $0.0069$ \\
+Unconditional mean--variance & $\alpha=1$ & $1.349$ & $2.370$ & $0.0034$ \\
+Unconditional mean--variance & $\alpha=5$ & $2.000$ & $1.639$ & $<10^{-4}$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0)$ & $1.068$ & $3.704$ & $0.3863$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(20,0)$ & $2.000$ & $1.639$ & $<10^{-4}$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.25)$ & $1.068$ & $3.704$ & $0.3863$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.5)$ & $1.111$ & $3.359$ & $0.2117$ \\
 \bottomrule
 \end{tabularx}
-\caption{Objective-specific selections for the calibrated long-WETH/short-WBTC benchmark
-over the 200-point grid $H_0\in[1.031,2.000]$. Only the decision rule or its stated
+\caption{Objective-specific selections for the empirical long-WBTC/short-WETH benchmark
+over the 200-point grid $H_0\in[1.068,2.000]$. Only the decision rule or its stated
 parameters change. Endpoint selections underscore that this is an illustration rather than
 a preferred practical buffer; the constrained rows maximize $L_0$ subject to the stated
 liquidation budget.}
@@ -1121,7 +1166,7 @@ conditions give a $3\times3$ resolvent system.
 These objective-independent quantities turn initial-buffer sizing into a one-dimensional
 optimization: rapid evaluation of survival and killed-moment outputs supports buffer
 selection under alternative liquidation constraints and moment-based preferences. For the
-calibrated long-WETH/short-WBTC benchmark, the health-buffer evaluation map displays the trade-off
+empirical long-WBTC/short-WETH benchmark, the health-buffer evaluation map displays the trade-off
 between the initial health buffer, leverage, liquidation probability, and surviving-path
 payoff moments. The selected buffer moves with the objective, its risk parameters, and the
 loss convention; no single selection should be read as a universal practical optimum.

@@ -8,7 +8,11 @@ import math
 import time
 from pathlib import Path
 
-from optimal_long_short.job_runners.common import RESULTS_DIR, load_calibrated_params
+from optimal_long_short.job_runners.common import (
+    DEFAULT_EMPIRICAL_PARAMS,
+    RESULTS_DIR,
+    load_calibrated_params,
+)
 from optimal_long_short.market_params import MarketParams
 from optimal_long_short.moments import ConditionalMoments
 from optimal_long_short.monte_carlo import MonteCarlo
@@ -20,7 +24,7 @@ DEFAULT_T = 1.0 / 12.0
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--params", type=Path, default=RESULTS_DIR / "params_WETH_WBTC.json")
+    parser.add_argument("--params", type=Path, default=DEFAULT_EMPIRICAL_PARAMS)
     parser.add_argument("--out", type=Path, default=RESULTS_DIR / "empirical_method_comparison.csv")
     parser.add_argument("--T", type=float, default=DEFAULT_T)
     parser.add_argument("--mc-paths", type=int, default=25_000)
@@ -147,7 +151,7 @@ def main() -> None:
         "talbot_M",
     ]
     with args.out.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     print(f"Saved {len(rows)} rows to {args.out}")

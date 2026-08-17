@@ -3,7 +3,7 @@ Generate the three-dimensional health-buffer evaluation map.
 
 The curve is parametrised by H_0 = exp(h_0), with conditional payoff variance,
 liquidation probability, and conditional payoff mean on the three axes.
-Parameters are loaded from results/params_WETH_WBTC.json.
+Parameters are loaded from results/params_empirical_showcase.json.
 
 Usage:  python jobs/health_buffer_evaluation_map.py
         python jobs/health_buffer_evaluation_map.py --H0-max 2.0 --delta-mu1 0.02 --delta-mu2 -0.01
@@ -21,6 +21,7 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 from optimal_long_short.drift import drift_summary
 from optimal_long_short.job_runners.common import (
+    DEFAULT_EMPIRICAL_PARAMS,
     LATEX_DIR,
     load_calibrated_params,
 )
@@ -48,10 +49,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--T", type=float, default=BASE_T)
     parser.add_argument("--H0-max", type=float, default=2.0)
     parser.add_argument("--H0-count", type=int, default=180)
-    parser.add_argument("--mu1", type=float, default=None, help="Absolute annual price-growth drift for WETH.")
-    parser.add_argument("--mu2", type=float, default=None, help="Absolute annual price-growth drift for WBTC.")
-    parser.add_argument("--delta-mu1", type=float, default=0.0, help="Additive annual price-growth drift view for WETH.")
-    parser.add_argument("--delta-mu2", type=float, default=0.0, help="Additive annual price-growth drift view for WBTC.")
+    parser.add_argument("--mu1", type=float, default=None, help="Absolute annual price-growth drift for the selected long asset.")
+    parser.add_argument("--mu2", type=float, default=None, help="Absolute annual price-growth drift for the selected short asset.")
+    parser.add_argument("--delta-mu1", type=float, default=0.0, help="Additive annual price-growth drift view for the selected long asset.")
+    parser.add_argument("--delta-mu2", type=float, default=0.0, help="Additive annual price-growth drift view for the selected short asset.")
     return parser.parse_args()
 
 
@@ -98,7 +99,7 @@ def compute(params, h0_grid, b, T, S10=1.0, S20=1.0, ltv_max=None):
 def main() -> None:
     args = parse_args()
     params, constraint = load_calibrated_params(
-        args.params or LATEX_DIR.parent / "results" / "params_WETH_WBTC.json",
+        args.params or DEFAULT_EMPIRICAL_PARAMS,
         price_drift_view=price_drift_view(args),
     )
     base_b = constraint["b"]
@@ -113,7 +114,7 @@ def main() -> None:
 
     # ── Compute benchmark evaluation map ───────────────────────────────────────────
     print(
-        f"Loaded {constraint.get('asset1', 'WETH')}/{constraint.get('asset2', 'WBTC')} calibrated params  "
+        f"Loaded {constraint.get('asset1', 'asset 1')}/{constraint.get('asset2', 'asset 2')} empirical params  "
         f"(b={base_b:.2f}, h0_min={h0_min:.4f}, H0_min={H0_min:.4f}, "
         f"H0_max={args.H0_max:.4f})"
     )

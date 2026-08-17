@@ -8,7 +8,7 @@ ECF fit plot to latex/.
 
 Usage:  python jobs/calibrate_empirical.py
 Output: results/calibration_<ASSET1>_<ASSET2>_<freq>_<timestamp>.json
-        latex/fig_ecf_empirical.pdf
+        latex/fig_ecf_empirical_generic.pdf
 
 Configuration: edit the constants in the section below.
 """
@@ -295,7 +295,7 @@ def main() -> None:
     out_json = _save_result(result, ASSET1_COL, ASSET2_COL, TARGET_FREQ, DATA_FILE, EWM_SPAN, out_dir)
     print(f"\nResult saved to {out_json}")
 
-    plot_path = ROOT / "latex" / "fig_ecf_empirical.pdf"
+    plot_path = ROOT / "latex" / "fig_ecf_empirical_generic.pdf"
     _plot_ecf_fit(r1, r2, result.params, dt_years, ASSET1_COL, ASSET2_COL, plot_path)
 
 

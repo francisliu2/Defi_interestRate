@@ -1,4 +1,4 @@
-"""Entry point for the long-WETH/short-WBTC empirical calibration."""
+"""Entry point for the data-selected WETH/WBTC empirical showcase."""
 import sys
 from pathlib import Path
 

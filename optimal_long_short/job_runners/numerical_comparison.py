@@ -7,9 +7,9 @@ range of initial log-health values h0, reporting H0 = exp(h0) alongside
 them where space allows. Also verifies the analytical
 no-shorting limit at h0 = 100.
 
-Parameters are loaded from results/params_WETH_WBTC.json (produced by
-jobs/calibrate_eth_btc.py).  Re-running calibrate_eth_btc.py then this
-script fully reproduces all tables.
+Parameters are loaded from results/params_empirical_showcase.json (produced by
+jobs/calibrate_eth_btc.py) in its data-selected long/short order. Re-running
+calibrate_eth_btc.py and then this script fully reproduces all tables.
 
 Usage:
     python jobs/calibrate_eth_btc.py   # calibrate once
@@ -45,7 +45,7 @@ T      = 1.0 / 12.0
 
 
 def main() -> None:
-    print(f"Loaded {_CONSTRAINT.get('asset1', 'WETH')}/{_CONSTRAINT.get('asset2', 'WBTC')} calibrated params  "
+    print(f"Loaded {_CONSTRAINT.get('asset1', 'asset 1')}/{_CONSTRAINT.get('asset2', 'asset 2')} calibrated params  "
           f"(b={_CONSTRAINT['b']:.2f}, h0_min={_CONSTRAINT['h0_min']:.4f})")
     print(
         f"Initial prices: {_CONSTRAINT.get('asset1', 'asset 1')} S10={MARKET.S10:.6f}, "

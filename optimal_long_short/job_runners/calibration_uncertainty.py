@@ -1,11 +1,13 @@
 """Paired moving-block bootstrap for calibration and sizing uncertainty.
 
-This job conditions on the current WETH/WBTC Kou specification and return
-preprocessing.  It resamples paired, contiguous return blocks; recalibrates the
-ECF model; reapplies fixed AAVE carry rates; and propagates each estimate to a
-reference survival probability and an explicitly liquidation-constrained
-health-buffer selection.
+This job conditions on the empirical showcase's selected long/short roles,
+endpoint EWM drift signal, and role-specific AAVE carry. It resamples paired,
+contiguous blocks of the centered causal-EWM innovations; recalibrates only the
+zero-log-mean residual shape; and propagates each estimate to a reference
+survival probability and an explicitly liquidation-constrained health-buffer
+selection.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -33,16 +35,17 @@ from optimal_long_short.calibration_uncertainty import (
 from optimal_long_short.job_runners.calibrate_eth_btc import (
     CALIB_BOUNDS,
     compute_returns,
-    ewm_demean_returns,
     load_aave_data,
+    orient_residual_params,
+    prepare_causal_innovations,
 )
 from optimal_long_short.job_runners.common import (
+    DEFAULT_EMPIRICAL_PARAMS,
     RESULTS_DIR,
     load_calibrated_params,
-    rate_adjusted_params,
 )
+from optimal_long_short.drift import with_expected_log_return_drift
 from optimal_long_short.model_params import KouParams
-
 
 DEFAULT_DETAIL_OUT = RESULTS_DIR / "calibration_uncertainty_bootstrap.csv"
 DEFAULT_SUMMARY_OUT = RESULTS_DIR / "calibration_uncertainty_summary.csv"
@@ -88,7 +91,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--params",
         type=Path,
-        default=RESULTS_DIR / "params_WETH_WBTC.json",
+        default=DEFAULT_EMPIRICAL_PARAMS,
     )
     parser.add_argument("--bootstrap-replicates", type=int, default=40)
     parser.add_argument(
@@ -119,6 +122,27 @@ def _params_from_mapping(values: dict[str, Any]) -> KouParams:
     return KouParams(**{name: float(values[name]) for name in PARAMETER_NAMES})
 
 
+def _apply_fixed_showcase_inputs(
+    residual_market_order: KouParams,
+    *,
+    long_asset: str,
+    short_asset: str,
+    endpoint_trends: dict[str, float],
+    long_carry: float,
+    short_carry: float,
+) -> KouParams:
+    """Orient a residual fit and add the fixed point-showcase drift inputs."""
+
+    if {long_asset, short_asset} != {"WETH", "WBTC"}:
+        raise ValueError("The showcase must assign WETH and WBTC to opposite roles")
+    residual_oriented = orient_residual_params(residual_market_order, long_asset)
+    return with_expected_log_return_drift(
+        residual_oriented,
+        drift1=float(endpoint_trends[long_asset]) + float(long_carry),
+        drift2=float(endpoint_trends[short_asset]) + float(short_carry),
+    )
+
+
 def _replicate_worker(task: dict[str, Any]) -> dict[str, Any]:
     """Top-level worker so multiprocessing works under spawn and fork."""
 
@@ -132,13 +156,22 @@ def _replicate_worker(task: dict[str, Any]) -> dict[str, Any]:
             int(task["block_length"]),
             rng,
         )
+        # The point calibration treats directional location as a fixed EWM
+        # input, not as part of the residual law. Recenter each resampled
+        # innovation series under that same zero-log-mean restriction while
+        # retaining the paired circular-block order.
+        sample1 = r1[indices]
+        sample2 = r2[indices]
+        sample1 = sample1 - float(np.mean(sample1))
+        sample2 = sample2 - float(np.mean(sample2))
+        sample_indices = np.arange(len(indices), dtype=int)
         raw_point = _params_from_mapping(task["raw_point"])
         health_grid = np.asarray(task["health_grid"], dtype=float)
 
         return calibration_bootstrap_record(
-            r1,
-            r2,
-            indices,
+            sample1,
+            sample2,
+            sample_indices,
             dt_years=float(task["dt_years"]),
             replicate=replicate,
             calibration_kwargs={
@@ -148,11 +181,15 @@ def _replicate_worker(task: dict[str, Any]) -> dict[str, Any]:
                 "seed": int(task["calibration_seed"]),
                 "run_diagnostics": False,
                 "max_moment_order": 4,
+                "drift_mode": "zero_expected_log_return",
             },
-            parameter_adjuster=lambda params: rate_adjusted_params(
+            parameter_adjuster=lambda params: _apply_fixed_showcase_inputs(
                 params,
-                float(task["supply_rate"]),
-                float(task["borrow_rate"]),
+                long_asset=str(task["long_asset"]),
+                short_asset=str(task["short_asset"]),
+                endpoint_trends=dict(task["endpoint_trends"]),
+                long_carry=float(task["long_carry"]),
+                short_carry=float(task["short_carry"]),
             ),
             downstream_evaluator=lambda params: liquidation_constrained_downstream(
                 params,
@@ -212,14 +249,59 @@ def main() -> None:
     started = time.perf_counter()
 
     payload = json.loads(args.params.read_text())
+    meta = payload.get("meta", {})
+    selection = payload.get("orientation_selection", {})
+    preprocessing_meta = meta.get("returns_preprocessing", {})
+    market_order = meta.get("market_calibration_order")
+    if market_order != ["WETH", "WBTC"]:
+        raise ValueError(
+            "The uncertainty job expects residual calibration in market order "
+            "['WETH', 'WBTC']"
+        )
+    if payload.get("ecf", {}).get("drift_mode") != "zero_expected_log_return":
+        raise ValueError(
+            "The empirical artifact must come from the shape-only, zero-log-mean "
+            "ECF calibration"
+        )
+    if preprocessing_meta.get("method") != (
+        "centered_lagged_normalized_ewm_innovations"
+    ):
+        raise ValueError(
+            "The empirical artifact does not use centered causal-EWM innovations"
+        )
+
     point_params, constraint = load_calibrated_params(args.params)
-    raw_point = _params_from_mapping(payload.get("params_raw_ecf", payload["params"]))
-    rates = payload.get("aave_rates", {})
-    supply_rate = float(rates["supply_eth"])
-    borrow_rate = float(rates["borrow_btc"])
+    raw_point = _params_from_mapping(payload["params_residual_ecf_market_order"])
+    long_asset = str(selection["long_asset"])
+    short_asset = str(selection["short_asset"])
+    if (
+        meta.get("asset1") != long_asset
+        or meta.get("asset2") != short_asset
+        or constraint.get("collateral_asset") != long_asset
+        or constraint.get("debt_asset") != short_asset
+    ):
+        raise ValueError(
+            "The saved parameter order, selected roles, and AAVE contract roles "
+            "are inconsistent"
+        )
+    endpoint_trends = {
+        asset: float(preprocessing_meta["endpoint_ewm_mean_annualized"][asset])
+        for asset in market_order
+    }
+    long_carry = float(selection["long_supply_rate"])
+    short_carry = float(selection["short_borrow_rate"])
+    drift_components = payload.get("drift_components_by_asset", {})
+    for asset, carry in ((long_asset, long_carry), (short_asset, short_carry)):
+        if not math.isclose(
+            float(drift_components[asset]["role_carry"]),
+            carry,
+            rel_tol=0.0,
+            abs_tol=1e-14,
+        ):
+            raise ValueError(f"Saved role carry is inconsistent for {asset}")
 
     data, data_meta = load_aave_data()
-    expected_sources = payload.get("meta", {}).get("source_files", {})
+    expected_sources = meta.get("source_files", {})
     loaded_sources = {
         "WBTC": data_meta["btc_file"],
         "WETH": data_meta["eth_file"],
@@ -230,15 +312,36 @@ def main() -> None:
             "re-run the point calibration or restore its source data first."
         )
 
-    r1_raw, r2_raw, date0, date1 = compute_returns(data)
-    ewm_span = int(
-        payload.get("meta", {})
-        .get("returns_preprocessing", {})
-        .get("ewm_span", 30)
+    dt_years = float(meta.get("dt_years", data_meta["dt_years"]))
+    if not math.isclose(
+        dt_years,
+        float(data_meta["dt_years"]),
+        rel_tol=0.0,
+        abs_tol=1e-15,
+    ):
+        raise ValueError("The current return frequency differs from the point fit")
+    r_weth_raw, r_wbtc_raw, date0, date1 = compute_returns(data)
+    half_life_years = float(preprocessing_meta["ewm_half_life_years"])
+    r1, r2, preprocessing = prepare_causal_innovations(
+        r_weth_raw,
+        r_wbtc_raw,
+        dt_years=dt_years,
+        horizon_years=half_life_years,
     )
-    r1 = ewm_demean_returns(r1_raw, ewm_span)
-    r2 = ewm_demean_returns(r2_raw, ewm_span)
-    dt_years = float(payload.get("meta", {}).get("dt_years", data_meta["dt_years"]))
+    if len(r1) != int(meta.get("n_obs", len(r1))):
+        raise ValueError("The innovation sample length differs from the point fit")
+    for asset in market_order:
+        reproduced_trend = float(preprocessing[asset].mean_path[-1] / dt_years)
+        if not math.isclose(
+            reproduced_trend,
+            endpoint_trends[asset],
+            rel_tol=1e-12,
+            abs_tol=1e-12,
+        ):
+            raise ValueError(
+                f"The current data do not reproduce the saved endpoint EWM trend "
+                f"for {asset}"
+            )
 
     block_length = (
         math.ceil(len(r1) ** (1.0 / 3.0))
@@ -295,8 +398,11 @@ def main() -> None:
                 "calibration_seed": child_seeds[2 * replicate + 1].generate_state(1)[0],
                 "n_starts": args.n_starts,
                 "raw_point": raw_point_dict,
-                "supply_rate": supply_rate,
-                "borrow_rate": borrow_rate,
+                "long_asset": long_asset,
+                "short_asset": short_asset,
+                "endpoint_trends": endpoint_trends,
+                "long_carry": long_carry,
+                "short_carry": short_carry,
                 "health_grid": health_grid,
                 "reference_H0": reference_H0,
                 "pbar": args.pbar,
@@ -322,10 +428,7 @@ def main() -> None:
         name: float(getattr(point_params, name)) for name in PARAMETER_NAMES
     }
     point_estimates.update(
-        {
-            metric: float(point_downstream[metric])
-            for metric in DOWNSTREAM_METRICS
-        }
+        {metric: float(point_downstream[metric]) for metric in DOWNSTREAM_METRICS}
     )
     summary = summarize_bootstrap_records(
         records,
@@ -339,25 +442,46 @@ def main() -> None:
 
     elapsed = time.perf_counter() - started
     converged = sum(bool(record.get("calibration_success")) for record in records)
-    selection_feasible = sum(bool(record.get("selection_feasible")) for record in records)
+    selection_feasible = sum(
+        bool(record.get("selection_feasible")) for record in records
+    )
     metadata = {
         "run_at": datetime.now(timezone.utc).isoformat(),
         "method": "paired circular moving-block percentile bootstrap",
         "interpretation": (
             "Descriptive sampling uncertainty conditional on the Kou model, ECF "
-            "criterion, EWM preprocessing, fixed AAVE rates and terminal-block "
+            "criterion, centered causal-EWM preprocessing, point-selected asset "
+            "roles, fixed endpoint EWM trends, fixed role carry, terminal-block "
             "protocol terms, block "
             "length, and discrete health-factor sizing grid; not a model-selection "
             "or out-of-sample forecast interval."
         ),
         "data": {
-            "asset1": payload.get("meta", {}).get("asset1", "WETH"),
-            "asset2": payload.get("meta", {}).get("asset2", "WBTC"),
+            "asset1": long_asset,
+            "asset2": short_asset,
+            "market_calibration_order": market_order,
             "date_range": [date0, date1],
             "n_obs": len(r1),
             "dt_years": dt_years,
-            "ewm_demean_span": ewm_span,
+            "returns_preprocessing": {
+                "method": preprocessing_meta["method"],
+                "ewm_half_life_years": half_life_years,
+                "ewm_half_life_periods": float(
+                    preprocessing_meta["ewm_half_life_periods"]
+                ),
+                "replicate_centering": True,
+            },
             "source_files": loaded_sources,
+        },
+        "fixed_empirical_inputs": {
+            "orientation_rule": selection["rule"],
+            "long_asset": long_asset,
+            "short_asset": short_asset,
+            "endpoint_ewm_expected_log_drift": endpoint_trends,
+            "long_supply_rate": long_carry,
+            "short_borrow_rate": short_carry,
+            "residual_drift_mode": "zero_expected_log_return",
+            "orientation_reselected_per_replicate": False,
         },
         "bootstrap": {
             "replicates": args.bootstrap_replicates,
@@ -395,6 +519,10 @@ def main() -> None:
     print(
         f"Paired circular blocks: length={block_length} observations "
         f"({metadata['bootstrap']['block_length_days']:.2f} days)."
+    )
+    print(
+        f"Fixed showcase orientation: long {long_asset} / short {short_asset}; "
+        "endpoint EWM trends and role carry held fixed."
     )
     for metric in ("p_surv_at_reference_H0", "selected_H0"):
         row = next(item for item in summary if item["metric"] == metric)

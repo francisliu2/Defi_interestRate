@@ -1,10 +1,9 @@
 """
 Bivariate Kou ECF calibration demo.
 
-Generates N synthetic daily log-return observations from the benchmark
-parameter set (Table 1 of the paper) and recovers the parameters via the
-Singleton-style empirical characteristic function estimator implemented in
-optimal_long_short.calibration.
+Generates N synthetic daily zero-mean Kou residuals and recovers the eleven
+diffusion, jump, and dependence parameters with the same shape-only ECF mode
+used by the empirical showcase.
 
 Usage:  python jobs/calibrate_kou.py
 Output: latex/fig_ecf_fit.pdf   (ECF fit along the spread direction)
@@ -18,22 +17,22 @@ from optimal_long_short.calibration import (
     ECFCalibrationResult,
     calibrate_ecf,
     empirical_cf,
-    params_to_theta,
 )
 from optimal_long_short.job_runners.common import LATEX_DIR, jump_cumulants, plot_ecf_spread_fit
+from optimal_long_short.drift import with_zero_expected_log_return
 from optimal_long_short.simulation import simulate_kou_returns
 
 # ---------------------------------------------------------------------------
 # True parameter set (crypto-realistic: higher jump intensity than Table 1
 # to give sufficient jump observations for identification with daily data)
 # ---------------------------------------------------------------------------
-TRUE_PARAMS = KouParams(
+TRUE_PARAMS = with_zero_expected_log_return(KouParams(
     mu1=0.10, sigma1=0.30, lam1=10.0, p1=0.45, eta1_pos=0.06, eta1_neg=0.05,
     mu2=0.08, sigma2=0.25, lam2=8.0,  p2=0.45, eta2_pos=0.05, eta2_neg=0.06,
     rho=0.60,
-)
+))
 
-N_OBS = 4000   # number of daily observations (~16 years of daily crypto data)
+N_OBS = 4000   # number of daily observations (about 11 years)
 DT = 1.0 / 365
 SEED = 42
 
@@ -45,10 +44,10 @@ SEED = 42
 def _evaluate_q(params: KouParams, phi_hat: np.ndarray, dt: float,
                 freqs: np.ndarray, weights: np.ndarray) -> float:
     """Plain (un-anchored) normalized ECF objective Q_N at given KouParams."""
-    from optimal_long_short.calibration.ecf_objective import objective_unc
-    from optimal_long_short.calibration.transforms import nat_to_unc, _DEFAULT_BOUNDS
-    tau = nat_to_unc(params_to_theta(params), _DEFAULT_BOUNDS)
-    return objective_unc(tau, phi_hat, dt, freqs, weights, _DEFAULT_BOUNDS)
+    from optimal_long_short.calibration.ecf_objective import objective_shape_unc
+    from optimal_long_short.calibration.transforms import params_to_shape_unc, _DEFAULT_BOUNDS
+    tau = params_to_shape_unc(params, _DEFAULT_BOUNDS)
+    return objective_shape_unc(tau, phi_hat, dt, freqs, weights, _DEFAULT_BOUNDS)
 
 
 # ---------------------------------------------------------------------------
@@ -64,6 +63,7 @@ def main() -> None:
     result: ECFCalibrationResult = calibrate_ecf(
         r1, r2, DT,
         n_starts=30,  # 6 ridge + 1 base + 23 random scenario starts
+        drift_mode="zero_expected_log_return",
     )
 
     _print_comparison(TRUE_PARAMS, result, r1, r2)
@@ -77,15 +77,13 @@ def _print_comparison(true: KouParams, result: ECFCalibrationResult,
 
     # ----- Parameter table -----
     rows = [
-        ("mu1",        true.mu1,           init.mu1,           est.mu1),
-        ("muX1",    true.muX1,  init.muX1, est.muX1),
+        ("mu1_res",    true.mu1,           init.mu1,           est.mu1),
         ("sigma1",     true.sigma1,         init.sigma1,        est.sigma1),
         ("lam1",       true.lam1,           init.lam1,          est.lam1),
         ("p1",         true.p1,             init.p1,            est.p1),
         ("eta1_pos",   true.eta1_pos,       init.eta1_pos,      est.eta1_pos),
         ("eta1_neg",   true.eta1_neg,       init.eta1_neg,      est.eta1_neg),
-        ("mu2",        true.mu2,            init.mu2,           est.mu2),
-        ("muX2",    true.muX2,  init.muX2, est.muX2),
+        ("mu2_res",    true.mu2,            init.mu2,           est.mu2),
         ("sigma2",     true.sigma2,         init.sigma2,        est.sigma2),
         ("lam2",       true.lam2,           init.lam2,          est.lam2),
         ("p2",         true.p2,             init.p2,            est.p2),

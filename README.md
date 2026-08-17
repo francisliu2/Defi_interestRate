@@ -2,8 +2,9 @@
 
 This repository studies leveraged long-short positions on AAVE using a
 bivariate Kou jump-diffusion model.  The current empirical workflow calibrates
-WETH/WBTC dynamics from AAVE v3 Ethereum on-chain data, with WETH as the
-long collateral leg and WBTC as the short borrowed leg, then uses a
+WETH/WBTC dynamics from AAVE v3 Ethereum on-chain data, evaluates both possible
+role assignments with the applicable AAVE carry, and uses the assignment with
+the larger positive empirical-mu spread.  It then uses a
 Laplace-resolvent method to compute liquidation probabilities, killed payoff
 moments, and conditional surviving-path moments over admissible initial health
 factors.
@@ -96,31 +97,45 @@ block schedule across assets, so WETH/WBTC rows can be aligned by block.
 
 ## Empirical Calibration
 
-The main empirical calibration is WETH collateral versus WBTC borrow:
+The main empirical calibration selects the long/short orientation between WETH
+and WBTC from the empirical price-growth exponents:
 
 ```bash
 .venv/bin/python jobs/calibrate_eth_btc.py
 ```
 
 This reads the latest WBTC and WETH rows from `aave-ts/data/AAVE/manifest.csv`,
-merges their parquet data by block, computes log returns, subtracts an
-exponentially weighted mean, and calibrates bivariate Kou parameters with a
-normalized ECF criterion plus disclosed soft moment/POT anchors.
+merges their parquet data by block, and computes log returns.  It estimates a
+causal exponentially weighted mean (EWM) with a one-month half-life, centers the
+resulting lagged innovations, and uses a shape-only empirical characteristic
+function (ECF) fit for the bivariate Kou diffusion, jump, and dependence
+parameters.  The residual expected log-return drifts are fixed at zero.
+
+For each asset, a carry-free empirical price-growth exponent combines the
+endpoint EWM log-return trend with the shape-implied residual price-growth
+correction.  Because financing depends on the assigned role, the workflow then
+evaluates both ordered role assignments after adding the applicable AAVE supply
+rate to the candidate long leg and borrowing rate to the candidate short leg.
+It selects the assignment with the larger positive long-minus-short empirical
+mu spread.
 
 Outputs:
 
 ```text
-results/params_WETH_WBTC.json
+results/params_empirical_showcase.json
+results/params_<LONG>_<SHORT>.json
 latex/fig_ecf_empirical.pdf
 ```
 
 The saved JSON includes:
 
-- rate-adjusted calibrated parameters for downstream analysis
-- raw ECF parameters before AAVE rate adjustment
-- terminal-block WETH collateral constraints (`b`, maximum LTV, `h0_min`, `H0_min`)
-- last aligned WETH/WBTC prices used as initial prices
-- drift summaries and first-moment diagnostics
+- the selected long/short orientation and its selection inputs
+- final empirical parameters in long-then-short order for downstream analysis
+- shape-only residual parameters before EWM trends and AAVE carry are added
+- the selected collateral asset's terminal-block constraints (`b`, maximum LTV,
+  `h0_min`, `H0_min`)
+- last aligned prices in the selected asset order
+- EWM preprocessing and drift-component diagnostics
 
 ## Drift Convention
 
@@ -141,17 +156,19 @@ User views should usually be applied to `mu_i` as price-growth views.  Use
 `optimal_long_short.drift.with_muX_drift_view` only when the view is explicitly
 stated as a log-process drift.
 
-Important empirical caveat: high-frequency ECF calibration can weakly identify
-the first moment.  The fitted `mu_i` values should be treated as model
-normalizers, not out-of-sample return forecasts.  The calibration JSON reports
-empirical first-moment diagnostics to make this visible.
+The showcase does not estimate `mu_i` freely in the high-frequency ECF fit.
+Instead, it fixes each residual expected log-return drift at zero and constructs
+the final `mu_i` from the endpoint EWM trend, the residual diffusion/jump
+correction required by the convention above, and role-specific AAVE carry.  The
+EWM trend is a horizon-matched empirical scenario input, not a structural
+out-of-sample expected-return estimate.
 
 ## Analysis Jobs
 
 Run from the repository root.
 
 ```bash
-# Calibrate long-WETH/short-WBTC from AAVE history
+# Calibrate the data-selected WETH/WBTC orientation from AAVE history
 .venv/bin/python jobs/calibrate_eth_btc.py
 
 # Numerical comparison table: Laplace-resolvent vs Monte Carlo
@@ -192,10 +209,12 @@ ECF criterion, return preprocessing, block length, protocol terms, and sizing
 grid. They are not model-selection or out-of-sample forecast intervals.
 
 `health_buffer_evaluation_map.py` and `sensitivity_analysis.py` load
-`results/params_WETH_WBTC.json` by default, including the same calibrated
-parameters, AAVE constraints, initial prices, and one-month horizon used in the
-empirical paper section. Optional drift views can be passed to the evaluation-map job
-with `--mu1`, `--mu2`, `--delta-mu1`, and `--delta-mu2`.
+`results/params_empirical_showcase.json` by default, including the selected
+asset order, calibrated parameters, AAVE constraints, initial prices, and
+one-month horizon used in the empirical paper section. Optional drift views can
+be passed to the evaluation-map job with `--mu1`, `--mu2`, `--delta-mu1`, and
+`--delta-mu2`; asset 1 is the selected long leg and asset 2 the selected short
+leg.
 
 ## Illustration Notebooks
 

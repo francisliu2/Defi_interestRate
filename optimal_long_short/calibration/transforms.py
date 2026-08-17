@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from numbers import Integral
 
 from optimal_long_short.model_params import KouParams
+from optimal_long_short.drift import with_zero_expected_log_return
 
 
 # ---------------------------------------------------------------------------
@@ -233,3 +234,40 @@ def unc_to_params(tau: np.ndarray,
                   bounds: ParameterBounds = _DEFAULT_BOUNDS) -> KouParams:
     """Unconstrained vector -> KouParams."""
     return theta_to_params(unc_to_nat(tau, bounds))
+
+
+# The two free drift coordinates (indices 0 and 6) are omitted when the ECF
+# estimator is used only for residual-law shape. The corresponding price-growth
+# exponents are reconstructed at every objective evaluation so that each
+# residual marginal has zero expected log-return drift.
+SHAPE_UNC_INDICES = np.array([1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12], dtype=int)
+
+
+def params_to_shape_unc(
+    params: KouParams,
+    bounds: ParameterBounds = _DEFAULT_BOUNDS,
+) -> np.ndarray:
+    """Kou parameters -> 11-dimensional unconstrained shape vector."""
+    full = nat_to_unc(params_to_theta(params), bounds)
+    return full[SHAPE_UNC_INDICES]
+
+
+def shape_unc_to_params(
+    tau_shape: np.ndarray,
+    bounds: ParameterBounds = _DEFAULT_BOUNDS,
+) -> KouParams:
+    """11-dimensional shape vector -> zero-log-mean residual parameters."""
+    values = np.asarray(tau_shape, dtype=float)
+    if values.shape != (len(SHAPE_UNC_INDICES),):
+        raise ValueError(
+            f"tau_shape must have length {len(SHAPE_UNC_INDICES)}, got {values.shape}"
+        )
+    full = np.zeros(13, dtype=float)
+    full[SHAPE_UNC_INDICES] = values
+    return with_zero_expected_log_return(unc_to_params(full, bounds))
+
+
+def shape_unc_bounds(bounds: ParameterBounds = _DEFAULT_BOUNDS) -> list[tuple[float, float]]:
+    """L-BFGS-B bounds for the 11-dimensional residual-shape vector."""
+    full_bounds = bounds.unc_bounds()
+    return [full_bounds[index] for index in SHAPE_UNC_INDICES]

@@ -9,6 +9,8 @@
 \usepackage{amsmath,amssymb}
 \usepackage[round,authoryear]{natbib}
 \usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{placeins}
 \usepackage{titlesec}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 
@@ -20,7 +22,7 @@
 
 \newcommand{\E}{\mathbb{E}}
 
-\title{Empirical Calibration of the Bivariate Kou Model:\\Companion Note}
+\title{Residual-Shape Calibration and Empirical Drift Construction:\\Companion Note}
 \author{}
 \date{}
 
@@ -29,25 +31,33 @@
 
 \begin{abstract}
 This note accompanies \emph{Optimal Sizing of Leveraged Crypto Long--Short Positions
-under Kou Jump-Diffusion via Killed Moments}. It records the penalized empirical
-characteristic-function estimator, frequency grid, initialization, and identification
-considerations underlying the empirical illustration in the main paper.
+under Kou Jump-Diffusion via Killed Moments}. It documents the empirical construction
+used in the paper's showcase. A normalized, causal exponentially weighted mean (EWM)
+separates a horizon-matched directional signal from high-frequency innovations. A
+penalized empirical-characteristic-function (ECF) estimator then fits only the eleven
+diffusion, jump, and dependence parameters of a residual law normalized to zero expected
+log drift. The endpoint EWM signal, the residual-law price-growth correction, and
+role-specific lending or borrowing rates determine the final expected-price growth
+exponents and the long--short orientation.
 \end{abstract}
 
 \section*{Model notation}
 
-We retain the notation of the main paper. For assets $i=1,2$, the free parameter vector is
+We retain the notation of the main paper. For assets $i=1,2$, the shape vector fitted to
+the residual returns is
 \[
-\theta
+\vartheta
 =
-\bigl((\mu_i,\sigma_i,\lambda_i,p_i,\eta_{i,+},\eta_{i,-})_{i=1,2},\rho\bigr).
+\bigl((\sigma_i,\lambda_i,p_i,\eta_{i,+},\eta_{i,-})_{i=1,2},\rho\bigr)\in\mathbb R^{11}.
 \]
-Here $\mu_i$ is the expected-price growth exponent, $\sigma_i>0$ is diffusion volatility,
-$\lambda_i>0$ is jump intensity, $p_i\in(0,1)$ is the upward-jump probability,
-$\eta_{i,+}\in(0,1)$ and $\eta_{i,-}>0$ are the mean upward and downward jump sizes, and
-$|\rho|<1$ is Brownian correlation. The jump characteristic function and price-jump
-compensator are
+Here $\sigma_i>0$ is diffusion volatility, $\lambda_i>0$ is jump intensity,
+$p_i\in(0,1)$ is the upward-jump probability, $\eta_{i,+}\in(0,1)$ and
+$\eta_{i,-}>0$ are the mean upward and downward jump sizes, and $|\rho|<1$ is Brownian
+correlation. Define the mean log jump, jump characteristic function, and price-jump
+compensator by
 \[
+\bar J_i=p_i\eta_{i,+}-(1-p_i)\eta_{i,-},
+\qquad
 \varphi_{J_i}(u)
 =
 \frac{p_i}{1-iu\eta_{i,+}}+\frac{1-p_i}{1+iu\eta_{i,-}},
@@ -56,12 +66,19 @@ compensator are
 =
 \frac{p_i}{1-\eta_{i,+}}+\frac{1-p_i}{1+\eta_{i,-}}-1,
 \]
-and the derived log-price drift is
-$\mu_i^X=\mu_i-\tfrac12\sigma_i^2-\lambda_i\chi_i$. Thus
+respectively. The ECF residual law is normalized to zero expected log drift. In the
+expected-price convention of the main paper this determines, rather than estimates,
+\begin{equation}\label{eq:residual-mu}
+\mu_i^{\mathrm{res}}
+=\frac12\sigma_i^2+\lambda_i(\chi_i-\bar J_i),
+\qquad
+\mu_i^{X,\mathrm{res}}=-\lambda_i\bar J_i.
+\end{equation}
+The residual characteristic exponent is therefore
 \[
-\Psi_\theta(u,v)
+\Psi_\vartheta^{\mathrm{res}}(u,v)
 =
-i(\mu_1^Xu+\mu_2^Xv)
+i(-\lambda_1\bar J_1u-\lambda_2\bar J_2v)
 -\frac12\bigl(\sigma_1^2u^2+\sigma_2^2v^2+2\rho\sigma_1\sigma_2uv\bigr)
 +\lambda_1\bigl(\varphi_{J_1}(u)-1\bigr)
 +\lambda_2\bigl(\varphi_{J_2}(v)-1\bigr).
@@ -69,42 +86,101 @@ i(\mu_1^Xu+\mu_2^Xv)
 The liquidation-driving log-price spread is $Z=X_1-X_2$. If moments through order $K$
 are required, the admissibility restriction is $K\eta_{i,+}<1$ for $i=1,2$.
 
+\section{Causal EWM filtering and empirical drift}\label{sec:ewm-drift}
+
+Let $r_{i,n}$ be the $n$th four-hour log return and let $\Delta$ be the corresponding
+year fraction. For the empirical horizon $T=1/12$, set
+\[
+\beta=2^{-\Delta/T}
+\]
+and form the finite-sample normalized EWM
+\begin{equation}\label{eq:normalized-ewm}
+m_{i,n}
+=
+\frac{\sum_{j=1}^{n}\beta^{n-j}r_{i,j}}
+     {\sum_{j=1}^{n}\beta^{n-j}}.
+\end{equation}
+Normalizing the weights avoids dependence on an arbitrary recursive starting value. The
+innovation used for shape calibration at time $n\ge2$ is causal,
+\begin{equation}\label{eq:causal-innovations}
+e_{i,n}=r_{i,n}-m_{i,n-1},
+\qquad
+\widetilde e_{i,n}=e_{i,n}-\frac{1}{N-1}\sum_{\ell=2}^{N}e_{i,\ell}.
+\end{equation}
+Thus the current return does not enter its own predictor, and the innovations supplied to
+the ECF estimator have sample mean exactly zero. The 540 raw WETH/WBTC return pairs yield
+539 centered innovations. Here $T/\Delta=182.5$ four-hour observations,
+$\beta=0.9962091$, and the equivalent pandas-style span is $526.584$.
+
+Exponential-smoothing choices generally depend on the forecast horizon
+\citep{Cox1961,TiaoXu1993}. The half-life-$T$ rule is used as a transparent
+horizon-matching convention, not as an estimated optimum. The sample contains only about
+three non-overlapping one-month forecast horizons, which is insufficient for a persuasive
+out-of-sample choice among decay rates. Moreover, high-frequency sampling is much more
+informative about volatility than expected return \citep{Merton1980}. These considerations
+motivate keeping directional drift outside the ECF fit. Sensitivity to the drift signal and
+decay horizon is consequently a decision-stage issue in the main paper.
+
+At the sample endpoint, define the annualized EWM log-drift signal
+\[
+d_i^{\mathrm{EWM}}=m_{i,N}/\Delta
+\]
+and the pre-financing price-growth exponent
+\begin{equation}\label{eq:pre-carry-mu}
+\nu_i=d_i^{\mathrm{EWM}}+\mu_i^{\mathrm{res}}.
+\end{equation}
+For each candidate ordered pair $(L,S)$ of distinct assets, apply the sample-average rates
+over the observation window associated with the candidate roles and compute
+\begin{equation}\label{eq:role-adjusted-mu}
+\mu_L^{\mathrm{emp}}(L,S)=\nu_L+r_{\mathrm{supply},L},
+\qquad
+\mu_S^{\mathrm{emp}}(L,S)=\nu_S+r_{\mathrm{borrow},S},
+\qquad
+\Delta_\mu(L,S)=\mu_L^{\mathrm{emp}}(L,S)-\mu_S^{\mathrm{emp}}(L,S).
+\end{equation}
+The selected orientation is the candidate with the largest positive $\Delta_\mu(L,S)$.
+Thus financing enters the orientation rule itself; $\nu_i$ alone does not determine which
+asset is long. If no candidate has positive score, the rule does not produce a showcase
+trade.
+
 \section{Penalized ECF estimator}\label{sec:ecf-estimator}
 
-The closed-form Lévy--Khintchine exponent $\Psi_\theta(u,v)$ gives the
+The closed-form residual Lévy--Khintchine exponent $\Psi_\vartheta^{\mathrm{res}}(u,v)$ gives the
 model-implied characteristic function
 \begin{equation}\label{eq:model-cf}
-\phi_\theta(u,v;\Delta)
+\phi_\vartheta^{\mathrm{res}}(u,v;\Delta)
 =
-\exp\!\bigl(\Delta\,\Psi_\theta(u,v)\bigr),
+\exp\!\bigl(\Delta\,\Psi_\vartheta^{\mathrm{res}}(u,v)\bigr),
 \end{equation}
 where $\Delta$ is the observation interval.
-Given $N$ observed bivariate log-return pairs $(r_{1,n},r_{2,n})_{n=1}^N$,
+Given $N_{\mathrm{res}}$ centered innovation pairs
+$(\widetilde e_{1,n},\widetilde e_{2,n})_{n=1}^{N_{\mathrm{res}}}$,
 the empirical characteristic function is
 \begin{equation}\label{eq:ecf}
-\widehat{\phi}_N(u,v)
+\widehat{\phi}_{N_{\mathrm{res}}}(u,v)
 =
-\frac{1}{N}\sum_{n=1}^N
-\exp\!\bigl(i(u\,r_{1,n}+v\,r_{2,n})\bigr).
+\frac{1}{N_{\mathrm{res}}}\sum_{n=1}^{N_{\mathrm{res}}}
+\exp\!\bigl(i(u\,\widetilde e_{1,n}+v\,\widetilde e_{2,n})\bigr).
 \end{equation}
 The ECF component of the estimator is the normalized weighted squared distance
 between \eqref{eq:ecf} and \eqref{eq:model-cf} over a discrete frequency grid
 $\mathcal{G}$:
 \begin{equation}\label{eq:ecf-objective}
-Q_N^{\mathrm{ECF}}(\theta)
+Q_{N_{\mathrm{res}}}^{\mathrm{ECF}}(\vartheta)
 =
 \frac{\displaystyle\sum_{(u,v)\in\mathcal{G}}w(u,v)
-\,\bigl|\widehat{\phi}_N(u,v)-\phi_\theta(u,v;\Delta)\bigr|^2}
+\,\bigl|\widehat{\phi}_{N_{\mathrm{res}}}(u,v)
+-\phi_\vartheta^{\mathrm{res}}(u,v;\Delta)\bigr|^2}
 {\displaystyle\sum_{(u,v)\in\mathcal{G}}w(u,v)}.
 \end{equation}
 Because finite high-frequency samples leave a pronounced intensity--jump-size ridge, the
 reported calibration uses two transparent soft anchoring terms:
 \begin{equation}\label{eq:ecf-penalized-objective}
 \begin{aligned}
-\widehat{\theta}
-&=\arg\min_{\theta\in\Theta}\mathcal{Q}_N(\theta),\\
-\mathcal{Q}_N(\theta)
-&=Q_N^{\mathrm{ECF}}(\theta)
+\widehat{\vartheta}
+&=\arg\min_{\vartheta\in\mathcal V}\mathcal{Q}_{N_{\mathrm{res}}}(\vartheta),\\
+\mathcal{Q}_{N_{\mathrm{res}}}(\vartheta)
+&=Q_{N_{\mathrm{res}}}^{\mathrm{ECF}}(\vartheta)
 +\omega_\lambda\sum_{i=1}^{2}(\log\lambda_i-\log\widetilde\lambda_i)^2\\
 &\quad+\omega_\eta\sum_{i=1}^{2}\sum_{s\in\{+,-\}}
 (\log\eta_{i,s}-\log\widetilde\eta_{i,s})^2.
@@ -129,10 +205,12 @@ see \citet{RamezaniZeng2007}.
 
 \section{Frequency grid}\label{sec:ecf-grid}
 
-The parameter vector $\theta$ has the $13$ free components stated above.
+The shape vector $\vartheta$ has the eleven free components stated above; neither
+$\mu_1$ nor $\mu_2$ is an ECF coordinate.
 Raw return magnitudes depend on the sampling interval, so fixed raw Fourier frequencies
 are poorly portable. Let $s_1$, $s_2$, and $s_Z$ be IQR-based robust scales,
-$s=\max\{(q_{0.75}-q_{0.25})/1.349,10^{-8}\}$, for $r_1$, $r_2$, and $r_1-r_2$. Dimensionless base
+$s=\max\{(q_{0.75}-q_{0.25})/1.349,10^{-8}\}$, for $\widetilde e_1$,
+$\widetilde e_2$, and $\widetilde e_1-\widetilde e_2$. Dimensionless base
 frequencies are mapped to raw frequencies by division by the corresponding scale. The
 grid contains the following groups, with every point accompanied by its conjugate
 $(-u,-v)$:
@@ -179,8 +257,14 @@ p_i=\mathrm{sigmoid}(c_i),\quad
 \rho=\tanh(f),
 \end{equation}
 where sigmoid$(x)=(1+e^{-x})^{-1}$.
-The unconstrained vector $\tau=({\mu_1,a_1,b_1,c_1,d_1,e_1,\mu_2,\ldots,f})$
-is optimized with box bounds in this transformed space. For both assets the code uses
+The optimized vector is the eleven-dimensional shape coordinate
+\[
+\tau_{\mathrm{shape}}
+=(a_1,b_1,c_1,d_1,e_1,a_2,b_2,c_2,d_2,e_2,f).
+\]
+There is no drift coordinate: at every objective evaluation the two residual exponents are
+reconstructed from the candidate shape by \eqref{eq:residual-mu}. The optimization uses
+box bounds in the transformed space. For both assets the code uses
 a scaled sigmoid with
 \[
 \eta_{i,+}^{\max}\le (1-\varepsilon)/K,
@@ -194,13 +278,13 @@ The characteristic-function objective is non-linear and non-convex,
 so the optimisation is initialised by a threshold-based decomposition
 following the logic of \citet{Mancini2009} for discretely observed
 jump-diffusions.
-Let $m_i=\mathrm{median}(r_{i,n})$ and let $s_i$ be the IQR robust scale.
+Let $q_i=\mathrm{median}(\widetilde e_{i,n})$ and let $s_i$ be the IQR robust scale.
 For a frequency-aware threshold constant $c\in[3,5]$, define candidate
 jump observations
 \[
-\mathcal{J}_i=\{n:|r_{i,n}-m_i|>c\,s_i\},
+\mathcal{J}_i=\{n:|\widetilde e_{i,n}-q_i|>c\,s_i\},
 \qquad
-\mathcal{C}_i=\{1,\ldots,N\}\setminus\mathcal{J}_i.
+\mathcal{C}_i=\{1,\ldots,N_{\mathrm{res}}\}\setminus\mathcal{J}_i.
 \]
 Initial volatility and correlation values use the continuous subset
 $\mathcal{C}_i$, while the jump-size means are anchored by peak-over-threshold
@@ -211,29 +295,18 @@ p_i^{(0)}&=\frac{|\mathcal{J}_{i,+}|}{|\mathcal{J}_i|}
   \quad\text{clamped to the admissible probability range},\\
 \eta_{i,+}^{(0)},\,\eta_{i,-}^{(0)}&=\text{POT mean-excess estimates},\\
 \lambda_i^{(0)}&=\text{two-moment estimate from variance and fourth cumulant},\\
-\sigma_i^{(0)}&=\mathrm{sd}(r_{i,n}:\,n\in\mathcal{C}_i)/\sqrt{\Delta},
+\sigma_i^{(0)}&=\mathrm{sd}(\widetilde e_{i,n}:\,n\in\mathcal{C}_i)/\sqrt{\Delta},
 &
-\rho^{(0)}&=\mathrm{corr}(r_1,r_2)_{n\in\mathcal{C}_1\cap\mathcal{C}_2}.
+\rho^{(0)}&=\mathrm{corr}(\widetilde e_1,\widetilde e_2)_{n\in\mathcal{C}_1\cap\mathcal{C}_2}.
 \end{align*}
-The initializer first estimates the annualized log-process drift with a damped
-mean-jump correction,
-\[
-\mu_i^{X,(0)}=\bar{r}_i/\Delta
--0.25\,\lambda_i^{(0)}
-\left[p_i^{(0)}\eta_{i,+}^{(0)}-(1-p_i^{(0)})\eta_{i,-}^{(0)}\right],
-\]
-then stores the result in the paper's price-growth convention,
-\[
-\mu_i^{(0)}=\operatorname{clip}_{[\mu_{\min},\mu_{\max}]}
-\!\left(\mu_i^{X,(0)}+\tfrac12(\sigma_i^{(0)})^2
-+\lambda_i^{(0)}\chi_i^{(0)}\right).
-\]
-The threshold filter is not the final estimator.
+No sample-mean or drift initializer enters the optimization; the residual drift is imposed
+by \eqref{eq:residual-mu}. The threshold filter is not the final estimator.
 It is a warm start that places the optimizer in a sensible region of
 parameter space; see the remark in \citet{Mancini2009}.
 
 \paragraph{Multi-start cloud.}
-Because $\mathcal{Q}_N(\tau)$ may have local minima, the optimizer is run from a
+Because $\mathcal{Q}_{N_{\mathrm{res}}}(\tau_{\mathrm{shape}})$ may have local minima,
+the optimizer is run from a
 structured cloud. It contains the unperturbed initializer and six deterministic
 intensity--size ridge starts with
 \[
@@ -242,13 +315,87 @@ intensity--size ridge starts with
 c\in\{0.1,0.25,0.5,2,4,8\}.
 \]
 Remaining starts cycle through four high-jump/high-diffusion scenarios and add bounded
-random perturbations to scale, probability, correlation, and drift parameters. The
+random perturbations to scale, probability, and correlation parameters. The
 application calibration uses 30 starts (the library default is 20) and returns the bounded
 L-BFGS-B minimizer with the lowest penalized objective.
 
+\section{Empirical showcase output}\label{sec:empirical-output}
+
+The application uses four-hour observations from 2026-02-26 to 2026-05-27 and calibrates
+the residual shape in the market-data order WETH/WBTC. The shape-only optimization
+converged with zero-based best-start index 2 among 30 starts, using 234 Fourier points,
+with penalized objective $0.00379935$. Reordering the fitted law after comparing the two
+role-adjusted candidate assignments gives the shape parameters in
+Table~\ref{tab:note-shape-output}.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Parameter & WBTC & WETH \\
+\midrule
+$\sigma_i$ & 0.256199 & 0.313328 \\
+$\lambda_i$ & 321.411575 & 609.836386 \\
+$p_i$ & 0.497268 & 0.427636 \\
+$\eta_{i,+}$ & 0.010556 & 0.011327 \\
+$\eta_{i,-}$ & 0.004586 & 0.005590 \\
+\bottomrule
+\end{tabular}
+\caption{Penalized shape-only ECF estimates, reordered to the selected long/short asset
+order. The fitted Brownian correlation is $\rho=0.841739$.}
+\label{tab:note-shape-output}
+\end{table}
+
+Table~\ref{tab:note-drift-output} records the separate drift construction. The endpoint EWM
+signals are $0.095089$ for WBTC and $-0.555894$ for WETH. Adding the shape-implied
+zero-log-mean corrections gives pre-financing exponents $0.149288$ and $-0.462118$,
+respectively. Table~\ref{tab:note-orientation-output} enumerates both ordered assignments
+after applying the candidate-specific supply and borrowing rates. Long WBTC/short WETH has
+the maximal positive score, $0.583607$, whereas the reverse assignment has negative score.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{llrrr}
+\toprule
+Candidate long $L$ & Candidate short $S$
+& $\mu_L^{\mathrm{emp}}(L,S)$ & $\mu_S^{\mathrm{emp}}(L,S)$
+& $\Delta_\mu(L,S)$ \\
+\midrule
+WBTC & WETH & $0.149344$ & $-0.434263$ & $0.583607$ \\
+WETH & WBTC & $-0.440217$ & $0.152768$ & $-0.592985$ \\
+\bottomrule
+\end{tabular}
+\caption{Enumeration of the two role-adjusted candidate assignments. The rule selects the
+candidate with the largest positive drift spread, hence long WBTC and short WETH.}
+\label{tab:note-orientation-output}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Annualized component & Long WBTC & Short WETH \\
+\midrule
+Endpoint EWM log drift $d_i^{\mathrm{EWM}}$ & $0.095089$ & $-0.555894$ \\
+Residual price-growth correction $\mu_i^{\mathrm{res}}$ & $0.054199$ & $0.093776$ \\
+Pre-financing exponent $\nu_i$ & $0.149288$ & $-0.462118$ \\
+Role-specific supply/borrowing rate & $0.0000556$ & $0.027855$ \\
+Final price-growth exponent $\mu_i^{\mathrm{emp}}$ & $0.149344$ & $-0.434263$ \\
+\bottomrule
+\end{tabular}
+\caption{Empirical drift construction for the selected long--short orientation. The
+residual corrections are determined by the fitted shapes; they are not free ECF drift
+estimates.}
+\label{tab:note-drift-output}
+\end{table}
+
+\FloatBarrier
 \section{Identifiability and model-comparison protocol}\label{sec:ecf-ident}
 
-The penalized criterion $\mathcal{Q}_N(\theta)$ is non-convex.
+The penalized shape criterion $\mathcal{Q}_{N_{\mathrm{res}}}(\vartheta)$ is non-convex.
 Jump-diffusion models possess approximate ridges along directions that
 preserve the compound-Poisson variance contribution
 $\lambda_i\E[J_i^2]=2\lambda_i(p_i\eta_{i,+}^2+(1-p_i)\eta_{i,-}^2)$
@@ -263,8 +410,9 @@ separate from aggregated returns, but it does not multiply the underlying annual
 Poisson count.
 
 For descriptive fit comparisons on a common grid, compare the unpenalized component
-$Q_N^{\mathrm{ECF}}(\widehat\theta)$ across nested models (GBM, Merton, bivariate Kou),
-rather than the penalized values $\mathcal{Q}_N(\widehat\theta)$ whose anchors differ.
+$Q_{N_{\mathrm{res}}}^{\mathrm{ECF}}(\widehat\vartheta)$ across nested residual laws
+(Gaussian, Merton, bivariate Kou), rather than the penalized values
+$\mathcal{Q}_{N_{\mathrm{res}}}(\widehat\vartheta)$ whose anchors differ.
 Such comparisons should be accompanied by liquidation-relevant diagnostics:
 empirical versus model $Z$-tail quantiles, empirical versus model
 barrier-crossing frequencies, and simulated versus observed drawdowns of $Z$.
@@ -276,22 +424,25 @@ model and stated empirical choices; they are not evidence of model dominance or
 parameter-robust recommendations.
 
 The repository's calibration package contains the implementation. The
-synthetic calibration job shows parameter recovery and produces
+synthetic calibration job tests recovery of the eleven residual-shape parameters under the
+same zero-expected-log-drift restriction and produces
 Figure~\ref{fig:ecf-fit}.
 
 \clearpage
 \begin{figure}[!ht]
 \centering
 \includegraphics[width=0.85\linewidth]{fig_ecf_fit.pdf}
-\caption{ECF fit along the spread direction $(s,-s)$ for $N=4{,}000$
-synthetic daily log-return observations.
+\caption{Shape-only ECF fit along the spread direction $(s,-s)$ for $N=4{,}000$
+synthetic daily observations from a residual law with zero expected log drift.
 Left: modulus $|\phi(s,-s)|$; right: phase $\arg\phi(s,-s)$.
-Dots: empirical CF $\widehat\phi_N$; dashed: true model CF;
-solid red: ECF estimate.
+Dots: empirical CF $\widehat\phi_N$; dashed: true residual-law CF;
+solid red: shape-only ECF estimate. Both residual expected log drifts are imposed at zero,
+and the corresponding price-growth corrections are derived from the shapes rather than
+estimated as drift coordinates.
 The close agreement in modulus and phase documents the fit along the
 liquidation-relevant spread direction; this plot alone does not assess every component of
-the full-grid criterion.
-Script \texttt{jobs/calibrate\_kou.py}.}
+the full-grid criterion or validate an empirical directional-drift forecast.
+Script \texttt{optimal\_long\_short/job\_runners/calibrate\_kou.py}.}
 \label{fig:ecf-fit}
 \end{figure}
 

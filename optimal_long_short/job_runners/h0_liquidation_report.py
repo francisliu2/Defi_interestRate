@@ -9,18 +9,22 @@ from pathlib import Path
 import numpy as np
 
 from optimal_long_short.drift import drift_summary
-from optimal_long_short.job_runners.common import RESULTS_DIR, load_calibrated_params
+from optimal_long_short.job_runners.common import (
+    DEFAULT_EMPIRICAL_PARAMS,
+    RESULTS_DIR,
+    load_calibrated_params,
+)
 from optimal_long_short.risk_report import h0_liquidation_moment_report
 
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Apply an annualized price-drift view to calibrated WETH/WBTC "
+            "Apply an annualized price-drift view to the empirical long/short "
             "parameters and report moments/liquidation probabilities over h0."
         )
     )
-    parser.add_argument("--params", type=Path, default=RESULTS_DIR / "params_WETH_WBTC.json")
+    parser.add_argument("--params", type=Path, default=DEFAULT_EMPIRICAL_PARAMS)
     parser.add_argument("--h0-min", type=float, default=None)
     parser.add_argument("--h0-max", type=float, default=2.0)
     parser.add_argument("--h0-count", type=int, default=20)
