@@ -7,7 +7,7 @@ from optimal_long_short.calibration.transforms import (
     unc_to_nat,
 )
 from optimal_long_short.calibration.calibrate import calibrate_ecf
-from optimal_long_short.model_params import KouParams
+from optimal_long_short.model.model_params import KouParams
 
 
 def _valid_params(**updates):

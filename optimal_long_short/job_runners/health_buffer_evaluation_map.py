@@ -5,8 +5,8 @@ The curve is parametrised by H_0 = exp(h_0), with conditional payoff variance,
 liquidation probability, and conditional payoff mean on the three axes.
 Parameters are loaded from results/params_empirical_showcase.json.
 
-Usage:  python jobs/health_buffer_evaluation_map.py
-        python jobs/health_buffer_evaluation_map.py --H0-max 2.0 --delta-mu1 0.02 --delta-mu2 -0.01
+Usage:  python jobs/job_runners/health_buffer_evaluation_map.py
+        python jobs/job_runners/health_buffer_evaluation_map.py --H0-max 2.0 --delta-mu1 0.02 --delta-mu2 -0.01
 Output: latex/fig_health_buffer_evaluation_map.pdf
 """
 import argparse
@@ -19,13 +19,13 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
-from optimal_long_short.drift import drift_summary
+from optimal_long_short.model.drift_service import drift_summary
 from optimal_long_short.job_runners.common import (
     DEFAULT_EMPIRICAL_PARAMS,
     LATEX_DIR,
     load_calibrated_params,
 )
-from optimal_long_short.risk_report import h0_liquidation_moment_report
+from optimal_long_short.model.risk_report import h0_liquidation_moment_report
 
 # ── Global style ───────────────────────────────────────────────────────────────
 plt.rcParams.update({

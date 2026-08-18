@@ -9,13 +9,12 @@ import numpy as np
 
 
 @dataclass(frozen=True)
-class CausalEWMResult:
-    """Outputs from causal EWM trend removal."""
+class EWMResidualResult:
+    """EWM mean path and the residual increments supplied to the ECF fit."""
 
-    mean_path: np.ndarray
-    innovations: np.ndarray
-    centered_innovations: np.ndarray
-    innovation_mean: float
+    ewm_mean_path_per_period: np.ndarray
+    residual_increments: np.ndarray
+    residual_sample_mean: float
     decay: float
     half_life_periods: float
 
@@ -81,31 +80,28 @@ def normalized_ewm_mean(r: np.ndarray, half_life_periods: float) -> np.ndarray:
     return means
 
 
-def causal_ewm_detrend(
+def construct_ewm_residual_increments(
     r: np.ndarray,
     half_life_periods: float,
-) -> CausalEWMResult:
-    """Construct lagged-mean innovations for shape-only calibration.
+) -> EWMResidualResult:
+    """Subtract the lagged normalized EWM mean from each observed increment.
 
-    The innovation at index ``t >= 1`` is ``r[t] - m[t-1]``; hence its trend
-    estimate contains no part of the contemporaneous return. The first return
-    initializes the normalized EWM and is not itself used as an innovation.
-    Innovations are centered exactly before ECF shape estimation, deliberately
-    keeping directional location outside the residual-law calibration.
+    For ``t >= 1``, the residual is ``r[t] - ewm_mean[t-1]``. The lag makes the
+    transformation causal: the contemporaneous increment is not used in its
+    own conditional-mean estimate. The first increment initializes the EWM path
+    and is not itself supplied to the ECF fit. No additional sample demeaning is
+    performed; the realized residual mean is retained as a model diagnostic.
     """
     values = np.asarray(r, dtype=float)
-    mean_path = normalized_ewm_mean(values, half_life_periods)
+    ewm_mean_path = normalized_ewm_mean(values, half_life_periods)
     if len(values) < 2:
-        raise ValueError("At least two returns are required for causal detrending")
-    innovations = values[1:] - mean_path[:-1]
-    innovation_mean = float(np.mean(innovations))
-    centered = innovations - innovation_mean
+        raise ValueError("At least two increments are required for EWM subtraction")
+    residual_increments = values[1:] - ewm_mean_path[:-1]
     decay = float(2.0 ** (-1.0 / half_life_periods))
-    return CausalEWMResult(
-        mean_path=mean_path,
-        innovations=innovations,
-        centered_innovations=centered,
-        innovation_mean=innovation_mean,
+    return EWMResidualResult(
+        ewm_mean_path_per_period=ewm_mean_path,
+        residual_increments=residual_increments,
+        residual_sample_mean=float(np.mean(residual_increments)),
         decay=decay,
         half_life_periods=float(half_life_periods),
     )

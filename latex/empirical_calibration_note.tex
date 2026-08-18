@@ -10,6 +10,7 @@
 \usepackage[round,authoryear]{natbib}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{array,tabularx}
 \usepackage{placeins}
 \usepackage{titlesec}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
@@ -21,6 +22,8 @@
 \setlength{\parskip}{0pt}
 
 \newcommand{\E}{\mathbb{E}}
+\newcommand{\diff}{\mathrm{d}}
+\newcommand{\one}{\mathbf{1}}
 
 \title{Residual-Shape Calibration and Empirical Drift Construction:\\Companion Note}
 \author{}
@@ -32,185 +35,322 @@
 \begin{abstract}
 This note accompanies \emph{Optimal Sizing of Leveraged Crypto Long--Short Positions
 under Kou Jump-Diffusion via Killed Moments}. It documents the empirical construction
-used in the paper's showcase. A normalized, causal exponentially weighted mean (EWM)
-separates a horizon-matched directional signal from high-frequency innovations. A
-penalized empirical-characteristic-function (ECF) estimator then fits only the eleven
-diffusion, jump, and dependence parameters of a residual law normalized to zero expected
-log drift. The endpoint EWM signal, the residual-law price-growth correction, and
-role-specific lending or borrowing rates determine the final expected-price growth
-exponents and the long--short orientation.
+used in the paper's showcase. The construction begins from the main paper's decomposition of
+log-price changes into an expected log-return component and a zero-mean Kou residual process.
+A normalized, causal exponentially weighted mean (EWM) estimates the conditional location of
+the observed log-price increments, while a penalized empirical-characteristic-function (ECF)
+criterion estimates only the diffusion, jump, and dependence shape of the resulting residual
+increments. The forward expected log-return mean is then supplied from the endpoint EWM
+forecast plus role-specific carry, or from a portfolio manager's view. Finally, the fitted
+shape and supplied mean are combined to obtain the log-SDE coefficient and the expected-price
+growth exponent used by the empirical analysis.
 \end{abstract}
 
-\section*{Model notation}
+\section{Location--shape decomposition and empirical workflow}\label{sec:construction-overview}
 
-We retain the notation of the main paper. For assets $i=1,2$, the shape vector fitted to
-the residual returns is
+Let $S_{i,t_n}>0$ be the observed price of asset $i$ at equally spaced dates
+$t_n=n\Delta t$, let $X_{i,t_n}^{\mathrm{obs}}=\log(S_{i,t_n}/S_{i,0})$, and let
+$\Delta X_{i,t_n}^{\mathrm{obs}}
+:=X_{i,t_n}^{\mathrm{obs}}-X_{i,t_{n-1}}^{\mathrm{obs}}
+=\log(S_{i,t_n}/S_{i,t_{n-1}})$ be the observed log-price increment. Here $\Delta X$
+denotes a discrete increment, whereas $\diff X$ in the main text denotes a continuous-time
+differential.
+The superscript ``obs'' distinguishes the observed sample path from the forward process
+$X_{i,t}$ in the main paper. At the population level, the observed increment is decomposed as
+\begin{equation}\label{eq:population-location-shape}
+\Delta X_{i,t_n}^{\mathrm{obs}}
+=
+\E\!\left[\Delta X_{i,t_n}^{\mathrm{obs}}\mid\mathcal F_{t_{n-1}}\right]
++\Delta X_{i,t_n}^{\mathrm{res}},
+\qquad
+\E\!\left[\Delta X_{i,t_n}^{\mathrm{res}}\mid\mathcal F_{t_{n-1}}\right]=0.
+\end{equation}
+The first term is location; the law of $\Delta X_{i,t_n}^{\mathrm{res}}$ supplies shape. In
+the forward specification of the main paper, the corresponding continuous-time identity is
+\begin{equation}\label{eq:forward-location-shape}
+\diff X_{i,t}=g_i\,\diff t+\diff X_{i,t}^{\mathrm{res}},
+\end{equation}
+where $g_i=\E[X_{i,t}]/t$ is the externally supplied expected log-return mean. Section~2
+defines the residual Kou law, Section~3 estimates the historical conditional location by EWM,
+Section~4 fits the residual shape by ECF, and Section~5 constructs the parameter set used in
+the empirical analysis.
+
+% Result source: conceptual workflow summary maintained directly in this TeX file;
+% no numerical result-generation script is used for this table.
+\begin{table}[ht]
+\centering
+\small
+\renewcommand{\arraystretch}{1.08}
+\begin{tabularx}{\linewidth}{@{}c>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+Stage & Input and operation & Estimated or fixed quantity & Quantity passed forward \\
+\midrule
+1 & Positive prices $S_{i,t_n}$ & Observed increments $\Delta X_{i,t_n}^{\mathrm{obs}}$ & Increment sample on the model time scale \\
+2 & Zero-mean residual Kou law & Location--shape decomposition & Model for $\Delta X_{i,t_n}^{\mathrm{res}}$ \\
+3 & Causal EWM subtraction & $d_{i,n}^{\mathrm{EWM}}$ and residual increments & Sample supplied to ECF \\
+4 & Penalized ECF & Residual shape $\vartheta$ & $\sigma_i,\lambda_i,p_i,\eta_{i,+},\eta_{i,-},\rho$ \\
+5 & Endpoint EWM, annual $r_i^{\mathrm{role}}$, and fitted shape & $g_i$ and derived drifts & Main-paper parameter set \\
+\bottomrule
+\end{tabularx}
+\caption{Model-to-estimator map. The ECF estimates only residual shape. The directional mean
+enters when the final main-paper parameter set is assembled.}
+\label{tab:two-stage-map}
+\end{table}
+\FloatBarrier
+
+\section{Zero-mean residual Kou law}\label{sec:residual-kou-law}
+
+The residual component in \eqref{eq:population-location-shape} is modeled by the same Kou
+process used in the main text, normalized to have zero expected log drift:
+\begin{equation}\label{eq:zero-mean-residual-process}
+\diff X_{i,t}^{\mathrm{res}}
+=-\lambda_i\bar J_i\,\diff t+\sigma_i\,\diff B_{i,t}
++\diff\!\left(\sum_{n=1}^{N_{i,t}}J_i^{(n)}\right),
+\qquad
+\E[X_{i,t}^{\mathrm{res}}]=0.
+\end{equation}
+Here $B_1$ and $B_2$ are standard Brownian motions satisfying
+$\diff\langle B_1,B_2\rangle_t=\rho\,\diff t$. The Poisson processes $N_1,N_2$, with
+respective intensities $\lambda_1,\lambda_2$, are independent of each other and of
+$(B_1,B_2)$. For each asset, the jumps $J_i^{(n)}$ are independent and identically
+distributed, and the two jump sequences are independent, with Kou density
+\begin{equation}\label{eq:residual-kou-density}
+f_i(j)
+=
+\frac{p_i}{\eta_{i,+}}e^{-j/\eta_{i,+}}\one_{\{j>0\}}
++\frac{1-p_i}{\eta_{i,-}}e^{j/\eta_{i,-}}\one_{\{j<0\}}.
+\end{equation}
+The mean log jump and price-jump compensator are
+\begin{equation}\label{eq:jump-means}
+\bar J_i:=\E[J_i]=p_i\eta_{i,+}-(1-p_i)\eta_{i,-},
+\qquad
+\chi_i:=\E[e^{J_i}-1]
+=\frac{p_i}{1-\eta_{i,+}}+\frac{1-p_i}{1+\eta_{i,-}}-1.
+\end{equation}
+Thus $-\lambda_i\bar J_i$ exactly compensates the expected compound-Poisson log jump in
+\eqref{eq:zero-mean-residual-process}. No $-\tfrac12\sigma_i^2$ term is needed because this
+normalization concerns the expected \emph{log} increment, and $\E[\diff B_{i,t}]=0$.
+
+The residual law is determined by the eleven shape parameters
 \[
 \vartheta
-=
-\bigl((\sigma_i,\lambda_i,p_i,\eta_{i,+},\eta_{i,-})_{i=1,2},\rho\bigr)\in\mathbb R^{11}.
+=\bigl((\sigma_i,\lambda_i,p_i,\eta_{i,+},\eta_{i,-})_{i=1,2},\rho\bigr).
 \]
 Here $\sigma_i>0$ is diffusion volatility, $\lambda_i>0$ is jump intensity,
-$p_i\in(0,1)$ is the upward-jump probability, $\eta_{i,+}\in(0,1)$ and
-$\eta_{i,-}>0$ are the mean upward and downward jump sizes, and $|\rho|<1$ is Brownian
-correlation. Define the mean log jump, jump characteristic function, and price-jump
-compensator by
-\[
-\bar J_i=p_i\eta_{i,+}-(1-p_i)\eta_{i,-},
-\qquad
+$p_i\in(0,1)$ is the upward-jump probability, $\eta_{i,+}>0$ and $\eta_{i,-}>0$ are the
+mean positive and absolute mean negative log-jump sizes, and $|\rho|<1$ is Brownian
+correlation. The jump characteristic function is
+\begin{equation}\label{eq:jump-cf}
 \varphi_{J_i}(u)
-=
-\frac{p_i}{1-iu\eta_{i,+}}+\frac{1-p_i}{1+iu\eta_{i,-}},
-\qquad
-\chi_i
-=
-\frac{p_i}{1-\eta_{i,+}}+\frac{1-p_i}{1+\eta_{i,-}}-1,
-\]
-respectively. The ECF residual law is normalized to zero expected log drift. In the
-expected-price convention of the main paper this determines, rather than estimates,
-\begin{equation}\label{eq:residual-mu}
-\mu_i^{\mathrm{res}}
-=\frac12\sigma_i^2+\lambda_i(\chi_i-\bar J_i),
-\qquad
-\mu_i^{X,\mathrm{res}}=-\lambda_i\bar J_i.
+=\frac{p_i}{1-iu\eta_{i,+}}+\frac{1-p_i}{1+iu\eta_{i,-}}.
 \end{equation}
-The residual characteristic exponent is therefore
-\[
+The price-jump compensator requires $\eta_{i,+}<1$; moments through order $K$ require
+$K\eta_{i,+}<1$. The bivariate residual characteristic exponent is
+\begin{equation}\label{eq:residual-characteristic-exponent}
+\begin{aligned}
 \Psi_\vartheta^{\mathrm{res}}(u,v)
-=
-i(-\lambda_1\bar J_1u-\lambda_2\bar J_2v)
--\frac12\bigl(\sigma_1^2u^2+\sigma_2^2v^2+2\rho\sigma_1\sigma_2uv\bigr)
-+\lambda_1\bigl(\varphi_{J_1}(u)-1\bigr)
+&=i(-\lambda_1\bar J_1u-\lambda_2\bar J_2v)\\
+&\quad-\frac12\bigl(\sigma_1^2u^2+\sigma_2^2v^2
++2\rho\sigma_1\sigma_2uv\bigr)\\
+&\quad+\lambda_1\bigl(\varphi_{J_1}(u)-1\bigr)
 +\lambda_2\bigl(\varphi_{J_2}(v)-1\bigr).
-\]
-The liquidation-driving log-price spread is $Z=X_1-X_2$. If moments through order $K$
-are required, the admissibility restriction is $K\eta_{i,+}<1$ for $i=1,2$.
+\end{aligned}
+\end{equation}
 
-\section{Causal EWM filtering and empirical drift}\label{sec:ewm-drift}
+\section{EWM estimation and residual-increment construction}\label{sec:ewm-drift}
 
-Let $r_{i,n}$ be the $n$th four-hour log return and let $\Delta$ be the corresponding
-year fraction. For the empirical horizon $T=1/12$, set
-\[
-\beta=2^{-\Delta/T}
-\]
-and form the finite-sample normalized EWM
+The conditional mean in \eqref{eq:population-location-shape} is unknown. For the empirical
+horizon $T=1/12$, set $\beta=2^{-\Delta t/T}$ and estimate its annualized path by the
+normalized causal EWM
 \begin{equation}\label{eq:normalized-ewm}
-m_{i,n}
-=
-\frac{\sum_{j=1}^{n}\beta^{n-j}r_{i,j}}
+d_{i,n}^{\mathrm{EWM}}
+:=\frac{1}{\Delta t}
+\frac{\sum_{j=1}^{n}\beta^{n-j}\Delta X_{i,t_j}^{\mathrm{obs}}}
      {\sum_{j=1}^{n}\beta^{n-j}}.
 \end{equation}
 Normalizing the weights avoids dependence on an arbitrary recursive starting value. The
-innovation used for shape calibration at time $n\ge2$ is causal,
-\begin{equation}\label{eq:causal-innovations}
-e_{i,n}=r_{i,n}-m_{i,n-1},
-\qquad
-\widetilde e_{i,n}=e_{i,n}-\frac{1}{N-1}\sum_{\ell=2}^{N}e_{i,\ell}.
+residual increment subtracts the lagged EWM estimate directly from the observed increment:
+\begin{equation}\label{eq:ewm-residual-increments}
+\boxed{\Delta X_{i,t_n}^{\mathrm{res}}
+:=\Delta X_{i,t_n}^{\mathrm{obs}}
+-d_{i,n-1}^{\mathrm{EWM}}\Delta t},
+\qquad n=2,\ldots,N.
 \end{equation}
-Thus the current return does not enter its own predictor, and the innovations supplied to
-the ECF estimator have sample mean exactly zero. The 540 raw WETH/WBTC return pairs yield
-539 centered innovations. Here $T/\Delta=182.5$ four-hour observations,
-$\beta=0.9962091$, and the equivalent pandas-style span is $526.584$.
-
-Exponential-smoothing choices generally depend on the forecast horizon
-\citep{Cox1961,TiaoXu1993}. The half-life-$T$ rule is used as a transparent
-horizon-matching convention, not as an estimated optimum. The sample contains only about
-three non-overlapping one-month forecast horizons, which is insufficient for a persuasive
-out-of-sample choice among decay rates. Moreover, high-frequency sampling is much more
-informative about volatility than expected return \citep{Merton1980}. These considerations
-motivate keeping directional drift outside the ECF fit. Sensitivity to the drift signal and
-decay horizon is consequently a decision-stage issue in the main paper.
-
-At the sample endpoint, define the annualized EWM log-drift signal
-\[
-d_i^{\mathrm{EWM}}=m_{i,N}/\Delta
-\]
-and the pre-financing price-growth exponent
-\begin{equation}\label{eq:pre-carry-mu}
-\nu_i=d_i^{\mathrm{EWM}}+\mu_i^{\mathrm{res}}.
+The lag ensures that the current increment does not enter its own conditional-mean estimate.
+No further sample demeaning is applied. Thus $d_{i,n-1}^{\mathrm{EWM}}\Delta t$ is the sole
+estimated location removed before ECF calibration, and the exact reconstruction is
+\begin{equation}\label{eq:return-reconstruction}
+\boxed{\Delta X_{i,t_n}^{\mathrm{obs}}
+=d_{i,n-1}^{\mathrm{EWM}}\Delta t
++\Delta X_{i,t_n}^{\mathrm{res}}}.
 \end{equation}
-For each candidate ordered pair $(L,S)$ of distinct assets, apply the sample-average rates
-over the observation window associated with the candidate roles and compute
-\begin{equation}\label{eq:role-adjusted-mu}
-\mu_L^{\mathrm{emp}}(L,S)=\nu_L+r_{\mathrm{supply},L},
-\qquad
-\mu_S^{\mathrm{emp}}(L,S)=\nu_S+r_{\mathrm{borrow},S},
-\qquad
-\Delta_\mu(L,S)=\mu_L^{\mathrm{emp}}(L,S)-\mu_S^{\mathrm{emp}}(L,S).
+Under a correctly specified conditional-mean filter, the residual increment has zero
+conditional mean in the population. Its realized sample average need not equal zero and is
+retained as sampling variation and as a diagnostic of the EWM specification. Consequently,
+the zero-mean residual Kou law is a population restriction rather than a mechanically imposed
+sample identity.
+
+The same operation is a multiplicative detrending of the positive price process. Define only
+the required cumulative removed location,
+\begin{equation}\label{eq:multiplicative-detrending}
+C_{i,n}
+:=\sum_{k=2}^{n}d_{i,k-1}^{\mathrm{EWM}}\Delta t,
+\qquad C_{i,1}:=0,
 \end{equation}
-The selected orientation is the candidate with the largest positive $\Delta_\mu(L,S)$.
-Thus financing enters the orientation rule itself; $\nu_i$ alone does not determine which
-asset is long. If no candidate has positive score, the rule does not produce a showcase
-trade.
+and set
+\begin{equation}\label{eq:residual-price}
+S_{i,t_n}^{\mathrm{res}}:=S_{i,t_n}e^{-C_{i,n}},
+\qquad
+X_{i,t_n}^{\mathrm{res}}:=\log\frac{S_{i,t_n}^{\mathrm{res}}}{S_{i,0}}.
+\end{equation}
+Then
+\begin{equation}\label{eq:price-return-equivalence}
+\Delta X_{i,t_n}^{\mathrm{res}}
+=X_{i,t_n}^{\mathrm{res}}-X_{i,t_{n-1}}^{\mathrm{res}}
+=\log\frac{S_{i,t_n}^{\mathrm{res}}}{S_{i,t_{n-1}}^{\mathrm{res}}},
+\qquad
+S_{i,t_n}=S_{i,t_n}^{\mathrm{res}}e^{C_{i,n}}.
+\end{equation}
+Thus the return transformation is reversible. Arithmetic price demeaning is not used because
+it can produce negative values, depends on the price unit, and does not preserve the
+exponential-L\'evy structure.
 
-\section{Penalized ECF estimator}\label{sec:ecf-estimator}
+The 540 observed WETH/WBTC increment pairs yield 539 residual pairs. Here
+$T/(\Delta t)=182.5$, $\beta=0.9962091$, and the equivalent pandas-style span is $526.584$.
+The half-life-$T$ choice is a transparent horizon-matching convention, not an estimated
+optimum \citep{Cox1961,TiaoXu1993}.
 
-The closed-form residual Lévy--Khintchine exponent $\Psi_\vartheta^{\mathrm{res}}(u,v)$ gives the
-model-implied characteristic function
+\section{ECF estimation of residual shape}\label{sec:ecf-estimator}
+
+The residual characteristic exponent in \eqref{eq:residual-characteristic-exponent} gives
+the model characteristic function over one observation interval:
 \begin{equation}\label{eq:model-cf}
-\phi_\vartheta^{\mathrm{res}}(u,v;\Delta)
-=
-\exp\!\bigl(\Delta\,\Psi_\vartheta^{\mathrm{res}}(u,v)\bigr),
+\phi_\vartheta^{\mathrm{res}}(u,v;\Delta t)
+=\exp\!\bigl(\Delta t\,\Psi_\vartheta^{\mathrm{res}}(u,v)\bigr).
 \end{equation}
-where $\Delta$ is the observation interval.
-Given $N_{\mathrm{res}}$ centered innovation pairs
-$(\widetilde e_{1,n},\widetilde e_{2,n})_{n=1}^{N_{\mathrm{res}}}$,
-the empirical characteristic function is
+The residual sample contains $N_{\mathrm{res}}=N-1$ pairs
+$(\Delta X_{1,t_n}^{\mathrm{res}},\Delta X_{2,t_n}^{\mathrm{res}})$, $n=2,\ldots,N$.
+Its empirical characteristic function is
 \begin{equation}\label{eq:ecf}
 \widehat{\phi}_{N_{\mathrm{res}}}(u,v)
-=
-\frac{1}{N_{\mathrm{res}}}\sum_{n=1}^{N_{\mathrm{res}}}
-\exp\!\bigl(i(u\,\widetilde e_{1,n}+v\,\widetilde e_{2,n})\bigr).
+=\frac{1}{N_{\mathrm{res}}}\sum_{n=2}^{N}
+\exp\!\bigl(i(u\,\Delta X_{1,t_n}^{\mathrm{res}}
++v\,\Delta X_{2,t_n}^{\mathrm{res}})\bigr).
 \end{equation}
-The ECF component of the estimator is the normalized weighted squared distance
-between \eqref{eq:ecf} and \eqref{eq:model-cf} over a discrete frequency grid
-$\mathcal{G}$:
+The normalized ECF distance over the frequency grid $\mathcal G$ is
 \begin{equation}\label{eq:ecf-objective}
 Q_{N_{\mathrm{res}}}^{\mathrm{ECF}}(\vartheta)
-=
-\frac{\displaystyle\sum_{(u,v)\in\mathcal{G}}w(u,v)
-\,\bigl|\widehat{\phi}_{N_{\mathrm{res}}}(u,v)
--\phi_\vartheta^{\mathrm{res}}(u,v;\Delta)\bigr|^2}
-{\displaystyle\sum_{(u,v)\in\mathcal{G}}w(u,v)}.
+=\frac{\displaystyle\sum_{(u,v)\in\mathcal G}w(u,v)
+\left|\widehat\phi_{N_{\mathrm{res}}}(u,v)
+-\phi_\vartheta^{\mathrm{res}}(u,v;\Delta t)\right|^2}
+{\displaystyle\sum_{(u,v)\in\mathcal G}w(u,v)}.
 \end{equation}
-Because finite high-frequency samples leave a pronounced intensity--jump-size ridge, the
-reported calibration uses two transparent soft anchoring terms:
+Because a short high-frequency sample leaves a pronounced intensity--jump-size ridge, the
+reported fit uses transparent soft anchors:
 \begin{equation}\label{eq:ecf-penalized-objective}
 \begin{aligned}
-\widehat{\vartheta}
-&=\arg\min_{\vartheta\in\mathcal V}\mathcal{Q}_{N_{\mathrm{res}}}(\vartheta),\\
-\mathcal{Q}_{N_{\mathrm{res}}}(\vartheta)
+\widehat\vartheta
+&=\arg\min_{\vartheta\in\mathcal V}\mathcal Q_{N_{\mathrm{res}}}(\vartheta),\\
+\mathcal Q_{N_{\mathrm{res}}}(\vartheta)
 &=Q_{N_{\mathrm{res}}}^{\mathrm{ECF}}(\vartheta)
 +\omega_\lambda\sum_{i=1}^{2}(\log\lambda_i-\log\widetilde\lambda_i)^2\\
 &\quad+\omega_\eta\sum_{i=1}^{2}\sum_{s\in\{+,-\}}
 (\log\eta_{i,s}-\log\widetilde\eta_{i,s})^2.
 \end{aligned}
 \end{equation}
-Here $\widetilde\lambda_i$ is the variance/fourth-cumulant initializer and
-$\widetilde\eta_{i,s}$ is the peak-over-threshold (POT) mean-excess initializer described
-below. The application uses $(\omega_\lambda,\omega_\eta)=(0.05,0.02)$. These are soft
-penalties, not equality restrictions; setting both weights to zero recovers pure ECF
-matching.
-This is the empirical-characteristic-function approach of
-\citet{Singleton2001}, which is particularly natural for affine and
-Lévy-based asset-pricing models whose characteristic functions are known in
-closed form.
-\citet{FeuervergerMcDunnough1981} establish that ECF estimators over a
-rich grid can attain maximum-likelihood efficiency.
-The procedure avoids evaluating the bivariate transition density, which would
-require a two-dimensional numerical Fourier inversion inside every optimizer
-call.
-For background on DEJD likelihood estimation in the univariate case
-see \citet{RamezaniZeng2007}.
+Here $\widetilde\lambda_i$ and $\widetilde\eta_{i,s}$ are the initializers described in
+Section~7. The application uses $(\omega_\lambda,\omega_\eta)=(0.05,0.02)$; setting both to
+zero recovers pure ECF matching. Crucially, neither $g_i$, $\mu_i^X$, nor $\mu_i$ is an ECF
+coordinate. The ECF literature motivates this shape estimation through known characteristic
+functions \citep{FeuervergerMcDunnough1981,Singleton2001,JiangKnight2002}; it does not by
+itself establish that the residual increments are stationary independent Kou increments.
+
+\section{Construction of the empirical parameter set}\label{sec:external-mean}
+
+The ECF output $\widehat\vartheta$ supplies residual shape but no directional mean. The
+endpoint of the EWM path is the annualized forecast already used in the main text:
+\begin{equation}\label{eq:directional-input}
+d_i^{\mathrm{EWM}}:=d_{i,N}^{\mathrm{EWM}}.
+\end{equation}
+The forward expected log-return mean is supplied as
+\begin{equation}\label{eq:manager-view}
+g_i
+=\begin{cases}
+d_i^{\mathrm{EWM}}+r_i^{\mathrm{role}},
+&\text{benchmark},\\
+d_i^{\mathrm{EWM}}+v_i+r_i^{\mathrm{role}},
+&\text{portfolio-manager overlay }v_i,\\
+d_i^{\mathrm{PM}}+r_i^{\mathrm{role}},
+&\text{absolute portfolio-manager forecast}.
+\end{cases}
+\end{equation}
+Here $r_i^{\mathrm{role}}$ is the lending rate for the long asset and the borrowing rate for
+the short asset. Every term in \eqref{eq:manager-view} is annualized. For an ordered
+long--short assignment $(L,S)$, the benchmark is
+\begin{equation}\label{eq:role-adjusted-log-mean}
+g_L(L,S)=d_L^{\mathrm{EWM}}+r_{\mathrm{supply},L},
+\qquad
+g_S(L,S)=d_S^{\mathrm{EWM}}+r_{\mathrm{borrow},S}.
+\end{equation}
+The borrowing rate enters positively because it is the growth rate of the short debt
+liability. The selected orientation maximizes $g_L(L,S)-g_S(L,S)$.
+
+No additional sample-mean adjustment enters $g_i$: the EWM estimate, financing, and any
+manager view determine the forward mean. With this $g_i$,
+\eqref{eq:forward-location-shape} becomes the main-text log-price model
+\begin{equation}\label{eq:forward-process}
+\diff X_{i,t}
+=\mu_i^X\,\diff t+\sigma_i\,\diff B_{i,t}
++\diff\!\left(\sum_{n=1}^{N_{i,t}}J_i^{(n)}\right),
+\qquad
+\mu_i^X=g_i-\lambda_i\bar J_i.
+\end{equation}
+Indeed, $\E[X_{i,t}]/t=\mu_i^X+\lambda_i\bar J_i=g_i$. Converting from expected log
+return to the expected-price growth convention of the main paper gives
+\begin{equation}\label{eq:drift-reinsertion}
+\boxed{\mu_i^X=g_i-\lambda_i\bar J_i},
+\qquad
+\boxed{\mu_i=g_i+\frac12\sigma_i^2+\lambda_i(\chi_i-\bar J_i)},
+\end{equation}
+where $\E[S_{i,t}/S_{i,0}]=e^{\mu_i t}$. Equivalently, the residual shape contributes
+\begin{equation}\label{eq:residual-mu}
+\mu_i^{\mathrm{res}}
+:=\frac12\sigma_i^2+\lambda_i(\chi_i-\bar J_i),
+\qquad
+\mu_i=g_i+\mu_i^{\mathrm{res}}.
+\end{equation}
+The $\tfrac12\sigma_i^2$ term appears only in the conversion to expected price growth, not
+in $g_i$ or $\mu_i^X$.
+
+After calibration, the main text suppresses estimator hats. The parameter set passed to the
+moment and liquidation calculations is
+\begin{equation}\label{eq:empirical-parameter-set}
+\left((\mu_i,\sigma_i,\lambda_i,p_i,\eta_{i,+},\eta_{i,-})_{i=1,2},\rho\right).
+\end{equation}
+Initial prices, the horizon, liquidation thresholds, and health-buffer choices are contract
+or evaluation inputs and are supplied separately; they are not outputs of the EWM--ECF
+calibration.
+Thus assembly is not merely concatenation: ECF supplies the residual shape, the external
+step supplies $g_i$, and \eqref{eq:drift-reinsertion} produces the $\mu_i$ required by the
+moment code. The associated log-SDE coefficient is $\mu_i^X$. If a manager instead supplies
+an expected-price growth exponent $\mu_i^{\mathrm{view}}$, it must first be converted to
+$g_i=\mu_i^{\mathrm{view}}-\mu_i^{\mathrm{res}}$.
+
+The liquidation-driving log-price spread remains $Z_t=X_{1,t}-X_{2,t}$. The limited
+information about expected returns in short samples motivates keeping directional drift
+outside the shape fit \citep{Merton1980}. A bootstrap for the full procedure should rerun
+EWM estimation, residual construction, ECF optimization, orientation, and parameter
+assembly.
 
 \section{Frequency grid}\label{sec:ecf-grid}
 
 The shape vector $\vartheta$ has the eleven free components stated above; neither
 $\mu_1$ nor $\mu_2$ is an ECF coordinate.
-Raw return magnitudes depend on the sampling interval, so fixed raw Fourier frequencies
+Residual-increment magnitudes depend on the sampling interval, so fixed raw Fourier frequencies
 are poorly portable. Let $s_1$, $s_2$, and $s_Z$ be IQR-based robust scales,
-$s=\max\{(q_{0.75}-q_{0.25})/1.349,10^{-8}\}$, for $\widetilde e_1$,
-$\widetilde e_2$, and $\widetilde e_1-\widetilde e_2$. Dimensionless base
+$s=\max\{(q_{0.75}-q_{0.25})/1.349,10^{-8}\}$, for the sample vectors
+$\Delta X_1^{\mathrm{res}}$, $\Delta X_2^{\mathrm{res}}$, and
+$\Delta X_1^{\mathrm{res}}-\Delta X_2^{\mathrm{res}}$. Dimensionless base
 frequencies are mapped to raw frequencies by division by the corresponding scale. The
 grid contains the following groups, with every point accompanied by its conjugate
 $(-u,-v)$:
@@ -262,8 +402,9 @@ The optimized vector is the eleven-dimensional shape coordinate
 \tau_{\mathrm{shape}}
 =(a_1,b_1,c_1,d_1,e_1,a_2,b_2,c_2,d_2,e_2,f).
 \]
-There is no drift coordinate: at every objective evaluation the two residual exponents are
-reconstructed from the candidate shape by \eqref{eq:residual-mu}. The optimization uses
+There is no drift coordinate: at every objective evaluation, the residual price-growth
+correction $\mu_i^{\mathrm{res}}$ for each asset is reconstructed from the candidate shape
+by \eqref{eq:residual-mu}. The optimization uses
 box bounds in the transformed space. For both assets the code uses
 a scaled sigmoid with
 \[
@@ -278,13 +419,13 @@ The characteristic-function objective is non-linear and non-convex,
 so the optimisation is initialised by a threshold-based decomposition
 following the logic of \citet{Mancini2009} for discretely observed
 jump-diffusions.
-Let $q_i=\mathrm{median}(\widetilde e_{i,n})$ and let $s_i$ be the IQR robust scale.
+Let $q_i=\mathrm{median}(\Delta X_{i,t_n}^{\mathrm{res}})$ and let $s_i$ be the IQR robust scale.
 For a frequency-aware threshold constant $c\in[3,5]$, define candidate
 jump observations
 \[
-\mathcal{J}_i=\{n:|\widetilde e_{i,n}-q_i|>c\,s_i\},
+\mathcal{J}_i=\{n:|\Delta X_{i,t_n}^{\mathrm{res}}-q_i|>c\,s_i\},
 \qquad
-\mathcal{C}_i=\{1,\ldots,N_{\mathrm{res}}\}\setminus\mathcal{J}_i.
+\mathcal{C}_i=\{2,\ldots,N\}\setminus\mathcal{J}_i.
 \]
 Initial volatility and correlation values use the continuous subset
 $\mathcal{C}_i$, while the jump-size means are anchored by peak-over-threshold
@@ -295,12 +436,12 @@ p_i^{(0)}&=\frac{|\mathcal{J}_{i,+}|}{|\mathcal{J}_i|}
   \quad\text{clamped to the admissible probability range},\\
 \eta_{i,+}^{(0)},\,\eta_{i,-}^{(0)}&=\text{POT mean-excess estimates},\\
 \lambda_i^{(0)}&=\text{two-moment estimate from variance and fourth cumulant},\\
-\sigma_i^{(0)}&=\mathrm{sd}(\widetilde e_{i,n}:\,n\in\mathcal{C}_i)/\sqrt{\Delta},
-&
-\rho^{(0)}&=\mathrm{corr}(\widetilde e_1,\widetilde e_2)_{n\in\mathcal{C}_1\cap\mathcal{C}_2}.
+\sigma_i^{(0)}&=\mathrm{sd}(\Delta X_{i,t_n}^{\mathrm{res}}:\,n\in\mathcal{C}_i)/\sqrt{\Delta t},\\
+\rho^{(0)}&=\mathrm{corr}(\Delta X_1^{\mathrm{res}},\Delta X_2^{\mathrm{res}})_{n\in\mathcal{C}_1\cap\mathcal{C}_2}.
 \end{align*}
-No sample-mean or drift initializer enters the optimization; the residual drift is imposed
-by \eqref{eq:residual-mu}. The threshold filter is not the final estimator.
+No sample-mean or drift initializer enters the optimization; zero expected log drift is
+imposed through \eqref{eq:zero-mean-residual-process}, with the corresponding price-growth
+correction given by \eqref{eq:residual-mu}. The threshold filter is not the final estimator.
 It is a warm start that places the optimizer in a sensible region of
 parameter space; see the remark in \citet{Mancini2009}.
 
@@ -311,8 +452,8 @@ structured cloud. It contains the unperturbed initializer and six deterministic
 intensity--size ridge starts with
 \[
 \lambda_i\mapsto c\lambda_i,\qquad
-\eta_{i,\pm}\mapsto\eta_{i,\pm}/\sqrt{c},qquad
-c\in\{0.1,0.25,0.5,2,4,8\}.
+\eta_{i,\pm}\mapsto\eta_{i,\pm}/\sqrt{c},\quad
+\text{for }c\in\{0.1,0.25,0.5,2,4,8\}.
 \]
 Remaining starts cycle through four high-jump/high-diffusion scenarios and add bounded
 random perturbations to scale, probability, and correlation parameters. The
@@ -323,11 +464,13 @@ L-BFGS-B minimizer with the lowest penalized objective.
 
 The application uses four-hour observations from 2026-02-26 to 2026-05-27 and calibrates
 the residual shape in the market-data order WETH/WBTC. The shape-only optimization
-converged with zero-based best-start index 2 among 30 starts, using 234 Fourier points,
-with penalized objective $0.00379935$. Reordering the fitted law after comparing the two
+converged with zero-based best-start index 24 among 30 starts, using 234 Fourier points,
+with penalized objective $0.00380646$. Reordering the fitted law after comparing the two
 role-adjusted candidate assignments gives the shape parameters in
 Table~\ref{tab:note-shape-output}.
 
+% Result-generation script: jobs/calibration/calibrate_eth_btc.py
+% Primary data artifact: results/params_empirical_showcase.json
 \begin{table}[ht]
 \centering
 \small
@@ -335,43 +478,49 @@ Table~\ref{tab:note-shape-output}.
 \toprule
 Parameter & WBTC & WETH \\
 \midrule
-$\sigma_i$ & 0.256199 & 0.313328 \\
-$\lambda_i$ & 321.411575 & 609.836386 \\
-$p_i$ & 0.497268 & 0.427636 \\
-$\eta_{i,+}$ & 0.010556 & 0.011327 \\
-$\eta_{i,-}$ & 0.004586 & 0.005590 \\
+$\sigma_i$ & 0.256377 & 0.313671 \\
+$\lambda_i$ & 321.430466 & 609.872146 \\
+$p_i$ & 0.493134 & 0.413228 \\
+$\eta_{i,+}$ & 0.010557 & 0.011322 \\
+$\eta_{i,-}$ & 0.004586 & 0.005592 \\
 \bottomrule
 \end{tabular}
 \caption{Penalized shape-only ECF estimates, reordered to the selected long/short asset
-order. The fitted Brownian correlation is $\rho=0.841739$.}
+order. The fitted Brownian correlation is $\rho=0.841703$.}
 \label{tab:note-shape-output}
 \end{table}
 
 Table~\ref{tab:note-drift-output} records the separate drift construction. The endpoint EWM
-signals are $0.095089$ for WBTC and $-0.555894$ for WETH. Adding the shape-implied
-zero-log-mean corrections gives pre-financing exponents $0.149288$ and $-0.462118$,
-respectively. Table~\ref{tab:note-orientation-output} enumerates both ordered assignments
-after applying the candidate-specific supply and borrowing rates. Long WBTC/short WETH has
-the maximal positive score, $0.583607$, whereas the reverse assignment has negative score.
+signals are $0.095089$ for WBTC and $-0.555894$ for WETH. Table~\ref{tab:note-orientation-output}
+first enumerates both ordered assignments after applying candidate-specific supply and
+borrowing rates in expected-log-return space. Long WBTC/short WETH has the maximal positive
+spread, $0.623184$, whereas the reverse assignment has a negative spread. Only after this
+selection are the fitted shape parameters used in \eqref{eq:drift-reinsertion} to derive
+$\mu_i^X$ and $\mu_i$, as reported in Table~\ref{tab:note-drift-output}.
 
+% Result-generation script: jobs/calibration/calibrate_eth_btc.py
+% Primary data artifact: results/params_empirical_showcase.json
 \begin{table}[ht]
 \centering
 \small
 \begin{tabular}{llrrr}
 \toprule
 Candidate long $L$ & Candidate short $S$
-& $\mu_L^{\mathrm{emp}}(L,S)$ & $\mu_S^{\mathrm{emp}}(L,S)$
-& $\Delta_\mu(L,S)$ \\
+& $g_L(L,S)$ & $g_S(L,S)$
+& $g_L(L,S)-g_S(L,S)$ \\
 \midrule
-WBTC & WETH & $0.149344$ & $-0.434263$ & $0.583607$ \\
-WETH & WBTC & $-0.440217$ & $0.152768$ & $-0.592985$ \\
+WBTC & WETH & $0.095145$ & $-0.528039$ & $0.623184$ \\
+WETH & WBTC & $-0.533993$ & $0.098569$ & $-0.632562$ \\
 \bottomrule
 \end{tabular}
 \caption{Enumeration of the two role-adjusted candidate assignments. The rule selects the
-candidate with the largest positive drift spread, hence long WBTC and short WETH.}
+candidate with the largest positive expected-log-return spread, hence long WBTC and short
+WETH.}
 \label{tab:note-orientation-output}
 \end{table}
 
+% Result-generation script: jobs/calibration/calibrate_eth_btc.py
+% Primary data artifact: results/params_empirical_showcase.json
 \begin{table}[ht]
 \centering
 \small
@@ -379,16 +528,19 @@ candidate with the largest positive drift spread, hence long WBTC and short WETH
 \toprule
 Annualized component & Long WBTC & Short WETH \\
 \midrule
-Endpoint EWM log drift $d_i^{\mathrm{EWM}}$ & $0.095089$ & $-0.555894$ \\
-Residual price-growth correction $\mu_i^{\mathrm{res}}$ & $0.054199$ & $0.093776$ \\
-Pre-financing exponent $\nu_i$ & $0.149288$ & $-0.462118$ \\
+Endpoint EWM log-return mean $d_i^{\mathrm{EWM}}$ & $0.095089$ & $-0.555894$ \\
 Role-specific supply/borrowing rate & $0.0000556$ & $0.027855$ \\
-Final price-growth exponent $\mu_i^{\mathrm{emp}}$ & $0.149344$ & $-0.434263$ \\
+Expected log-return mean $g_i$ & $0.095145$ & $-0.528039$ \\
+Mean jump rate $\lambda_i\bar J_i$ & $0.926182$ & $0.852120$ \\
+Log-SDE coefficient $\mu_i^X$ & $-0.831037$ & $-1.380159$ \\
+Residual price-growth correction $\mu_i^{\mathrm{res}}$ & $0.054131$ & $0.093001$ \\
+Expected-price growth exponent $\mu_i$ & $0.149275$ & $-0.435038$ \\
 \bottomrule
 \end{tabular}
 \caption{Empirical drift construction for the selected long--short orientation. The
-residual corrections are determined by the fitted shapes; they are not free ECF drift
-estimates.}
+first three rows construct the expected log-return mean. The remaining rows show how the
+fitted residual shape maps that mean into the two drift conventions; neither $\mu_i^X$ nor
+$\mu_i$ is a free ECF drift estimate.}
 \label{tab:note-drift-output}
 \end{table}
 
@@ -428,23 +580,20 @@ synthetic calibration job tests recovery of the eleven residual-shape parameters
 same zero-expected-log-drift restriction and produces
 Figure~\ref{fig:ecf-fit}.
 
-\clearpage
-\begin{figure}[!ht]
+% Result-generation script: jobs/calibration/calibrate_kou.py
+% Figure artifact: latex/fig_ecf_fit.pdf
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.85\linewidth]{fig_ecf_fit.pdf}
+\includegraphics[width=0.76\linewidth]{fig_ecf_fit.pdf}
 \caption{Shape-only ECF fit along the spread direction $(s,-s)$ for $N=4{,}000$
 synthetic daily observations from a residual law with zero expected log drift.
 Left: modulus $|\phi(s,-s)|$; right: phase $\arg\phi(s,-s)$.
 Dots: empirical CF $\widehat\phi_N$; dashed: true residual-law CF;
-solid red: shape-only ECF estimate. Both residual expected log drifts are imposed at zero,
-and the corresponding price-growth corrections are derived from the shapes rather than
-estimated as drift coordinates.
-The close agreement in modulus and phase documents the fit along the
-liquidation-relevant spread direction; this plot alone does not assess every component of
-the full-grid criterion or validate an empirical directional-drift forecast.
-Script \texttt{optimal\_long\_short/job\_runners/calibrate\_kou.py}.}
+solid red: shape-only ECF estimate. Agreement in this liquidation-relevant direction is a
+shape diagnostic; it does not validate the directional-drift forecast.}
 \label{fig:ecf-fit}
 \end{figure}
+\FloatBarrier
 
 \bibliographystyle{abbrvnat}
 \bibliography{finance}

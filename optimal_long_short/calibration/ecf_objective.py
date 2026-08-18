@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from optimal_long_short.kou_model import BivariateKouModel
+from optimal_long_short.model.kou_model import BivariateKouModel
 from .transforms import (
     ParameterBounds,
     _DEFAULT_BOUNDS,

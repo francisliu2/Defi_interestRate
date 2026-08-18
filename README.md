@@ -19,8 +19,8 @@ The project has two main parts:
 - `aave-ts/`: TypeScript data fetcher for AAVE v3 Ethereum market/history data.
 - `optimal_long_short/`: Python model, calibration, moments, simulation, and job runners.
 
-The `jobs/` directory contains thin entry-point scripts only.  Implementation
-lives under `optimal_long_short/job_runners/` and `optimal_long_short/`.
+The `jobs/` directory contains thin entry-point scripts only. Implementation
+lives in the responsibility-specific subpackages under `optimal_long_short/`.
 
 ## Repository Layout
 
@@ -29,18 +29,18 @@ lives under `optimal_long_short/job_runners/` and `optimal_long_short/`.
 |-- aave-ts/                       # AAVE v3 Ethereum data fetcher
 |   |-- src/run.ts                 # TypeScript CLI entry point
 |   `-- data/AAVE/                 # Parquet history files and manifest.csv
-|-- jobs/                          # Python entry points only
+|-- jobs/                          # Python entry points, mirroring package domains
+|   |-- calibration/               # Calibration entry points
+|   |-- laplace/                   # Laplace diagnostic entry points
+|   |-- monte_carlo/               # Simulation/comparison entry points
+|   `-- job_runners/               # Cross-cutting analysis entry points
 |-- optimal_long_short/            # Core Python package
-|   |-- calibration/               # ECF calibration, initializers, diagnostics
-|   |-- job_runners/               # Implementations behind jobs/*.py
-|   |-- model_params.py            # Kou parameter convention
-|   |-- moments.py                 # Survival, killed, and survivor-conditional moments
-|   |-- laplace_resolvent.py       # Laplace-resolvent machinery
-|   |-- risk_report.py             # H0/h0 liquidation reports
-|   |-- sizing.py                  # Explicit objective-specific selection rules
-|   |-- calibration_uncertainty.py # Paired block bootstrap and propagation
-|   |-- numerical_diagnostics.py   # Inversion/root/conditioning/MC diagnostics
-|   `-- drift.py                   # Drift-view helpers and diagnostics
+|   |-- calibration/               # ECF calibration, uncertainty, and calibration jobs
+|   |-- laplace/                   # Inversion, roots, resolvents, and diagnostics
+|   |-- model/                     # Parameters, dynamics, drift service, strategy, sizing, moments, and reports
+|   |-- monte_carlo/               # Simulation engine and comparison jobs
+|   |-- strategy/                  # Colleague research assets
+|   `-- job_runners/               # Cross-cutting empirical analysis jobs
 |-- latex/                         # Paper and generated figures
 |-- results/                       # Calibrated parameter JSON and reports
 `-- requirements.txt               # Python dependencies
@@ -59,7 +59,7 @@ pip install -r requirements.txt
 Most Python jobs are run from the repository root:
 
 ```bash
-.venv/bin/python jobs/<job_name>.py
+.venv/bin/python jobs/<module>/<job_name>.py
 ```
 
 AAVE TypeScript fetcher:
@@ -101,15 +101,17 @@ The main empirical calibration selects the long/short orientation between WETH
 and WBTC from the empirical price-growth exponents:
 
 ```bash
-.venv/bin/python jobs/calibrate_eth_btc.py
+.venv/bin/python jobs/calibration/calibrate_eth_btc.py
 ```
 
 This reads the latest WBTC and WETH rows from `aave-ts/data/AAVE/manifest.csv`,
-merges their parquet data by block, and computes log returns.  It estimates a
-causal exponentially weighted mean (EWM) with a one-month half-life, centers the
-resulting lagged innovations, and uses a shape-only empirical characteristic
-function (ECF) fit for the bivariate Kou diffusion, jump, and dependence
-parameters.  The residual expected log-return drifts are fixed at zero.
+merges their parquet data by block, and computes log returns. It estimates a
+causal exponentially weighted mean (EWM) with a one-month half-life and
+subtracts the lagged EWM mean once from each observed log-return increment. The
+resulting residual increments are passed directly to a shape-only empirical
+characteristic function (ECF) fit for the bivariate Kou diffusion, jump, and
+dependence parameters; no additional sample demeaning is applied. The residual
+expected log-return drifts are fixed at zero as a population model restriction.
 
 For each asset, a carry-free empirical price-growth exponent combines the
 endpoint EWM log-return trend with the shape-implied residual price-growth
@@ -153,7 +155,7 @@ muX_i = mu_i - 0.5 * sigma_i^2 - lambda_i * E[exp(J_i) - 1]
 ```
 
 User views should usually be applied to `mu_i` as price-growth views.  Use
-`optimal_long_short.drift.with_muX_drift_view` only when the view is explicitly
+`optimal_long_short.model.drift_service.with_muX_drift_view` only when the view is explicitly
 stated as a log-process drift.
 
 The showcase does not estimate `mu_i` freely in the high-frequency ECF fit.
@@ -163,34 +165,46 @@ correction required by the convention above, and role-specific AAVE carry.  The
 EWM trend is a horizon-matched empirical scenario input, not a structural
 out-of-sample expected-return estimate.
 
+For the empirical section, define
+`g_i = endpoint EWM log mean + role-specific annual carry`.  The downstream
+log-price coefficient is `muX_i = g_i - lambda_i E[J_i]`; the diffusion term is
+not subtracted from `g_i`.  It has already been included when the stored
+price-growth `mu_i` is converted to `muX_i`.
+
 ## Analysis Jobs
 
 Run from the repository root.
 
 ```bash
 # Calibrate the data-selected WETH/WBTC orientation from AAVE history
-.venv/bin/python jobs/calibrate_eth_btc.py
+.venv/bin/python jobs/calibration/calibrate_eth_btc.py
 
 # Numerical comparison table: Laplace-resolvent vs Monte Carlo
-.venv/bin/python jobs/numerical_comparison.py
+.venv/bin/python jobs/monte_carlo/numerical_comparison.py
 
 # Parameter sensitivity figure
-.venv/bin/python jobs/sensitivity_analysis.py
+.venv/bin/python jobs/job_runners/sensitivity_analysis.py
 
 # Health-buffer evaluation-map figure
-.venv/bin/python jobs/health_buffer_evaluation_map.py
+.venv/bin/python jobs/job_runners/health_buffer_evaluation_map.py
+
+# Section 6 log-return-mean spread sensitivity CSV and figure
+.venv/bin/python jobs/job_runners/mu_spread_sensitivity.py
+
+# Section 6 semi-analytical / seeded Monte Carlo comparison table data
+.venv/bin/python jobs/monte_carlo/empirical_method_comparison.py
 
 # CSV report over h0 / H0 grid
-.venv/bin/python jobs/h0_liquidation_report.py
+.venv/bin/python jobs/job_runners/h0_liquidation_report.py
 
 # Compare explicitly parameterized initial-buffer decision rules
-.venv/bin/python jobs/objective_comparison.py
+.venv/bin/python jobs/job_runners/objective_comparison.py
 
 # Talbot/root/conditioning and discrete-monitoring diagnostics
-.venv/bin/python jobs/numerical_diagnostics.py
+.venv/bin/python jobs/laplace/numerical_diagnostics.py
 
 # Paired moving-block calibration and sizing uncertainty
-.venv/bin/python jobs/calibration_uncertainty.py
+.venv/bin/python jobs/calibration/calibration_uncertainty.py
 ```
 
 The objective-comparison defaults reproduce

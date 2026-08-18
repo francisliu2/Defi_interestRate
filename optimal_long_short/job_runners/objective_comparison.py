@@ -18,8 +18,8 @@ from optimal_long_short.job_runners.common import (
     RESULTS_DIR,
     load_calibrated_params,
 )
-from optimal_long_short.risk_report import h0_liquidation_moment_report
-from optimal_long_short.sizing import (
+from optimal_long_short.model.risk_report import h0_liquidation_moment_report
+from optimal_long_short.model.sizing import (
     ObjectiveSpecificSelection,
     select_conditional_mean_variance_with_liquidation_penalty,
     select_liquidation_constrained,

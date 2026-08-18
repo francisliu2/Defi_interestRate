@@ -31,6 +31,9 @@ export interface HistoryBlockSchedule {
   blockTags: number[];
 }
 
+// Aave reserve liquidity/borrow rates are annualized RAY values (1e27 = 100%).
+// Persist them as annual APR percentage points; Python later divides by 100
+// to obtain annual decimal rates on the model's year-based time scale.
 function rayToPercent(ray: ethers.BigNumber): number {
   return parseFloat(ethers.utils.formatUnits(ray, 27)) * 100;
 }

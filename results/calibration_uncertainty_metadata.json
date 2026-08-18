@@ -1,7 +1,7 @@
 {
-  "run_at": "2026-08-17T13:45:55.202285+00:00",
+  "run_at": "2026-08-18T14:26:14.257270+00:00",
   "method": "paired circular moving-block percentile bootstrap",
-  "interpretation": "Descriptive sampling uncertainty conditional on the Kou model, ECF criterion, centered causal-EWM preprocessing, point-selected asset roles, fixed endpoint EWM trends, fixed role carry, terminal-block protocol terms, block length, and discrete health-factor sizing grid; not a model-selection or out-of-sample forecast interval.",
+  "interpretation": "Descriptive sampling uncertainty conditional on the Kou model, ECF criterion, direct causal-EWM residual preprocessing, point-selected asset roles, fixed endpoint EWM trends, fixed role carry, terminal-block protocol terms, block length, and discrete health-factor sizing grid; not a model-selection or out-of-sample forecast interval.",
   "data": {
     "asset1": "WBTC",
     "asset2": "WETH",
@@ -16,10 +16,10 @@
     "n_obs": 539,
     "dt_years": 0.00045662100456621003,
     "returns_preprocessing": {
-      "method": "centered_lagged_normalized_ewm_innovations",
+      "method": "lagged_normalized_ewm_residual_increments",
       "ewm_half_life_years": 0.08333333333333333,
       "ewm_half_life_periods": 182.5,
-      "replicate_centering": true
+      "additional_sample_demeaning": false
     },
     "source_files": {
       "WBTC": "hist_c66c279c1c66.parquet",
@@ -27,7 +27,7 @@
     }
   },
   "fixed_empirical_inputs": {
-    "orientation_rule": "maximize the positive role-adjusted empirical-mu spread",
+    "orientation_rule": "maximize the positive role-adjusted expected-log-return-mean spread",
     "long_asset": "WBTC",
     "short_asset": "WETH",
     "endpoint_ewm_expected_log_drift": {
@@ -59,7 +59,7 @@
     "H0_max": 2.0,
     "H0_count": 200
   },
-  "runtime_seconds": 33.25541191700904,
+  "runtime_seconds": 33.33458262501517,
   "outputs": {
     "replicates": "/Users/francis/Defi_interestRate/results/calibration_uncertainty_bootstrap.csv",
     "summary": "/Users/francis/Defi_interestRate/results/calibration_uncertainty_summary.csv"

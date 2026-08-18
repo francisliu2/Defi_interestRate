@@ -20,8 +20,8 @@ from dataclasses import dataclass, field
 import numpy as np
 from scipy.optimize import minimize
 
-from optimal_long_short.model_params import KouParams
-from optimal_long_short.drift import with_zero_expected_log_return
+from optimal_long_short.model.model_params import KouParams
+from optimal_long_short.model.drift_service import with_zero_expected_log_return
 from .transforms import (
     ParameterBounds, _DEFAULT_BOUNDS,
     SHAPE_UNC_INDICES,

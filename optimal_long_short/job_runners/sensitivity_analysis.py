@@ -15,7 +15,7 @@ Annotations on p_surv panels:
   • Horizontal threshold lines at p_surv = 0.90 (10 % liq) and 0.75 (25 % liq)
   • Region labels "← high leverage" and "safe buffer →" at left / right of x-axis
 
-Usage:  python jobs/sensitivity_analysis.py
+Usage:  python jobs/job_runners/sensitivity_analysis.py
 Output: latex/fig_sensitivity.pdf
 """
 import numpy as np

@@ -17,7 +17,7 @@
 \usepackage[round,authoryear]{natbib}
 
 % ==== TABLES & FIGURES ====
-\usepackage{graphicx,booktabs,rotating,multirow,tabularx}
+\usepackage{graphicx,booktabs,rotating,multirow,tabularx,placeins}
 
 % ==== LISTS ====
 \usepackage{enumerate}
@@ -573,6 +573,8 @@ liquidation boundary are developed separately in Appendix~\ref{app:downward-phas
 
 Table~\ref{tab:tilted-params} collects the quantities introduced in this subsection.
 
+% Result source: analytical notation summary maintained directly in this TeX file;
+% no numerical result-generation script is used for this table.
 \begin{table}[ht]
 \centering\small
 \renewcommand{\arraystretch}{1.35}
@@ -906,21 +908,40 @@ $2\times2$ system.
 
 We illustrate the framework with 540 four-hour WETH/WBTC return pairs and horizon
 $T=1/12$. A normalized, causal exponentially weighted mean (EWM) with half-life $T$
-produces 539 lagged-mean innovations, which are centered before fitting. A penalized
+produces 539 residual increments by subtracting the lagged EWM mean once from each observed
+increment. No additional sample demeaning is applied. A penalized
 empirical characteristic function (ECF) criterion estimates the eleven diffusion, jump, and
-dependence parameters from those innovations, following
+dependence parameters from those residual increments, following
 \citet{FeuervergerMcDunnough1981} and \citet{Singleton2001}; the residual expected log
 drifts are fixed at zero. The accompanying empirical-calibration note gives the complete
 construction.
 
-For each asset, the endpoint EWM log drift is added to the residual-law price-growth
-correction. We then evaluate both role assignments using the applicable supply rate on the
-long leg and borrowing rate on the short leg, and choose the assignment with the larger
-positive empirical-$\mu$ spread. This selects long WBTC and short WETH. The terminal-block
+The EWM step estimates the conditional log-return mean separately from the ECF shape fit.
+For each asset, the annualized mean retained in this section is
+\[
+g_i:=\frac{\E[X_{i,t}]}{t}
+=d_i^{\mathrm{EWM}}+r_i^{\mathrm{role}},
+\qquad
+\bar J_i=p_i\eta_{i,+}-(1-p_i)\eta_{i,-},
+\]
+where $r_i^{\mathrm{role}}$ is the lending rate for the long asset and the borrowing rate
+for the short asset. Because jumps contribute $\lambda_i\bar J_i$ to the expected log
+return, the finite-variation coefficient used in the log-price SDE is
+\[
+\mu_i^X=g_i-\lambda_i\bar J_i.
+\]
+The ECF is fitted only to these EWM residual increments, whose residual expected
+log-return drift is fixed at zero as a population restriction; it estimates $\sigma_i,\lambda_i,p_i,\eta_{i,+},
+\eta_{i,-}$, and $\rho$, not another directional mean. The implementation converts $g_i$
+internally to the expected-price growth convention required by the moment code, but Section~6
+reports and perturbs means only in log-return space. We evaluate both role assignments using
+the role-adjusted $g_1-g_2$ spread. This selects long WBTC and short WETH. The terminal-block
 WBTC threshold $b=0.78$ and maximum LTV
 $0.73$ imply $h_0^{\min}=\log(0.78/0.73)\approx0.0662$. Table~\ref{tab:num-params}
 reports the resulting benchmark.
 
+% Result-generation script: jobs/calibration/calibrate_eth_btc.py
+% Primary data artifact: results/params_empirical_showcase.json
 \begin{table}[!h]
 \centering\small
 \renewcommand{\arraystretch}{1.15}
@@ -928,11 +949,18 @@ reports the resulting benchmark.
 \toprule
 Group & Parameter & Long $S_1$: WBTC & Short $S_2$: WETH \\
 \midrule
-\multirow{6}{*}{Kou}
- & Expected-price growth exponent $\mu_i$ & $0.149$ & $-0.434$ \\
- & Diffusion volatility $\sigma_i$ & $0.256$ & $0.313$ \\
- & Jump intensity $\lambda_i$ & $321.41$ & $609.84$ \\
- & Upward-jump probability $p_i$ & $0.497$ & $0.428$ \\
+\multirow{6}{*}{Log-return mean}
+ & Endpoint EWM log-return mean $d_i^{\mathrm{EWM}}$ & $0.095089$ & $-0.555894$ \\
+ & Lending/borrowing rate $r_i^{\mathrm{role}}$ & $0.0000556$ & $0.027855$ \\
+ & Expected log-return mean $g_i$ & $0.095145$ & $-0.528039$ \\
+ & Mean jump rate $\lambda_i\bar J_i$ & $0.926182$ & $0.852120$ \\
+ & Log-SDE coefficient $\mu_i^X$ & $-0.831037$ & $-1.380159$ \\
+ & Expected-price growth exponent $\mu_i$ & $0.149275$ & $-0.435038$ \\
+\midrule
+\multirow{5}{*}{Kou}
+ & Diffusion volatility $\sigma_i$ & $0.256$ & $0.314$ \\
+ & Jump intensity $\lambda_i$ & $321.43$ & $609.87$ \\
+ & Upward-jump probability $p_i$ & $0.493$ & $0.413$ \\
  & Mean upward-jump size $\eta_{i,+}$ & $0.0106$ & $0.0113$ \\
  & Mean downward-jump size $\eta_{i,-}$ & $0.00459$ & $0.00559$ \\
 \midrule
@@ -947,11 +975,18 @@ Group & Parameter & Long $S_1$: WBTC & Short $S_2$: WETH \\
 \bottomrule
 \end{tabular}
 \caption{Empirical benchmark from four-hour WETH/WBTC returns
-(2026-02-26--2026-05-27). Shape parameters are fitted by penalized ECF to
-centered causal-EWM innovations with half-life $T$. Each reported $\mu_i$ combines the
-endpoint EWM log drift, the zero-log-mean residual correction, and the sample-average AAVE
-rate over the observation window: $0.0056\%$ for WBTC supply and $2.7855\%$ for WETH
-variable borrowing.
+(2026-02-26--2026-05-27). Shape parameters are fitted by penalized ECF to the residual
+increments obtained after one causal EWM subtraction with half-life $T$; no additional
+sample demeaning is imposed. The Log-return mean group
+keeps the empirical drift construction in log-return space: $g_i$ is the endpoint EWM mean
+plus the role-specific lending or borrowing rate, and $\mu_i^X=g_i-\lambda_i\bar J_i$ is
+the corresponding finite-variation coefficient in the log-price SDE. The final row gives
+the distinct price-growth exponent defined by $\E[e^{X_{i,t}}]=e^{\mu_i t}$.
+The sample-average AAVE rates over the observation
+window are $0.0056\%$ for WBTC lending (supply) and $2.7855\%$ for WETH variable borrowing.
+Both are annual APRs expressed as decimal rates in the calculation (year$^{-1}$), matching
+the annual time scale of $d_i^{\mathrm{EWM}}$ and the Kou parameters; no four-hour scaling
+is applied before they enter $g_i$.
 Contract terms and initial prices are measured at terminal block $25{,}189{,}091$.}
 \label{tab:num-params}
 \end{table}
@@ -960,6 +995,8 @@ Table~\ref{tab:sa-mc-comparison} compares the semi-analytical (SA) calculation w
 discretely monitored Monte Carlo (MC) benchmark at selected points on the plotted
 health-factor range. The conditional statistics are computed given survival to $T$.
 
+% Result-generation script: jobs/monte_carlo/empirical_method_comparison.py
+% Primary data artifact: results/empirical_method_comparison.csv
 \begin{table}[t]
 \centering
 \setlength{\tabcolsep}{3pt}
@@ -973,11 +1010,14 @@ health-factor range. The conditional statistics are computed given survival to $
 \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}
 $h_0$ & $H_0$ & SA & MC & SA & MC & SA & MC & SA & MC \\
 \midrule
-$0.0662$ & $1.0685$ & $0.3863$ & $0.3812$ & $1.3091$ & $1.3058$ & $0.0778$ & $0.0773$ & $0.041$ & $13.53$ \\
-$0.0953$ & $1.1000$ & $0.2475$ & $0.2450$ & $1.2388$ & $1.2366$ & $0.0712$ & $0.0704$ & $0.036$ & $12.69$ \\
-$0.1823$ & $1.2000$ & $0.0510$ & $0.0488$ & $1.1270$ & $1.1245$ & $0.0585$ & $0.0586$ & $0.037$ & $12.68$ \\
-$0.4055$ & $1.5000$ & $1.76\!\times\!10^{-4}$ & $1.60\!\times\!10^{-4}$ & $1.0647$ & $1.0638$ & $0.0330$ & $0.0327$ & $0.035$ & $12.52$ \\
-$0.6931$ & $2.0000$ & $7.27\!\times\!10^{-9}$ & $0^{\ast}$ & $1.0433$ & $1.0427$ & $0.0196$ & $0.0194$ & $0.036$ & $12.47$ \\
+$0.0662$ & $1.0685$ & $0.3833$ & $0.3822$ & $1.3072$ & $1.3102$ & $0.0774$ & $0.0781$ & $0.044$ & $13.90$ \\
+$0.0953$ & $1.1000$ & $0.2444$ & $0.2440$ & $1.2372$ & $1.2388$ & $0.0708$ & $0.0715$ & $0.039$ & $13.85$ \\
+$0.1823$ & $1.2000$ & $0.0494$ & $0.0496$ & $1.1263$ & $1.1265$ & $0.0582$ & $0.0591$ & $0.039$ & $13.85$ \\
+$0.4055$ & $1.5000$ & $1.58\!\times\!10^{-4}$ & $2.40\!\times\!10^{-4}$ & $1.0647$ & $1.0649$ & $0.0328$ & $0.0330$ & $0.041$ & $14.00$ \\
+$0.6931$ & $2.0000$ & $5.77\!\times\!10^{-9}$ & $0^{\ast}$ & $1.0433$ & $1.0434$ & $0.0195$ & $0.0196$ & $0.040$ & $13.91$ \\
+\midrule
+$100$ & $2.69\!\times\!10^{43}$ & $0$ & $0$ & $1.0125$ & $1.0126$ & $0.0094$ & $0.0093$ & $0.039$ & $14.03$ \\
+$\infty$ & $\infty$ & \multicolumn{2}{c}{$0$} & \multicolumn{2}{c}{$1.0125$} & \multicolumn{2}{c}{$0.0094$} & \multicolumn{2}{c}{exact limit} \\
 \bottomrule
 \end{tabular}
 \caption{Semi-analytical and Monte Carlo calculations for the benchmark in
@@ -985,9 +1025,19 @@ Table~\ref{tab:num-params}, with $T=1/12$. SA uses Talbot inversion with $M=32$ 
 times the survival probability and killed moments $k=1,2$. MC uses $25{,}000$ paths,
 $1{,}008$ monitoring intervals, and seed 42. Times are single-run wall-clock seconds
 and are implementation- and machine-dependent. $0^{\ast}$ means that no liquidation was
-observed in the simulated sample, not that the underlying probability is zero.}
+observed in the simulated sample, not that the underlying probability is zero. The
+$h_0=100$ row is a finite SA/MC proxy for no shorting; the $h_0=\infty$ row reports the
+corresponding analytical limit.}
 \label{tab:sa-mc-comparison}
 \end{table}
+
+The penultimate row evaluates the no-shorting proxy $h_0=100$ with both methods under the
+same settings as the other rows. SA agrees with the exact limit to the reported precision;
+MC differs from the exact mean by $+0.010\%$ and from the exact variance by $-0.38\%$.
+The final row is the analytical limit: as $h_0\to\infty$, the portfolio becomes a unit
+position in WBTC, so its mean is $e^{\mu_1T}=1.0125$ and not
+$e^{g_1T}=1.0080$. The latter exponentiates the mean log return; it does not include the
+diffusion and jump convexity corrections needed for the arithmetic mean of the gross return.
 
 Conditional moments are close. The discretely monitored MC liquidation estimate is lower
 near the barrier, as expected when crossings between monitoring dates are missed. Runtime
@@ -999,6 +1049,8 @@ health-buffer evaluation map in Figure~\ref{fig:health-buffer-map}. Before impos
 investor objective, the three-dimensional curve shows how the initial buffer jointly changes
 liquidation probability and the conditional mean and variance of the surviving payoff.
 
+% Result-generation script: jobs/job_runners/health_buffer_evaluation_map.py
+% Figure artifact: latex/fig_health_buffer_evaluation_map.pdf
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth,height=0.64\textheight,keepaspectratio]{fig_health_buffer_evaluation_map.pdf}
@@ -1011,7 +1063,149 @@ Grey curves are orthogonal guides on the coordinate planes.}
 \label{fig:health-buffer-map}
 \end{figure}
 
-\clearpage
+\subsection{Sensitivity to the long--short mean spread}\label{sec:mu-spread-sensitivity}
+
+The evaluation map is sensitive to the expected log-return means supplied to the
+framework. We therefore hold the calibrated mean midpoint and all non-drift inputs fixed
+and perturb only the long--short mean spread around its calibrated value. The first analysis
+tracks liquidation risk and conditional payoff moments; the second combines payoff and
+survival through the expected killed payoff and studies the induced optimal health buffer.
+
+\subsubsection{Liquidation risk and conditional moments}\label{sec:spread-conditional-moments}
+
+To isolate spread uncertainty from a common shift in the log-return mean, let
+$\Delta_g^{\mathrm{bm}}=g_1^{\mathrm{bm}}-g_2^{\mathrm{bm}}=0.623184$ and
+$\bar g^{\mathrm{bm}}=(g_1^{\mathrm{bm}}+g_2^{\mathrm{bm}})/2=-0.216447$.
+We hold this midpoint and all calibrated diffusion, jump, correlation, contract, and price
+parameters fixed, and vary only
+\begin{equation}\label{eq:log-mean-spread-perturbation}
+ g_1(c)=\bar g^{\mathrm{bm}}+\frac{(1+c)\Delta_g^{\mathrm{bm}}}{2},
+ \qquad
+ g_2(c)=\bar g^{\mathrm{bm}}-\frac{(1+c)\Delta_g^{\mathrm{bm}}}{2},
+ \qquad c\in[-1,1].
+\end{equation}
+Thus $c=0$ is the calibrated benchmark, $c<0$ narrows the spread, and $c>0$ widens it;
+the endpoints $c=-1$ and $c=1$ respectively set equal leg means and double the benchmark
+log-mean spread. For each $c$, the implementation maps $g_i(c)$ to
+its internal price-growth convention while leaving all ECF shape parameters fixed. This is
+a comparative-static drift perturbation, not a recalibration of those shape parameters.
+
+Figure~\ref{fig:mu-spread-sensitivity} evaluates 41 equally spaced values of
+$c\in[-1,1]$ at
+$H_0=1.10$ and $T=1/12$. Table~\ref{tab:mu-spread-sensitivity} reports five representative
+points. We refer to $p_{\mathrm{liq}}$ as default risk in this illustration; operationally,
+the event is first passage through the protocol liquidation boundary. Narrowing the spread
+from its benchmark value to zero increases $p_{\mathrm{liq}}$ from $24.44\%$ to $37.68\%$
+and lowers the conditional mean from $1.2372$ to $1.1419$. Doubling the spread lowers
+$p_{\mathrm{liq}}$ to $14.79\%$ and raises the conditional mean to $1.3485$. Relative to
+the benchmark, these endpoints change liquidation probability by $+54.2\%$ and $-39.5\%$,
+respectively. Conditional variance changes by approximately $-15.7\%$ and $+15.8\%$; conditional
+skewness and excess kurtosis also move appreciably. Mean uncertainty therefore propagates
+not only to default probability and expected surviving payoff, but to the dispersion and
+shape of the conditional payoff distribution.
+
+% Result-generation script: jobs/job_runners/mu_spread_sensitivity.py
+% Figure artifact: latex/fig_mu_spread_sensitivity.pdf
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{fig_mu_spread_sensitivity.pdf}
+\caption{Sensitivity to the supplied expected log-return mean spread at $H_0=1.10$ and
+$T=1/12$. The midpoint of $(g_1,g_2)$ and every non-drift input are held at their
+calibrated values while the benchmark spread is multiplied by $1+c$ as in
+\eqref{eq:log-mean-spread-perturbation}. The dotted vertical line marks the calibrated benchmark
+$c=0$. Conditional moments are computed given $\tau>T$.}
+\label{fig:mu-spread-sensitivity}
+\end{figure}
+
+% Result-generation script: jobs/job_runners/mu_spread_sensitivity.py
+% Primary data artifact: results/mu_spread_sensitivity.csv
+\begin{table}[!htbp]
+\centering\small
+\setlength{\tabcolsep}{4.2pt}
+\renewcommand{\arraystretch}{1.10}
+\begin{tabular}{@{}rrrrrrr@{}}
+\toprule
+$c$ & $g_1-g_2$ & $p_{\mathrm{liq}}$ &
+$\E[\Pi_T\mid\tau>T]$ & $\operatorname{Var}(\Pi_T\mid\tau>T)$ & Skew. & Ex. kurt. \\
+\midrule
+$-1.0$ & $0.0000$ & $0.3768$ & $1.1419$ & $0.0597$ & $0.7099$ & $0.6491$ \\
+$-0.5$ & $0.3116$ & $0.3064$ & $1.1875$ & $0.0652$ & $0.6575$ & $0.5456$ \\
+$0.0$ & $0.6232$ & $0.2444$ & $1.2372$ & $0.0708$ & $0.6052$ & $0.4572$ \\
+$0.5$ & $0.9348$ & $0.1915$ & $1.2909$ & $0.0765$ & $0.5543$ & $0.3860$ \\
+$1.0$ & $1.2464$ & $0.1479$ & $1.3485$ & $0.0820$ & $0.5063$ & $0.3327$ \\
+\bottomrule
+\end{tabular}
+\caption{Selected expected-log-return-mean spread sensitivity results. The calibrated case is $c=0$; all
+figures use the same semi-analytical inversion and fixed non-drift inputs as the benchmark.}
+\label{tab:mu-spread-sensitivity}
+\end{table}
+
+\FloatBarrier
+\subsubsection{Expected killed payoff and optimal health buffer}\label{sec:expected-killed-payoff}
+
+Let $m(c,h_0):=\E[\Pi_T\mid\tau>T]$ and
+$p_{\mathrm{surv}}(c,h_0):=1-p_{\mathrm{liq}}(c,h_0)$. We study the sensitivity of the
+optimal initial log health buffer to the first killed moment
+\begin{equation}\label{eq:expected-killed-payoff}
+ M_1(T,h_0)
+ :=p_{\mathrm{surv}}(c,h_0)m(c,h_0)
+ =\E[\Pi_T]
+ =:J_{\mathrm{kill}}(c,h_0).
+\end{equation}
+If the terminal portfolio payoff is regarded as a contingent claim, $M_1$ has the payoff
+structure of a zero-rebate barrier option: crossing the liquidation boundary knocks out the
+claim and sets its terminal payoff to zero. Because the expectation is taken under the physical
+measure, $M_1$ is an expected-performance criterion rather than an arbitrage-free option price.
+
+At fixed $H_0=1.10$, Figure~\ref{fig:expected-killed-payoff} uses the same 41-point spread
+grid, $T=1/12$, and calibrated non-drift inputs as
+Section~\ref{sec:spread-conditional-moments}. The calibrated benchmark gives
+$J_{\mathrm{kill}}=0.9349$. Narrowing the spread to equal leg means ($c=-1$) lowers it to
+$0.7117$, or $23.9\%$ below the benchmark, while doubling the spread ($c=1$) raises it to
+$1.1490$, or $22.9\%$ above the benchmark.
+
+% Result-generation script: jobs/job_runners/mu_spread_sensitivity.py
+% Figure artifact: latex/fig_expected_killed_payoff_sensitivity.pdf
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.78\linewidth]{fig_expected_killed_payoff_sensitivity.pdf}
+\caption{Expected killed payoff at $H_0=1.10$ as the expected-log-return mean spread varies.
+The calibrated benchmark is $c=0$; negative values narrow and positive values widen the
+calibrated spread. All non-drift inputs are fixed, with $T=1/12$.}
+\label{fig:expected-killed-payoff}
+\end{figure}
+
+To examine the induced buffer choice, define
+\begin{equation}\label{eq:optimal-h-killed-payoff}
+ h_0^\star(c)
+ \in\arg\max_{h_0\in[h_0^{\min},\log 2]}
+ J_{\mathrm{kill}}(c,h_0),
+ \qquad H_0^\star(c):=e^{h_0^\star(c)}.
+\end{equation}
+We evaluate \eqref{eq:optimal-h-killed-payoff} on 101 equally spaced health factors over
+$H_0\in[1.0685,2]$. At the calibrated benchmark, the grid solution is
+$H_0^\star=1.2734$, $h_0^\star=0.2417$, initial leverage $2.5808$, and
+$J_{\mathrm{kill}}^\star=1.0811$. The optimizer is spread-sensitive: representative
+$H_0^\star$ values are $2.0000$, $1.3479$, $1.2734$, $1.2175$, and $1.1803$ at
+$c=-1,-0.5,0,0.5,1$, respectively. Hence a wider expected-log-return spread supports more
+initial leverage and a smaller health buffer, while a narrower spread favors deleveraging.
+At $c=-1$ the upper boundary is selected, so that endpoint remains a constrained rather than
+an interior optimum. The corresponding maximized killed payoff rises from $0.9845$ at
+$c=-1$ to $1.2101$ at $c=1$.
+
+% Result-generation script: jobs/job_runners/mu_spread_sensitivity.py
+% Data artifact: results/optimal_h_killed_payoff_sensitivity.csv
+% Figure artifact: latex/fig_optimal_h_killed_payoff_sensitivity.pdf
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{fig_optimal_h_killed_payoff_sensitivity.pdf}
+\caption{Sensitivity of the expected-killed-payoff optimizer to the expected-log-return mean
+spread. Panel (a) reports the constrained grid solution $H_0^*(c)$; panel (b) reports the
+maximized expected killed payoff. The dotted line marks the calibrated benchmark $c=0$.}
+\label{fig:optimal-h-killed-payoff}
+\end{figure}
+
+\FloatBarrier
 % ============================================================
 \section{Application: Initial Health-Buffer Sizing}\label{sec:application}
 % ============================================================
@@ -1027,31 +1221,30 @@ sampling sharpens volatility estimates much more than expected-return estimates
 \citep{Merton1980}; in a short sample, allowing the characteristic-function phase to select a
 free drift can therefore confound location with jump-shape discrepancies. Let
 $d_i^{\mathrm{EWM}}$ denote the annualized endpoint EWM log-return signal and
-$\bar J_i=p_i\eta_{i,+}-(1-p_i)\eta_{i,-}$. Normalizing the fitted residual law to zero
-expected log drift gives the shape-implied correction
+$\bar J_i=p_i\eta_{i,+}-(1-p_i)\eta_{i,-}$. Because financing is role-dependent, the
+expected log-return means are constructed for each complete ordered assignment $(L,S)$:
 \[
-\mu_i^{\mathrm{res}}
-=\frac12\sigma_i^2+\lambda_i(\chi_i-\bar J_i),
+g_L(L,S)=d_L^{\mathrm{EWM}}+r_{\mathrm{supply},L},
 \qquad
-\nu_i=d_i^{\mathrm{EWM}}+\mu_i^{\mathrm{res}}.
-\]
-Because financing is role-dependent, the comparison is made for each complete ordered
-assignment $(L,S)$:
-\[
-\mu_L(L,S)=\nu_L+r_{\mathrm{supply},L},
-\qquad
-\mu_S(L,S)=\nu_S+r_{\mathrm{borrow},S}.
+g_S(L,S)=d_S^{\mathrm{EWM}}+r_{\mathrm{borrow},S}.
 \]
 Writing $\mathcal O=\{(\mathrm{WETH},\mathrm{WBTC}),
 (\mathrm{WBTC},\mathrm{WETH})\}$, the showcase selects
 \[
 (L^\star,S^\star)=\arg\max_{(L,S)\in\mathcal O}
-\{\mu_L(L,S)-\mu_S(L,S)\},
+\{g_L(L,S)-g_S(L,S)\},
 \]
-provided that the maximum is positive. The selected exponents are then relabelled $\mu_1$
-and $\mu_2$ for the long and short legs, respectively. This makes the
-``larger empirical $\mu$ is long'' rule well-defined without treating a supply or borrowing
-rate as an asset characteristic before its role is known.
+provided that the maximum is positive. After selection, the expected-price growth exponent
+required internally by the moment code is derived, rather than estimated, as
+\[
+\mu_i=g_i+\mu_i^{\mathrm{res}},
+\qquad
+\mu_i^{\mathrm{res}}
+=\frac12\sigma_i^2+\lambda_i(\chi_i-\bar J_i),
+\]
+and the log-SDE coefficient is $\mu_i^X=g_i-\lambda_i\bar J_i$. Thus the orientation
+rule and its reported mean remain in log-return space, while the price-growth conversion is
+only an implementation step.
 
 Exponential-smoothing choices generally depend on the forecast horizon
 \citep{Cox1961,TiaoXu1993}; the half-life-$T$ specification used here is a transparent
@@ -1060,7 +1253,7 @@ about three non-overlapping one-month forecast horizons, too few for a persuasiv
 horizon-specific out-of-sample selection. A practical implementation should therefore
 compare half-lives $T/2$, $T$, and $2T$, as well as a zero-directional-trend, carry-only
 case. The reported benchmark is one empirical scenario rather than a claim that its
-$\mu_i$ are structural or precisely estimated expected returns.
+$g_i$ are structural or precisely estimated expected returns.
 
 Write
 \[
@@ -1122,6 +1315,8 @@ in Table~\ref{tab:num-params} and the same buffer grid used for Figure~\ref{fig:
 A value selected at a grid endpoint is reported as such; it should not be read as an interior
 or universal optimum.
 
+% Result-generation script: jobs/job_runners/objective_comparison.py
+% Primary data artifact: results/sizing_objective_comparison.csv
 \begin{table}[ht]
 \centering\small
 \renewcommand{\arraystretch}{1.25}
@@ -1129,16 +1324,16 @@ or universal optimum.
 \toprule
 Rule & Parameters & Selected $H_0$ & Initial $L_0$ & $p_{\mathrm{liq}}$ \\
 \midrule
-Maximum leverage under risk limit & $\bar p=0.05$ & $1.204$ & $2.839$ & $0.0474$ \\
-Maximum leverage under risk limit & $\bar p=0.10$ & $1.162$ & $3.041$ & $0.0953$ \\
-Maximum leverage under risk limit & $\bar p=0.20$ & $1.115$ & $3.326$ & $0.1974$ \\
-Unconditional mean--variance & $\alpha=0.5$ & $1.312$ & $2.466$ & $0.0069$ \\
-Unconditional mean--variance & $\alpha=1$ & $1.349$ & $2.370$ & $0.0034$ \\
+Maximum leverage under risk limit & $\bar p=0.05$ & $1.200$ & $2.859$ & $0.0498$ \\
+Maximum leverage under risk limit & $\bar p=0.10$ & $1.162$ & $3.041$ & $0.0931$ \\
+Maximum leverage under risk limit & $\bar p=0.20$ & $1.115$ & $3.326$ & $0.1945$ \\
+Unconditional mean--variance & $\alpha=0.5$ & $1.312$ & $2.466$ & $0.0065$ \\
+Unconditional mean--variance & $\alpha=1$ & $1.345$ & $2.381$ & $0.0035$ \\
 Unconditional mean--variance & $\alpha=5$ & $2.000$ & $1.639$ & $<10^{-4}$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0)$ & $1.068$ & $3.704$ & $0.3863$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0)$ & $1.068$ & $3.704$ & $0.3833$ \\
 Conditional mean--variance--penalty & $(\alpha,\delta)=(20,0)$ & $2.000$ & $1.639$ & $<10^{-4}$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.25)$ & $1.068$ & $3.704$ & $0.3863$ \\
-Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.5)$ & $1.111$ & $3.359$ & $0.2117$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.25)$ & $1.068$ & $3.704$ & $0.3833$ \\
+Conditional mean--variance--penalty & $(\alpha,\delta)=(1,0.5)$ & $1.111$ & $3.359$ & $0.2087$ \\
 \bottomrule
 \end{tabularx}
 \caption{Objective-specific selections for the empirical long-WBTC/short-WETH benchmark

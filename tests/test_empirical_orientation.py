@@ -3,7 +3,8 @@ import math
 
 import pytest
 
-from optimal_long_short.job_runners.calibrate_eth_btc import (
+from optimal_long_short.model.drift_service import expected_log_return_drift
+from optimal_long_short.calibration.jobs.calibrate_eth_btc import (
     AAVE_CONFIG_BLOCK,
     AAVE_RISK,
     ASSET_RATE_SUFFIX,
@@ -12,7 +13,8 @@ from optimal_long_short.job_runners.common import (
     DEFAULT_EMPIRICAL_PARAMS,
     load_calibrated_params,
 )
-from optimal_long_short.kou_model import BivariateKouModel
+from optimal_long_short.monte_carlo.jobs.empirical_method_comparison import no_shorting_limit
+from optimal_long_short.model.kou_model import BivariateKouModel
 
 
 def _payload() -> dict:
@@ -28,8 +30,8 @@ def test_primary_empirical_artifact_follows_data_selected_orientation():
     assert meta["asset1"] == selection["long_asset"] == constraint["collateral_asset"]
     assert meta["asset2"] == selection["short_asset"] == constraint["debt_asset"]
     candidates = selection["candidate_assignments"]
-    selected_spread = candidates[meta["asset1"]]["mu_spread"]
-    assert selected_spread == max(row["mu_spread"] for row in candidates.values())
+    selected_spread = candidates[meta["asset1"]]["g_spread"]
+    assert selected_spread == max(row["g_spread"] for row in candidates.values())
     assert selected_spread > 0.0
     assert payload["params"]["mu1"] > payload["params"]["mu2"]
     assert constraint["emode_applied"] is False
@@ -98,3 +100,15 @@ def test_no_short_mean_uses_selected_long_asset_growth():
         math.e ** (horizon * model.levy_khintchine(-1j, 0))
     ).real
     assert characteristic_mean == pytest.approx(math.exp(params.mu1 * horizon))
+
+
+def test_exact_no_shorting_limit_matches_first_two_long_asset_moments():
+    params, _ = load_calibrated_params(DEFAULT_EMPIRICAL_PARAMS)
+    horizon = 1.0 / 12.0
+    mean, variance = no_shorting_limit(params, horizon)
+    model = BivariateKouModel(params)
+    raw2 = complex(math.e ** (horizon * model.levy_khintchine(-2j, 0))).real
+
+    assert mean == pytest.approx(math.exp(params.mu1 * horizon))
+    assert variance == pytest.approx(raw2 - mean**2)
+    assert mean != pytest.approx(math.exp(expected_log_return_drift(params)[0] * horizon))

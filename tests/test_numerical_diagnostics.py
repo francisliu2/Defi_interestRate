@@ -4,19 +4,19 @@ import math
 import numpy as np
 import pytest
 
-from optimal_long_short.inversion import TalbotInverter
-from optimal_long_short.kou_model import KouZTiltedDynamics
-from optimal_long_short.laplace_resolvent import ParticularSolution
-from optimal_long_short.market_params import MarketParams
-from optimal_long_short.model_params import KouParams
-from optimal_long_short.numerical_diagnostics import (
+from optimal_long_short.laplace.inversion import TalbotInverter
+from optimal_long_short.model.kou_model import KouZTiltedDynamics
+from optimal_long_short.laplace.laplace_resolvent import ParticularSolution
+from optimal_long_short.model.market_params import MarketParams
+from optimal_long_short.model.model_params import KouParams
+from optimal_long_short.laplace.numerical_diagnostics import (
     killed_barrier_cancellation_residuals,
     root_quality_diagnostics,
     talbot_convergence_diagnostics,
     talbot_nodes,
     write_numerical_diagnostics_csv,
 )
-from optimal_long_short.strategy import UnitExposureLongShortStrategy
+from optimal_long_short.model.strategy import UnitExposureLongShortStrategy
 
 
 @pytest.fixture

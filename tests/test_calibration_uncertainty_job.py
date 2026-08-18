@@ -3,12 +3,12 @@ import dataclasses
 import numpy as np
 import pytest
 
-from optimal_long_short.drift import (
+from optimal_long_short.model.drift_service import (
     expected_log_return_drift,
     with_zero_expected_log_return,
 )
-from optimal_long_short.job_runners import calibration_uncertainty as job
-from optimal_long_short.model_params import KouParams
+from optimal_long_short.calibration.jobs import calibration_uncertainty as job
+from optimal_long_short.model.model_params import KouParams
 
 
 def _residual_market_params() -> KouParams:
@@ -47,7 +47,7 @@ def test_fixed_showcase_inputs_orient_shape_and_add_expected_log_drifts():
     assert expected_log_return_drift(final) == pytest.approx((0.11, -0.17))
 
 
-def test_replicate_worker_centers_paired_blocks_and_uses_shape_only_fit(monkeypatch):
+def test_replicate_worker_preserves_residual_location_and_uses_shape_only_fit(monkeypatch):
     residual = _residual_market_params()
 
     def fake_bootstrap_record(
@@ -61,8 +61,8 @@ def test_replicate_worker_centers_paired_blocks_and_uses_shape_only_fit(monkeypa
         **kwargs,
     ):
         assert np.array_equal(indices, np.arange(len(sample1)))
-        assert np.mean(sample1) == pytest.approx(0.0, abs=1e-14)
-        assert np.mean(sample2) == pytest.approx(0.0, abs=1e-14)
+        assert np.mean(sample1) == pytest.approx(4.0)
+        assert np.mean(sample2) == pytest.approx(8.0)
         assert sample2 == pytest.approx(2.0 * sample1)
         assert calibration_kwargs["drift_mode"] == "zero_expected_log_return"
         final = parameter_adjuster(residual)

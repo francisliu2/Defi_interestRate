@@ -9,15 +9,15 @@ from typing import Any
 
 import numpy as np
 
-from optimal_long_short.kou_model import BivariateKouModel
-from optimal_long_short.market_params import MarketParams
-from optimal_long_short.model_params import KouParams
-from optimal_long_short.moments import ConditionalMoments
-from optimal_long_short.strategy import (
+from optimal_long_short.model.kou_model import BivariateKouModel
+from optimal_long_short.model.market_params import MarketParams
+from optimal_long_short.model.model_params import KouParams
+from optimal_long_short.model.moments import ConditionalMoments
+from optimal_long_short.model.strategy import (
     UnitExposureLongShortStrategy,
     minimum_feasible_h0,
 )
-from optimal_long_short.drift import apply_price_drift_view
+from optimal_long_short.model.drift_service import apply_price_drift_view
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LATEX_DIR = REPO_ROOT / "latex"
@@ -57,7 +57,7 @@ def load_calibrated_params(
     """
     if not path.exists():
         raise FileNotFoundError(
-            f"{path} not found. Run  python jobs/calibrate_eth_btc.py  first."
+            f"{path} not found. Run  python jobs/calibration/calibrate_eth_btc.py  first."
         )
     payload = json.loads(path.read_text())
     p = payload["params"]

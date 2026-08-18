@@ -2,14 +2,14 @@ from dataclasses import replace
 
 import pytest
 
-from optimal_long_short.kou_model import KouZTiltedDynamics
-from optimal_long_short.inversion import TalbotInverter
-from optimal_long_short.laplace_resolvent import HomogeneousSolution, ParticularSolution
-from optimal_long_short.market_params import MarketParams
-from optimal_long_short.model_params import KouParams
-from optimal_long_short.moments import ConditionalMoments, SurvivalResolvent
-from optimal_long_short.risk_report import h0_liquidation_moment_report
-from optimal_long_short.strategy import UnitExposureLongShortStrategy
+from optimal_long_short.model.kou_model import KouZTiltedDynamics
+from optimal_long_short.laplace.inversion import TalbotInverter
+from optimal_long_short.laplace.laplace_resolvent import HomogeneousSolution, ParticularSolution
+from optimal_long_short.model.market_params import MarketParams
+from optimal_long_short.model.model_params import KouParams
+from optimal_long_short.model.moments import ConditionalMoments, SurvivalResolvent
+from optimal_long_short.model.risk_report import h0_liquidation_moment_report
+from optimal_long_short.model.strategy import UnitExposureLongShortStrategy
 
 
 @pytest.fixture
@@ -148,7 +148,7 @@ def test_report_exposes_killed_and_conditional_outputs_without_reinverting_survi
             return {1: 0.8, 2: 1.6}[k]
 
     monkeypatch.setattr(
-        "optimal_long_short.risk_report.ConditionalMoments",
+        "optimal_long_short.model.risk_report.ConditionalMoments",
         StubConditionalMoments,
     )
 
@@ -205,7 +205,7 @@ def test_report_rejects_materially_invalid_survival_probability(
             return 1.0
 
     monkeypatch.setattr(
-        "optimal_long_short.risk_report.ConditionalMoments",
+        "optimal_long_short.model.risk_report.ConditionalMoments",
         InvalidSurvivalMoments,
     )
 
@@ -234,7 +234,7 @@ def test_report_uses_clipped_probability_consistently(
             return {1: 1.0, 2: 1.1}[k]
 
     monkeypatch.setattr(
-        "optimal_long_short.risk_report.ConditionalMoments",
+        "optimal_long_short.model.risk_report.ConditionalMoments",
         RoundoffSurvivalMoments,
     )
 

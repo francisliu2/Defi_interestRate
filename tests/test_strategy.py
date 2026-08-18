@@ -2,8 +2,8 @@ import math
 
 import pytest
 
-from optimal_long_short.market_params import MarketParams
-from optimal_long_short.strategy import (
+from optimal_long_short.model.market_params import MarketParams
+from optimal_long_short.model.strategy import (
     UnitExposureLongShortStrategy,
     minimum_feasible_h0,
 )

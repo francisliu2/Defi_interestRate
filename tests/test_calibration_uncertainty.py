@@ -3,8 +3,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-import optimal_long_short.calibration_uncertainty as uncertainty
-from optimal_long_short.model_params import KouParams
+import optimal_long_short.calibration.calibration_uncertainty as uncertainty
+from optimal_long_short.model.model_params import KouParams
 
 
 def _params(**updates) -> KouParams:

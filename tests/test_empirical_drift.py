@@ -1,22 +1,29 @@
 import numpy as np
+import pandas as pd
 import pytest
 
-from optimal_long_short.calibration import causal_ewm_detrend
+from optimal_long_short.calibration import construct_ewm_residual_increments
 from optimal_long_short.calibration.transforms import (
     ParameterBounds,
     params_to_shape_unc,
     shape_unc_to_params,
 )
-from optimal_long_short.drift import (
+from optimal_long_short.model.drift_service import (
     expected_log_return_drift,
     with_expected_log_return_drift,
     with_zero_expected_log_return,
 )
-from optimal_long_short.job_runners.calibrate_eth_btc import (
+from optimal_long_short.calibration.jobs.calibrate_eth_btc import (
     build_empirical_params,
-    empirical_asset_exponents,
+    compute_avg_rates,
+    empirical_asset_log_means,
 )
-from optimal_long_short.model_params import KouParams
+from optimal_long_short.model.model_params import KouParams
+from optimal_long_short.job_runners.mu_spread_sensitivity import (
+    expected_killed_payoff,
+    spread_params,
+    select_optimal_health,
+)
 
 
 def _params() -> KouParams:
@@ -37,12 +44,50 @@ def _params() -> KouParams:
     )
 
 
-def test_causal_ewm_uses_only_lagged_mean_and_centers_innovations():
-    result = causal_ewm_detrend(np.array([1.0, 2.0, 3.0]), 1.0)
+def test_causal_ewm_uses_only_lagged_mean_without_extra_demeaning():
+    result = construct_ewm_residual_increments(
+        np.array([1.0, 2.0, 3.0]), 1.0
+    )
 
-    assert result.mean_path == pytest.approx([1.0, 5.0 / 3.0, 17.0 / 7.0])
-    assert result.innovations == pytest.approx([1.0, 4.0 / 3.0])
-    assert np.mean(result.centered_innovations) == pytest.approx(0.0, abs=1e-15)
+    assert result.ewm_mean_path_per_period == pytest.approx(
+        [1.0, 5.0 / 3.0, 17.0 / 7.0]
+    )
+    assert result.residual_increments == pytest.approx([1.0, 4.0 / 3.0])
+    assert result.residual_sample_mean == pytest.approx(7.0 / 6.0)
+
+
+def test_aave_apr_percentages_are_converted_to_annual_decimal_rates():
+    frame = pd.DataFrame(
+        {
+            "supply_apr_btc": [0.01, 0.03],
+            "variable_borrow_apr_eth": [2.0, 4.0],
+            "supply_apr_eth": [1.0, 3.0],
+            "variable_borrow_apr_btc": [0.2, 0.4],
+        }
+    )
+    rates = compute_avg_rates(frame)
+    assert rates == pytest.approx(
+        {
+            "supply_btc": 0.0002,
+            "borrow_eth": 0.03,
+            "supply_eth": 0.02,
+            "borrow_btc": 0.003,
+        }
+    )
+
+
+@pytest.mark.parametrize("bad", [np.nan, np.inf, -0.01])
+def test_aave_apr_conversion_rejects_invalid_annual_percentages(bad):
+    frame = pd.DataFrame(
+        {
+            "supply_apr_btc": [bad],
+            "variable_borrow_apr_eth": [2.0],
+            "supply_apr_eth": [1.0],
+            "variable_borrow_apr_btc": [0.2],
+        }
+    )
+    with pytest.raises(ValueError, match="annual APR percentages"):
+        compute_avg_rates(frame)
 
 
 def test_zero_log_mean_shape_transform_is_eleven_dimensional():
@@ -62,8 +107,57 @@ def test_expected_log_drift_view_is_converted_to_price_growth_mu():
     adjusted = with_expected_log_return_drift(_params(), drift1=-0.4, drift2=0.25)
     assert expected_log_return_drift(adjusted) == pytest.approx((-0.4, 0.25))
 
+    mean_jump1 = adjusted.p1 * adjusted.eta1_pos - (1.0 - adjusted.p1) * adjusted.eta1_neg
+    chi1 = (
+        adjusted.p1 / (1.0 - adjusted.eta1_pos)
+        + (1.0 - adjusted.p1) / (1.0 + adjusted.eta1_neg)
+        - 1.0
+    )
+    assert adjusted.mu1 == pytest.approx(
+        -0.4 + 0.5 * adjusted.sigma1**2 + adjusted.lam1 * (chi1 - mean_jump1)
+    )
+    assert adjusted.muX1 == pytest.approx(-0.4 - adjusted.lam1 * mean_jump1)
 
-def test_empirical_orientation_maximizes_role_adjusted_mu_spread():
+    mean_jump2 = adjusted.p2 * adjusted.eta2_pos - (1.0 - adjusted.p2) * adjusted.eta2_neg
+    assert adjusted.mean_jump_rate1 == pytest.approx(adjusted.lam1 * mean_jump1)
+    assert adjusted.mean_jump_rate2 == pytest.approx(adjusted.lam2 * mean_jump2)
+    assert adjusted.muX2 == pytest.approx(0.25 - adjusted.mean_jump_rate2)
+
+
+def test_signed_spread_perturbation_is_centered_on_calibrated_benchmark():
+    benchmark = with_expected_log_return_drift(_params(), drift1=0.4, drift2=-0.2)
+    midpoint = 0.1
+    benchmark_spread = 0.6
+
+    narrowed = expected_log_return_drift(spread_params(benchmark, -1.0))
+    centered = expected_log_return_drift(spread_params(benchmark, 0.0))
+    widened = expected_log_return_drift(spread_params(benchmark, 1.0))
+
+    assert narrowed == pytest.approx((midpoint, midpoint))
+    assert centered == pytest.approx((0.4, -0.2))
+    assert widened == pytest.approx(
+        (midpoint + benchmark_spread, midpoint - benchmark_spread)
+    )
+
+
+def test_expected_killed_payoff_definition_and_validation():
+    assert expected_killed_payoff(1.2, 0.25) == pytest.approx(0.9)
+    with pytest.raises(ValueError, match="p_liq"):
+        expected_killed_payoff(1.2, 1.1)
+
+
+def test_select_optimal_health_uses_expected_killed_payoff():
+    reports = [
+        {"H0": 1.1, "killed_moment_1": 0.9},
+        {"H0": 1.2, "killed_moment_1": 0.99},
+    ]
+    optimum, score, index = select_optimal_health(reports)
+    assert index == 1
+    assert optimum["H0"] == pytest.approx(1.2)
+    assert score == pytest.approx(0.99)
+
+
+def test_empirical_orientation_maximizes_role_adjusted_log_mean_spread():
     residual = with_zero_expected_log_return(_params())
     trends = {"WETH": -0.50, "WBTC": 0.10}
     rates = {
@@ -73,7 +167,7 @@ def test_empirical_orientation_maximizes_role_adjusted_mu_spread():
         "borrow_btc": 0.004,
     }
 
-    pre_carry = empirical_asset_exponents(residual, trends)
+    pre_carry = empirical_asset_log_means(trends)
     final, residual_oriented, selection = build_empirical_params(residual, trends, rates)
 
     assert pre_carry["WBTC"] > pre_carry["WETH"]
@@ -86,10 +180,7 @@ def test_empirical_orientation_maximizes_role_adjusted_mu_spread():
 
 def test_role_carry_can_reverse_the_pre_carry_ranking():
     residual = with_zero_expected_log_return(_params())
-    trends = {
-        "WETH": 0.02 - residual.mu1,
-        "WBTC": 0.01 - residual.mu2,
-    }
+    trends = {"WETH": 0.02, "WBTC": 0.01}
     rates = {
         "supply_eth": 0.0,
         "borrow_eth": 0.0,
@@ -97,11 +188,11 @@ def test_role_carry_can_reverse_the_pre_carry_ranking():
         "borrow_btc": 0.02,
     }
 
-    pre_carry = empirical_asset_exponents(residual, trends)
+    pre_carry = empirical_asset_log_means(trends)
     final, _, selection = build_empirical_params(residual, trends, rates)
 
     assert pre_carry["WETH"] > pre_carry["WBTC"]
     assert selection["long_asset"] == "WBTC"
     assert selection["short_asset"] == "WETH"
-    assert selection["candidate_assignments"]["WBTC"]["mu_spread"] > 0.0
-    assert final.mu1 > final.mu2
+    assert selection["candidate_assignments"]["WBTC"]["g_spread"] > 0.0
+    assert expected_log_return_drift(final)[0] > expected_log_return_drift(final)[1]

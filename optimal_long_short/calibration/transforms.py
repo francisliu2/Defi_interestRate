@@ -22,8 +22,8 @@ import numpy as np
 from dataclasses import dataclass
 from numbers import Integral
 
-from optimal_long_short.model_params import KouParams
-from optimal_long_short.drift import with_zero_expected_log_return
+from optimal_long_short.model.model_params import KouParams
+from optimal_long_short.model.drift_service import with_zero_expected_log_return
 
 
 # ---------------------------------------------------------------------------

@@ -7,7 +7,7 @@ from optimal_long_short.job_runners.objective_comparison import (
     comparison_rows,
     latex_ready_table,
 )
-from optimal_long_short.sizing import (
+from optimal_long_short.model.sizing import (
     conditional_mean_variance_liquidation_score,
     select_conditional_mean_variance_with_liquidation_penalty,
     select_liquidation_constrained,

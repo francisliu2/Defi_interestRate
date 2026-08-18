@@ -13,10 +13,11 @@ prepare_returns             price series -> synchronised log-returns
 params_to_theta             KouParams -> natural-space flat vector
 ewm_smooth                  legacy recursive EWM smoother for returns
 normalized_ewm_mean         normalized finite-sample EWM mean path
-causal_ewm_detrend          lagged EWM innovations for shape calibration
+construct_ewm_residual_increments
+                            lagged EWM residuals for shape calibration
 
 CalibrationGrid is kept as an alias for StandardizedCalibrationGrid for
-backward compatibility with code written against the old flat calibration.py.
+backward compatibility with code written against the legacy calibration module.
 """
 from .calibrate import ECFCalibrationResult, calibrate_ecf
 from .ecf_objective import empirical_cf
@@ -24,8 +25,8 @@ from .frequency_grid import StandardizedCalibrationGrid
 from .transforms import ParameterBounds, params_to_theta
 from .time_grid import PreparedReturns, prepare_returns
 from .preprocess import (
-    CausalEWMResult,
-    causal_ewm_detrend,
+    EWMResidualResult,
+    construct_ewm_residual_increments,
     ewm_smooth,
     normalized_ewm_mean,
 )
@@ -42,8 +43,8 @@ __all__ = [
     "params_to_theta",
     "PreparedReturns",
     "prepare_returns",
-    "CausalEWMResult",
-    "causal_ewm_detrend",
+    "EWMResidualResult",
+    "construct_ewm_residual_increments",
     "ewm_smooth",
     "normalized_ewm_mean",
 ]

@@ -8,13 +8,13 @@ from pathlib import Path
 
 import numpy as np
 
-from optimal_long_short.drift import drift_summary
+from optimal_long_short.model.drift_service import drift_summary
 from optimal_long_short.job_runners.common import (
     DEFAULT_EMPIRICAL_PARAMS,
     RESULTS_DIR,
     load_calibrated_params,
 )
-from optimal_long_short.risk_report import h0_liquidation_moment_report
+from optimal_long_short.model.risk_report import h0_liquidation_moment_report
 
 
 def _parse_args() -> argparse.Namespace:
