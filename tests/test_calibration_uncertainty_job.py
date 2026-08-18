@@ -7,7 +7,7 @@ from optimal_long_short.model.drift_service import (
     expected_log_return_drift,
     with_zero_expected_log_return,
 )
-from optimal_long_short.calibration.jobs import calibration_uncertainty as job
+from jobs.legacy_jobs import calibration_uncertainty as job
 from optimal_long_short.model.model_params import KouParams
 
 

@@ -13,13 +13,13 @@ from optimal_long_short.model.drift_service import (
     with_expected_log_return_drift,
     with_zero_expected_log_return,
 )
-from optimal_long_short.calibration.jobs.calibrate_eth_btc import (
+from jobs.calibrate_eth_btc import (
     build_empirical_params,
     compute_avg_rates,
     empirical_asset_log_means,
 )
 from optimal_long_short.model.model_params import KouParams
-from optimal_long_short.job_runners.mu_spread_sensitivity import (
+from jobs.mu_spread_sensitivity import (
     expected_killed_payoff,
     spread_params,
     select_optimal_health,

@@ -15,6 +15,18 @@
 \usepackage{titlesec}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 
+% OPTIONAL RESULT-SCRIPT PROVENANCE
+% Change the next line to \showresultscriptpathstrue to print the generating
+% script below each numerical table or figure. Keep it false for distribution.
+\newif\ifshowresultscriptpaths
+\showresultscriptpathstrue
+\newcommand{\resultscript}[1]{%
+  \ifshowresultscriptpaths
+    \par\smallskip
+    {\raggedright\footnotesize\itshape Result-generation script: \path{#1}\par}%
+  \fi
+}
+
 \titleformat{\section}
   {\fontsize{11}{13}\selectfont\bfseries\raggedright}{\thesection.}{0.5em}{}
 \titlespacing*{\section}{0pt}{26pt plus 4pt minus 2pt}{13pt}
@@ -469,7 +481,7 @@ with penalized objective $0.00380646$. Reordering the fitted law after comparing
 role-adjusted candidate assignments gives the shape parameters in
 Table~\ref{tab:note-shape-output}.
 
-% Result-generation script: jobs/calibration/calibrate_eth_btc.py
+% Result-generation script: jobs/calibrate_eth_btc.py
 % Primary data artifact: results/params_empirical_showcase.json
 \begin{table}[ht]
 \centering
@@ -488,6 +500,7 @@ $\eta_{i,-}$ & 0.004586 & 0.005592 \\
 \caption{Penalized shape-only ECF estimates, reordered to the selected long/short asset
 order. The fitted Brownian correlation is $\rho=0.841703$.}
 \label{tab:note-shape-output}
+\resultscript{jobs/calibrate_eth_btc.py}
 \end{table}
 
 Table~\ref{tab:note-drift-output} records the separate drift construction. The endpoint EWM
@@ -498,7 +511,7 @@ spread, $0.623184$, whereas the reverse assignment has a negative spread. Only a
 selection are the fitted shape parameters used in \eqref{eq:drift-reinsertion} to derive
 $\mu_i^X$ and $\mu_i$, as reported in Table~\ref{tab:note-drift-output}.
 
-% Result-generation script: jobs/calibration/calibrate_eth_btc.py
+% Result-generation script: jobs/calibrate_eth_btc.py
 % Primary data artifact: results/params_empirical_showcase.json
 \begin{table}[ht]
 \centering
@@ -517,9 +530,10 @@ WETH & WBTC & $-0.533993$ & $0.098569$ & $-0.632562$ \\
 candidate with the largest positive expected-log-return spread, hence long WBTC and short
 WETH.}
 \label{tab:note-orientation-output}
+\resultscript{jobs/calibrate_eth_btc.py}
 \end{table}
 
-% Result-generation script: jobs/calibration/calibrate_eth_btc.py
+% Result-generation script: jobs/calibrate_eth_btc.py
 % Primary data artifact: results/params_empirical_showcase.json
 \begin{table}[ht]
 \centering
@@ -542,6 +556,7 @@ first three rows construct the expected log-return mean. The remaining rows show
 fitted residual shape maps that mean into the two drift conventions; neither $\mu_i^X$ nor
 $\mu_i$ is a free ECF drift estimate.}
 \label{tab:note-drift-output}
+\resultscript{jobs/calibrate_eth_btc.py}
 \end{table}
 
 \FloatBarrier
@@ -580,7 +595,7 @@ synthetic calibration job tests recovery of the eleven residual-shape parameters
 same zero-expected-log-drift restriction and produces
 Figure~\ref{fig:ecf-fit}.
 
-% Result-generation script: jobs/calibration/calibrate_kou.py
+% Result-generation script: jobs/calibrate_kou.py
 % Figure artifact: latex/fig_ecf_fit.pdf
 \begin{figure}[!htbp]
 \centering
@@ -592,6 +607,7 @@ Dots: empirical CF $\widehat\phi_N$; dashed: true residual-law CF;
 solid red: shape-only ECF estimate. Agreement in this liquidation-relevant direction is a
 shape diagnostic; it does not validate the directional-drift forecast.}
 \label{fig:ecf-fit}
+\resultscript{jobs/calibrate_kou.py}
 \end{figure}
 \FloatBarrier
 

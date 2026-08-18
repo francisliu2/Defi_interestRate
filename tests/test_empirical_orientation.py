@@ -4,16 +4,16 @@ import math
 import pytest
 
 from optimal_long_short.model.drift_service import expected_log_return_drift
-from optimal_long_short.calibration.jobs.calibrate_eth_btc import (
+from jobs.calibrate_eth_btc import (
     AAVE_CONFIG_BLOCK,
     AAVE_RISK,
     ASSET_RATE_SUFFIX,
 )
-from optimal_long_short.job_runners.common import (
+from optimal_long_short.utils.helpers import (
     DEFAULT_EMPIRICAL_PARAMS,
     load_calibrated_params,
 )
-from optimal_long_short.monte_carlo.jobs.empirical_method_comparison import no_shorting_limit
+from jobs.empirical_method_comparison import no_shorting_limit
 from optimal_long_short.model.kou_model import BivariateKouModel
 
 

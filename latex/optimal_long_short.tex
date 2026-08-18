@@ -86,6 +86,18 @@
 % ==== HYPERLINKS ====
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 
+% ==== OPTIONAL RESULT-SCRIPT PROVENANCE ====
+% Change the next line to \showresultscriptpathstrue to print the generating
+% script below each numerical table or figure. Keep it false for submission.
+\newif\ifshowresultscriptpaths
+\showresultscriptpathstrue
+\newcommand{\resultscript}[1]{%
+  \ifshowresultscriptpaths
+    \par\smallskip
+    {\raggedright\footnotesize\itshape Result-generation script: \path{#1}\par}%
+  \fi
+}
+
 % ==== APPENDICES (renames sections to "Appendix A: ...") ====
 \newcommand{\appendices}{%
   \appendix
@@ -940,7 +952,7 @@ WBTC threshold $b=0.78$ and maximum LTV
 $0.73$ imply $h_0^{\min}=\log(0.78/0.73)\approx0.0662$. Table~\ref{tab:num-params}
 reports the resulting benchmark.
 
-% Result-generation script: jobs/calibration/calibrate_eth_btc.py
+% Result-generation script: jobs/calibrate_eth_btc.py
 % Primary data artifact: results/params_empirical_showcase.json
 \begin{table}[!h]
 \centering\small
@@ -989,13 +1001,14 @@ the annual time scale of $d_i^{\mathrm{EWM}}$ and the Kou parameters; no four-ho
 is applied before they enter $g_i$.
 Contract terms and initial prices are measured at terminal block $25{,}189{,}091$.}
 \label{tab:num-params}
+\resultscript{jobs/calibrate_eth_btc.py}
 \end{table}
 
 Table~\ref{tab:sa-mc-comparison} compares the semi-analytical (SA) calculation with a
 discretely monitored Monte Carlo (MC) benchmark at selected points on the plotted
 health-factor range. The conditional statistics are computed given survival to $T$.
 
-% Result-generation script: jobs/monte_carlo/empirical_method_comparison.py
+% Result-generation script: jobs/empirical_method_comparison.py
 % Primary data artifact: results/empirical_method_comparison.csv
 \begin{table}[t]
 \centering
@@ -1029,6 +1042,7 @@ observed in the simulated sample, not that the underlying probability is zero. T
 $h_0=100$ row is a finite SA/MC proxy for no shorting; the $h_0=\infty$ row reports the
 corresponding analytical limit.}
 \label{tab:sa-mc-comparison}
+\resultscript{jobs/empirical_method_comparison.py}
 \end{table}
 
 The penultimate row evaluates the no-shorting proxy $h_0=100$ with both methods under the
@@ -1049,7 +1063,7 @@ health-buffer evaluation map in Figure~\ref{fig:health-buffer-map}. Before impos
 investor objective, the three-dimensional curve shows how the initial buffer jointly changes
 liquidation probability and the conditional mean and variance of the surviving payoff.
 
-% Result-generation script: jobs/job_runners/health_buffer_evaluation_map.py
+% Result-generation script: jobs/health_buffer_evaluation_map.py
 % Figure artifact: latex/fig_health_buffer_evaluation_map.pdf
 \begin{figure}[!htbp]
 \centering
@@ -1061,6 +1075,7 @@ $z=\mathrm{E}[\Pi_T\mid\tau>T]$. The curve is parametrised and coloured by
 $H_0\in[1.068,2.000]$; labelled points identify representative initial health factors.
 Grey curves are orthogonal guides on the coordinate planes.}
 \label{fig:health-buffer-map}
+\resultscript{jobs/health_buffer_evaluation_map.py}
 \end{figure}
 
 \subsection{Sensitivity to the long--short mean spread}\label{sec:mu-spread-sensitivity}
@@ -1104,7 +1119,7 @@ skewness and excess kurtosis also move appreciably. Mean uncertainty therefore p
 not only to default probability and expected surviving payoff, but to the dispersion and
 shape of the conditional payoff distribution.
 
-% Result-generation script: jobs/job_runners/mu_spread_sensitivity.py
+% Result-generation script: jobs/mu_spread_sensitivity.py
 % Figure artifact: latex/fig_mu_spread_sensitivity.pdf
 \begin{figure}[!htbp]
 \centering
@@ -1115,9 +1130,10 @@ calibrated values while the benchmark spread is multiplied by $1+c$ as in
 \eqref{eq:log-mean-spread-perturbation}. The dotted vertical line marks the calibrated benchmark
 $c=0$. Conditional moments are computed given $\tau>T$.}
 \label{fig:mu-spread-sensitivity}
+\resultscript{jobs/mu_spread_sensitivity.py}
 \end{figure}
 
-% Result-generation script: jobs/job_runners/mu_spread_sensitivity.py
+% Result-generation script: jobs/mu_spread_sensitivity.py
 % Primary data artifact: results/mu_spread_sensitivity.csv
 \begin{table}[!htbp]
 \centering\small
@@ -1138,6 +1154,7 @@ $1.0$ & $1.2464$ & $0.1479$ & $1.3485$ & $0.0820$ & $0.5063$ & $0.3327$ \\
 \caption{Selected expected-log-return-mean spread sensitivity results. The calibrated case is $c=0$; all
 figures use the same semi-analytical inversion and fixed non-drift inputs as the benchmark.}
 \label{tab:mu-spread-sensitivity}
+\resultscript{jobs/mu_spread_sensitivity.py}
 \end{table}
 
 \FloatBarrier
@@ -1164,7 +1181,7 @@ $J_{\mathrm{kill}}=0.9349$. Narrowing the spread to equal leg means ($c=-1$) low
 $0.7117$, or $23.9\%$ below the benchmark, while doubling the spread ($c=1$) raises it to
 $1.1490$, or $22.9\%$ above the benchmark.
 
-% Result-generation script: jobs/job_runners/mu_spread_sensitivity.py
+% Result-generation script: jobs/mu_spread_sensitivity.py
 % Figure artifact: latex/fig_expected_killed_payoff_sensitivity.pdf
 \begin{figure}[!htbp]
 \centering
@@ -1173,6 +1190,7 @@ $1.1490$, or $22.9\%$ above the benchmark.
 The calibrated benchmark is $c=0$; negative values narrow and positive values widen the
 calibrated spread. All non-drift inputs are fixed, with $T=1/12$.}
 \label{fig:expected-killed-payoff}
+\resultscript{jobs/mu_spread_sensitivity.py}
 \end{figure}
 
 To examine the induced buffer choice, define
@@ -1193,7 +1211,7 @@ At $c=-1$ the upper boundary is selected, so that endpoint remains a constrained
 an interior optimum. The corresponding maximized killed payoff rises from $0.9845$ at
 $c=-1$ to $1.2101$ at $c=1$.
 
-% Result-generation script: jobs/job_runners/mu_spread_sensitivity.py
+% Result-generation script: jobs/mu_spread_sensitivity.py
 % Data artifact: results/optimal_h_killed_payoff_sensitivity.csv
 % Figure artifact: latex/fig_optimal_h_killed_payoff_sensitivity.pdf
 \begin{figure}[!htbp]
@@ -1203,6 +1221,7 @@ $c=-1$ to $1.2101$ at $c=1$.
 spread. Panel (a) reports the constrained grid solution $H_0^*(c)$; panel (b) reports the
 maximized expected killed payoff. The dotted line marks the calibrated benchmark $c=0$.}
 \label{fig:optimal-h-killed-payoff}
+\resultscript{jobs/mu_spread_sensitivity.py}
 \end{figure}
 
 \FloatBarrier
@@ -1315,7 +1334,7 @@ in Table~\ref{tab:num-params} and the same buffer grid used for Figure~\ref{fig:
 A value selected at a grid endpoint is reported as such; it should not be read as an interior
 or universal optimum.
 
-% Result-generation script: jobs/job_runners/objective_comparison.py
+% Result-generation script: jobs/objective_comparison.py
 % Primary data artifact: results/sizing_objective_comparison.csv
 \begin{table}[ht]
 \centering\small
@@ -1342,6 +1361,7 @@ parameters change. Endpoint selections underscore that this is an illustration r
 a preferred practical buffer; the constrained rows maximize $L_0$ subject to the stated
 liquidation budget.}
 \label{tab:objective-comparison}
+\resultscript{jobs/objective_comparison.py}
 \end{table}
 
 \clearpage

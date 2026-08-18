@@ -29,38 +29,43 @@ lives in the responsibility-specific subpackages under `optimal_long_short/`.
 |-- aave-ts/                       # AAVE v3 Ethereum data fetcher
 |   |-- src/run.ts                 # TypeScript CLI entry point
 |   `-- data/AAVE/                 # Parquet history files and manifest.csv
-|-- jobs/                          # Python entry points, mirroring package domains
-|   |-- calibration/               # Calibration entry points
-|   |-- laplace/                   # Laplace diagnostic entry points
-|   |-- monte_carlo/               # Simulation/comparison entry points
-|   `-- job_runners/               # Cross-cutting analysis entry points
+|-- jobs/                          # Current paper result-generation scripts
+|   `-- legacy_jobs/               # Jobs unused by the current paper and note
 |-- optimal_long_short/            # Core Python package
-|   |-- calibration/               # ECF calibration, uncertainty, and calibration jobs
+|   |-- calibration/               # Reusable ECF calibration and bootstrap services
 |   |-- laplace/                   # Inversion, roots, resolvents, and diagnostics
 |   |-- model/                     # Parameters, dynamics, drift service, strategy, sizing, moments, and reports
-|   |-- monte_carlo/               # Simulation engine and comparison jobs
+|   |-- monte_carlo/               # Simulation engine
 |   |-- strategy/                  # Colleague research assets
-|   `-- job_runners/               # Cross-cutting empirical analysis jobs
+|   `-- utils/helpers.py           # Shared serialization and analysis helpers
 |-- latex/                         # Paper and generated figures
 |-- results/                       # Calibrated parameter JSON and reports
-`-- requirements.txt               # Python dependencies
+|-- pyproject.toml                 # Package metadata and dependency declarations
+`-- uv.lock                        # Reproducible Python dependency lock
 ```
 
 ## Setup
 
-Python:
+Install [uv](https://docs.astral.sh/uv/) and create the locked development
+environment from the repository root:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv sync --locked
 ```
 
-Most Python jobs are run from the repository root:
+uv creates and manages `.venv` automatically. Run Python, tests, and jobs
+through `uv run`; no manual activation is required:
 
 ```bash
-.venv/bin/python jobs/<module>/<job_name>.py
+uv run python -m jobs.<job_name>
+uv run pytest
 ```
+
+When dependencies change, use `uv add <package>` for runtime dependencies or
+`uv add --dev <package>` for development tools, then commit both
+`pyproject.toml` and `uv.lock`. CI and reproducible local runs should use
+`uv sync --locked`; a runtime-only environment can use
+`uv sync --locked --no-dev`.
 
 AAVE TypeScript fetcher:
 
@@ -101,7 +106,7 @@ The main empirical calibration selects the long/short orientation between WETH
 and WBTC from the empirical price-growth exponents:
 
 ```bash
-.venv/bin/python jobs/calibration/calibrate_eth_btc.py
+uv run ols-calibrate
 ```
 
 This reads the latest WBTC and WETH rows from `aave-ts/data/AAVE/manifest.csv`,
@@ -171,64 +176,48 @@ log-price coefficient is `muX_i = g_i - lambda_i E[J_i]`; the diffusion term is
 not subtracted from `g_i`.  It has already been included when the stored
 price-growth `mu_i` is converted to `muX_i`.
 
-## Analysis Jobs
+## Paper Result-Generation Jobs
 
 Run from the repository root.
 
 ```bash
 # Calibrate the data-selected WETH/WBTC orientation from AAVE history
-.venv/bin/python jobs/calibration/calibrate_eth_btc.py
+uv run ols-calibrate
 
-# Numerical comparison table: Laplace-resolvent vs Monte Carlo
-.venv/bin/python jobs/monte_carlo/numerical_comparison.py
+# Synthetic shape-only ECF diagnostic used in the calibration note
+uv run ols-calibrate-kou
 
-# Parameter sensitivity figure
-.venv/bin/python jobs/job_runners/sensitivity_analysis.py
+# Semi-analytical / seeded Monte Carlo comparison table
+uv run ols-compare-methods
 
 # Health-buffer evaluation-map figure
-.venv/bin/python jobs/job_runners/health_buffer_evaluation_map.py
+uv run ols-health-map
 
 # Section 6 log-return-mean spread sensitivity CSV and figure
-.venv/bin/python jobs/job_runners/mu_spread_sensitivity.py
-
-# Section 6 semi-analytical / seeded Monte Carlo comparison table data
-.venv/bin/python jobs/monte_carlo/empirical_method_comparison.py
-
-# CSV report over h0 / H0 grid
-.venv/bin/python jobs/job_runners/h0_liquidation_report.py
+uv run ols-mean-spread
 
 # Compare explicitly parameterized initial-buffer decision rules
-.venv/bin/python jobs/job_runners/objective_comparison.py
-
-# Talbot/root/conditioning and discrete-monitoring diagnostics
-.venv/bin/python jobs/laplace/numerical_diagnostics.py
-
-# Paired moving-block calibration and sizing uncertainty
-.venv/bin/python jobs/calibration/calibration_uncertainty.py
+uv run ols-objective-comparison
 ```
 
 The objective-comparison defaults reproduce
 `results/sizing_objective_comparison.csv` on a 200-point health-factor grid.
-The bootstrap job writes replicate-level estimates, percentile summaries, and
-run metadata to:
-
-```text
-results/calibration_uncertainty_bootstrap.csv
-results/calibration_uncertainty_summary.csv
-results/calibration_uncertainty_metadata.json
-```
-
-These intervals describe sampling variability conditional on the Kou model,
-ECF criterion, return preprocessing, block length, protocol terms, and sizing
-grid. They are not model-selection or out-of-sample forecast intervals.
-
-`health_buffer_evaluation_map.py` and `sensitivity_analysis.py` load
+`health_buffer_evaluation_map.py` loads
 `results/params_empirical_showcase.json` by default, including the selected
 asset order, calibrated parameters, AAVE constraints, initial prices, and
 one-month horizon used in the empirical paper section. Optional drift views can
 be passed to the evaluation-map job with `--mu1`, `--mu2`, `--delta-mu1`, and
 `--delta-mu2`; asset 1 is the selected long leg and asset 2 the selected short
 leg.
+
+Jobs not used to produce a table or figure in the current main paper or
+calibration note are retained under `jobs/legacy_jobs/`. The colleague-provided
+research assets under `optimal_long_short/strategy/` are intentionally outside
+this classification and remain untouched.
+
+Both TeX documents define `\showresultscriptpathsfalse` near the top. Change it
+to `\showresultscriptpathstrue` to print the generating script beneath each
+numerical table or figure; switch it back to hide those paths for distribution.
 
 ## Illustration Notebooks
 

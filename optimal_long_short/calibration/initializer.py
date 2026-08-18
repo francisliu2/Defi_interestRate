@@ -32,13 +32,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .frequency_grid import _robust_scale
 from .transforms import ParameterBounds, nat_to_unc, _DEFAULT_BOUNDS
-
-
-def _robust_scale(r: np.ndarray, min_scale: float = 1e-8) -> float:
-    """IQR-based robust scale: (q75 - q25) / 1.349."""
-    q25, q75 = np.percentile(r, [25, 75])
-    return float(max((q75 - q25) / 1.349, min_scale))
 
 
 def _dt_to_threshold(dt: float) -> float:

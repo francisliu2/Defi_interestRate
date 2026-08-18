@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from optimal_long_short.job_runners.objective_comparison import (
+from jobs.objective_comparison import (
     build_selections,
     comparison_rows,
     latex_ready_table,
