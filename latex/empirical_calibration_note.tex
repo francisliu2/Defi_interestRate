@@ -77,7 +77,16 @@ $X_{i,t}$ in the main paper. At the population level, the observed increment is 
 \qquad
 \E\!\left[\Delta X_{i,t_n}^{\mathrm{res}}\mid\mathcal F_{t_{n-1}}\right]=0.
 \end{equation}
-The first term is location; the law of $\Delta X_{i,t_n}^{\mathrm{res}}$ supplies shape. In
+The first term is location; the law of $\Delta X_{i,t_n}^{\mathrm{res}}$ supplies shape.
+The conditional expectation
+$\E[\Delta X_{i,t_n}^{\mathrm{obs}}\mid\mathcal F_{t_{n-1}}]$ is an estimand, not a
+quantity intrinsically tied to a particular filter. Depending on the application and
+information set, it may be estimated using, for example, a rolling or kernel mean, a
+parametric predictive regression, a state-space filter, or an exponentially weighted mean.
+In this empirical study we use the normalized causal EWM defined in Section~3, with a
+one-month half-life matched to the analysis horizon. This choice specifies the historical
+location estimator; it does not alter the residual Kou law or make the EWM part of the ECF
+criterion. In
 the forward specification of the main paper, the corresponding continuous-time identity is
 \begin{equation}\label{eq:forward-location-shape}
 \diff X_{i,t}=g_i\,\diff t+\diff X_{i,t}^{\mathrm{res}},
@@ -99,7 +108,7 @@ Stage & Input and operation & Estimated or fixed quantity & Quantity passed forw
 \midrule
 1 & Positive prices $S_{i,t_n}$ & Observed increments $\Delta X_{i,t_n}^{\mathrm{obs}}$ & Increment sample on the model time scale \\
 2 & Zero-mean residual Kou law & Location--shape decomposition & Model for $\Delta X_{i,t_n}^{\mathrm{res}}$ \\
-3 & Causal EWM subtraction & $d_{i,n}^{\mathrm{EWM}}$ and residual increments & Sample supplied to ECF \\
+3 & Chosen location estimator: causal EWM subtraction & $d_{i,n}^{\mathrm{EWM}}$ and residual increments & Sample supplied to ECF \\
 4 & Penalized ECF & Residual shape $\vartheta$ & $\sigma_i,\lambda_i,p_i,\eta_{i,+},\eta_{i,-},\rho$ \\
 5 & Endpoint EWM, annual $r_i^{\mathrm{role}}$, and fitted shape & $g_i$ and derived drifts & Main-paper parameter set \\
 \bottomrule
@@ -226,6 +235,28 @@ S_{i,t_n}=S_{i,t_n}^{\mathrm{res}}e^{C_{i,n}}.
 Thus the return transformation is reversible. Arithmetic price demeaning is not used because
 it can produce negative values, depends on the price unit, and does not preserve the
 exponential-L\'evy structure.
+
+Figure~\ref{fig:price-ewm-overlay} displays this decomposition in price space. The EWM curve
+is not an exponentially weighted average of price levels. It is the multiplicative location
+component reconstructed from the same lagged causal log-return means removed in
+\eqref{eq:ewm-residual-increments}:
+$\widehat S_{i,t_n}^{\mathrm{EWM}}:=S_{i,0}\exp(C_{i,n})$. Consequently, deviations of the
+observed price from this curve are retained in $S_{i,t_n}^{\mathrm{res}}$ and passed to the
+residual-increment calibration rather than being smoothed away.
+
+% Result-generation script: jobs/calibrate_eth_btc.py
+% Figure artifact: latex/fig_price_ewm_overlay.pdf
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.88\linewidth]{fig_price_ewm_overlay.pdf}
+\caption{Observed WBTC and WETH prices and the price-level location components obtained by
+integrating the lagged causal EWM log-return means. The EWM half-life is $T=1/12$ year.
+The orange curves are $S_{i,0}\exp(C_{i,n})$, not EWM smoothers applied directly to price
+levels.}
+\label{fig:price-ewm-overlay}
+\resultscript{jobs/calibrate_eth_btc.py}
+\end{figure}
+\FloatBarrier
 
 The 540 observed WETH/WBTC increment pairs yield 539 residual pairs. Here
 $T/(\Delta t)=182.5$, $\beta=0.9962091$, and the equivalent pandas-style span is $526.584$.

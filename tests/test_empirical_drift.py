@@ -17,6 +17,7 @@ from jobs.calibrate_eth_btc import (
     build_empirical_params,
     compute_avg_rates,
     empirical_asset_log_means,
+    reconstruct_ewm_location_price,
 )
 from optimal_long_short.model.model_params import KouParams
 from jobs.mu_spread_sensitivity import (
@@ -54,6 +55,20 @@ def test_causal_ewm_uses_only_lagged_mean_without_extra_demeaning():
     )
     assert result.residual_increments == pytest.approx([1.0, 4.0 / 3.0])
     assert result.residual_sample_mean == pytest.approx(7.0 / 6.0)
+
+
+def test_ewm_location_price_compounds_only_removed_lagged_means():
+    result = construct_ewm_residual_increments(
+        np.array([0.1, 0.2, 0.3]), 1.0
+    )
+    location = reconstruct_ewm_location_price(
+        np.array([100.0, 110.0, 121.0, 133.1]),
+        result,
+    )
+
+    assert location == pytest.approx(
+        [100.0, 100.0, 100.0 * np.exp(0.1), 100.0 * np.exp(0.1 + 1.0 / 6.0)]
+    )
 
 
 def test_aave_apr_percentages_are_converted_to_annual_decimal_rates():

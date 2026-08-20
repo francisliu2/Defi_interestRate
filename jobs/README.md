@@ -7,7 +7,7 @@ note:
 
 | Script | Main output used by TeX |
 |---|---|
-| `calibrate_eth_btc.py` | `results/params_empirical_showcase.json` |
+| `calibrate_eth_btc.py` | `results/params_empirical_showcase.json`; empirical ECF and price/EWM figures |
 | `calibrate_kou.py` | `latex/fig_ecf_fit.pdf` |
 | `empirical_method_comparison.py` | `results/empirical_method_comparison.csv` |
 | `health_buffer_evaluation_map.py` | `latex/fig_health_buffer_evaluation_map.pdf` |

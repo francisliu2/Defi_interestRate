@@ -13,6 +13,7 @@ Usage :  python -m jobs.calibrate_eth_btc
 Output:  results/params_empirical_showcase.json
          results/params_<LONG>_<SHORT>.json
          latex/fig_ecf_empirical.pdf
+         latex/fig_price_ewm_overlay.pdf
 """
 
 import json
@@ -22,6 +23,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from optimal_long_short.calibration import (
@@ -53,6 +55,7 @@ ROOT       = Path.cwd()
 AAVE_DIR   = ROOT / "aave-ts" / "data" / "AAVE"
 OUT_JSON   = ROOT / "results" / "params_empirical_showcase.json"
 OUT_FIG    = ROOT / "latex" / "fig_ecf_empirical.pdf"
+OUT_EWM_FIG = ROOT / "latex" / "fig_price_ewm_overlay.pdf"
 
 SECONDS_PER_YEAR = 365.0 * 24.0 * 3_600.0
 FREQUENCY_SECONDS = {
@@ -440,6 +443,64 @@ def print_summary(
 # Plot
 # ---------------------------------------------------------------------------
 
+def reconstruct_ewm_location_price(
+    prices: np.ndarray,
+    preprocessing: EWMResidualResult,
+) -> np.ndarray:
+    """Return the price-level location component implied by lagged EWM means.
+
+    The first return initializes the causal EWM and is not removed. For each
+    later price node, the function compounds exactly the lagged per-period
+    means subtracted from the residual increments used by the ECF fit.
+    """
+    values = np.asarray(prices, dtype=float)
+    means = preprocessing.ewm_mean_path_per_period
+    if values.ndim != 1 or len(values) != len(means) + 1:
+        raise ValueError("prices must contain one more observation than the EWM path")
+    if not np.all(np.isfinite(values)) or np.any(values <= 0.0):
+        raise ValueError("prices must be finite and strictly positive")
+    cumulative_location = np.zeros_like(values)
+    cumulative_location[2:] = np.cumsum(means[:-1])
+    return values[0] * np.exp(cumulative_location)
+
+
+def plot_price_ewm_overlay(
+    df: pd.DataFrame,
+    eth_pre: EWMResidualResult,
+    btc_pre: EWMResidualResult,
+    out: Path,
+) -> None:
+    """Plot raw prices against the integrated causal-EWM location component."""
+    dates = pd.to_datetime(df["datetime"], utc=True)
+    series = [
+        ("WBTC", df["close_btc"].to_numpy(dtype=float), btc_pre),
+        ("WETH", df["close_eth"].to_numpy(dtype=float), eth_pre),
+    ]
+    fig, axes = plt.subplots(2, 1, figsize=(7.4, 5.0), sharex=True)
+    for axis, (asset, prices, preprocessed) in zip(axes, series):
+        location_price = reconstruct_ewm_location_price(prices, preprocessed)
+        axis.plot(dates, prices, color="#1f4e79", lw=1.15, label="Observed price")
+        axis.plot(
+            dates,
+            location_price,
+            color="#b35806",
+            lw=1.5,
+            label="Integrated causal EWM location",
+        )
+        axis.set_title(asset, loc="left", fontsize=9)
+        axis.set_ylabel("USD price")
+        axis.grid(axis="y", color="0.87", lw=0.5)
+        axis.spines[["top", "right"]].set_visible(False)
+        axis.ticklabel_format(axis="y", style="plain", useOffset=False)
+    axes[0].legend(loc="best", frameon=False, fontsize=8)
+    axes[-1].set_xlabel("Observation date")
+    fig.autofmt_xdate(rotation=0, ha="center")
+    fig.tight_layout()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Figure → {out}")
+
 def plot_ecf_fit(
     r1: np.ndarray,
     r2: np.ndarray,
@@ -717,6 +778,7 @@ def main() -> None:
         OUT_FIG,
         meta["frequency"],
     )
+    plot_price_ewm_overlay(df, eth_pre, btc_pre, OUT_EWM_FIG)
 
 
 if __name__ == "__main__":

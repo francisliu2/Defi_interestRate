@@ -132,6 +132,7 @@ Outputs:
 results/params_empirical_showcase.json
 results/params_<LONG>_<SHORT>.json
 latex/fig_ecf_empirical.pdf
+latex/fig_price_ewm_overlay.pdf
 ```
 
 The saved JSON includes:
@@ -253,6 +254,7 @@ Generated figures used by the paper include:
 
 ```text
 latex/fig_ecf_empirical.pdf
+latex/fig_price_ewm_overlay.pdf
 latex/fig_ecf_fit.pdf
 latex/fig_sensitivity.pdf
 latex/fig_health_buffer_evaluation_map.pdf
