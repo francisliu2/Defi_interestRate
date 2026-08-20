@@ -1206,15 +1206,16 @@ To examine the induced buffer choice, define
  J_{\mathrm{kill}}(c,h_0),
  \qquad H_0^\star(c):=e^{h_0^\star(c)}.
 \end{equation}
-We evaluate \eqref{eq:optimal-h-killed-payoff} on 101 equally spaced health factors over
-$H_0\in[1.0685,2]$. At the calibrated benchmark, the grid solution is
-$H_0^\star=1.2734$, $h_0^\star=0.2417$, initial leverage $2.5808$, and
+We solve \eqref{eq:optimal-h-killed-payoff} by bounded scalar optimization over
+$H_0\in[1.0685,2]$, with absolute tolerance $10^{-7}$ and explicit checks of both endpoints.
+At the calibrated benchmark, the solution is
+$H_0^\star=1.2711$, $h_0^\star=0.2399$, initial leverage $2.5882$, and
 $J_{\mathrm{kill}}^\star=1.0811$. The optimizer is spread-sensitive: representative
-$H_0^\star$ values are $1.3479$, $1.3014$, $1.2734$, $1.2455$, and $1.2175$ at
+$H_0^\star$ values are $1.3450$, $1.3034$, $1.2711$, $1.2445$, and $1.2218$ at
 $c=-0.30,-0.15,0,0.15,0.30$, respectively. Hence a wider expected-log-return spread supports more
 initial leverage and a smaller health buffer, while a narrower spread favors deleveraging.
 The corresponding maximized killed payoff rises from $1.0293$ at $c=-0.30$ to $1.1398$
-at $c=0.30$; all five representative optimizers are interior to the reported grid.
+at $c=0.30$; all five representative optimizers are interior to the reported interval.
 
 % Result-generation script: jobs/mu_spread_sensitivity.py
 % Data artifact: results/optimal_h_killed_payoff_sensitivity.csv
@@ -1223,7 +1224,7 @@ at $c=0.30$; all five representative optimizers are interior to the reported gri
 \centering
 \includegraphics[width=0.92\linewidth]{fig_optimal_h_killed_payoff_sensitivity.pdf}
 \caption{Sensitivity of the expected-killed-payoff optimizer to the expected-log-return mean
-spread. Panel (a) reports the constrained grid solution $H_0^*(c)$; panel (b) reports the
+spread. Panel (a) reports the bounded continuous solution $H_0^*(c)$; panel (b) reports the
 maximized expected killed payoff. The dotted line marks the calibrated benchmark $c=0$.}
 \label{fig:optimal-h-killed-payoff}
 \resultscript{jobs/mu_spread_sensitivity.py}

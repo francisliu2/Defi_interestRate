@@ -21,6 +21,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.optimize import minimize_scalar
 
 from optimal_long_short.utils.helpers import (
     DEFAULT_EMPIRICAL_PARAMS,
@@ -73,7 +74,12 @@ def parse_args() -> argparse.Namespace:
         default=LATEX_DIR / "fig_expected_killed_payoff_sensitivity.pdf",
     )
     parser.add_argument("--optimal-H0-max", type=float, default=2.0)
-    parser.add_argument("--optimal-H0-count", type=int, default=101)
+    parser.add_argument(
+        "--optimizer-xatol",
+        type=float,
+        default=1e-7,
+        help="Absolute H0 tolerance for the bounded scalar optimizer.",
+    )
     parser.add_argument(
         "--optimal-csv-out",
         type=Path,
@@ -188,31 +194,49 @@ def select_optimal_health(
 
 
 def compute_optimal_health_rows(args: argparse.Namespace) -> list[dict[str, float]]:
-    """Optimize expected killed payoff over a fixed empirical H0 grid."""
+    """Continuously optimize expected killed payoff over the feasible H0 interval."""
     params, constraint = load_calibrated_params(args.params)
     log_mean1, log_mean2 = expected_log_return_drift(params)
     benchmark_spread = log_mean1 - log_mean2
     H0_min = float(constraint["H0_min"])
     if args.optimal_H0_max <= H0_min:
         raise ValueError("--optimal-H0-max must exceed the feasible minimum H0")
-    if args.optimal_H0_count < 2:
-        raise ValueError("--optimal-H0-count must be at least two")
-    H0_grid = np.linspace(H0_min, args.optimal_H0_max, args.optimal_H0_count)
-    h0_grid = np.log(H0_grid)
-    rows: list[dict[str, float]] = []
-    for c in np.linspace(args.c_min, args.c_max, args.c_count):
-        varied = spread_params(params, float(c))
-        reports = h0_liquidation_moment_report(
+    if args.optimizer_xatol <= 0.0:
+        raise ValueError("--optimizer-xatol must be positive")
+
+    def evaluate(varied, H0: float) -> dict[str, float]:
+        return h0_liquidation_moment_report(
             varied,
-            h0_grid,
+            [np.log(H0)],
             b=constraint["b"],
             T=args.T,
             S10=constraint.get("S10", 1.0),
             S20=constraint.get("S20", 1.0),
             ltv_max=constraint["ltv_max"],
             max_moment_order=1,
+        )[0]
+
+    rows: list[dict[str, float]] = []
+    for c in np.linspace(args.c_min, args.c_max, args.c_count):
+        varied = spread_params(params, float(c))
+        result = minimize_scalar(
+            lambda H0: -evaluate(varied, float(H0))["killed_moment_1"],
+            bounds=(H0_min, args.optimal_H0_max),
+            method="bounded",
+            options={"xatol": args.optimizer_xatol},
         )
-        optimum, score, index = select_optimal_health(reports)
+        if not result.success:
+            raise RuntimeError(
+                f"Health-buffer optimization failed at c={float(c):.6g}: "
+                f"{result.message}"
+            )
+
+        candidates = [
+            evaluate(varied, H0_min),
+            evaluate(varied, float(result.x)),
+            evaluate(varied, args.optimal_H0_max),
+        ]
+        optimum, score, index = select_optimal_health(candidates)
         rows.append(
             {
                 "spread_shock_c": float(c),
@@ -224,10 +248,13 @@ def compute_optimal_health_rows(args: argparse.Namespace) -> list[dict[str, floa
                 "max_expected_killed_payoff": score,
                 "optimal_p_surv": optimum["p_surv"],
                 "optimal_conditional_mean": optimum["conditional_mean"],
-                "optimizer_at_upper_bound": float(index == len(reports) - 1),
-                "H0_grid_min": H0_min,
-                "H0_grid_max": float(args.optimal_H0_max),
-                "H0_grid_count": float(args.optimal_H0_count),
+                "optimizer_at_lower_bound": float(index == 0),
+                "optimizer_at_upper_bound": float(index == 2),
+                "optimizer_success": float(result.success),
+                "optimizer_nfev": float(result.nfev),
+                "optimizer_xatol": float(args.optimizer_xatol),
+                "H0_bound_min": H0_min,
+                "H0_bound_max": float(args.optimal_H0_max),
             }
         )
     return rows
