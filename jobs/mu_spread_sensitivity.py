@@ -1,11 +1,11 @@
 """Sensitivity of liquidation risk and payoff moments to the log-return mean spread.
 
 The calibrated midpoint of the two annual expected log-return means is held fixed
-while their benchmark spread is perturbed by the signed parameter c: the spread
-multiplier is 1+c. Thus c=0 is the calibrated benchmark, negative c narrows the
-spread, and positive c widens it. The required expected-price-growth inputs are
-derived internally from the unchanged Kou shape parameters. Outputs are a
-machine-readable CSV and a publication-ready PDF figure.
+while their benchmark spread receives an additive annualized shock c. Thus c=0
+is the calibrated benchmark, negative c narrows the spread, and positive c widens
+it. The required expected-price-growth inputs are derived internally from the
+unchanged Kou shape parameters. Outputs are machine-readable CSVs and
+publication-ready PDF figures.
 
 Usage
 -----
@@ -44,8 +44,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--params", type=Path, default=DEFAULT_EMPIRICAL_PARAMS)
     parser.add_argument("--H0", type=float, default=DEFAULT_H0)
     parser.add_argument("--T", type=float, default=BASE_T)
-    parser.add_argument("--c-min", type=float, default=-1.0)
-    parser.add_argument("--c-max", type=float, default=1.0)
+    parser.add_argument(
+        "--c-min",
+        type=float,
+        default=-0.30,
+        help="Minimum additive annualized log-mean-spread shock.",
+    )
+    parser.add_argument(
+        "--c-max",
+        type=float,
+        default=0.30,
+        help="Maximum additive annualized log-mean-spread shock.",
+    )
     parser.add_argument("--c-count", type=int, default=41)
     parser.add_argument(
         "--csv-out",
@@ -78,15 +88,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def spread_params(params, c: float):
-    """Hold the log-mean midpoint fixed and scale the spread by ``1 + c``."""
+    """Apply an additive annualized spread shock at a fixed log-mean midpoint."""
     log_mean1, log_mean2 = expected_log_return_drift(params)
-    midpoint = 0.5 * (log_mean1 + log_mean2)
-    spread = log_mean1 - log_mean2
-    multiplier = 1.0 + float(c)
     return with_expected_log_return_drift(
         params,
-        drift1=midpoint + 0.5 * multiplier * spread,
-        drift2=midpoint - 0.5 * multiplier * spread,
+        drift1=log_mean1 + 0.5 * float(c),
+        drift2=log_mean2 - 0.5 * float(c),
     )
 
 
@@ -106,12 +113,13 @@ def compute_rows(args: argparse.Namespace) -> tuple[list[dict[str, float]], floa
         )
     if args.c_count < 2 or args.c_max <= args.c_min:
         raise ValueError("The c grid must contain at least two increasing points.")
-    if args.c_min < -1.0:
-        raise ValueError("--c-min must be at least -1 so the spread does not reverse.")
-
     log_mean1, log_mean2 = expected_log_return_drift(params)
     midpoint = 0.5 * (log_mean1 + log_mean2)
     benchmark_spread = log_mean1 - log_mean2
+    if benchmark_spread + args.c_min < -1e-12:
+        raise ValueError(
+            "--c-min must not make the calibrated log-mean spread negative."
+        )
     rows: list[dict[str, float]] = []
     for c in np.linspace(args.c_min, args.c_max, args.c_count):
         varied = spread_params(params, float(c))
@@ -132,8 +140,8 @@ def compute_rows(args: argparse.Namespace) -> tuple[list[dict[str, float]], floa
         )
         rows.append(
             {
-                "spread_perturbation_c": float(c),
-                "spread_multiplier": 1.0 + float(c),
+                "spread_shock_c": float(c),
+                "benchmark_log_mean_spread": benchmark_spread,
                 "log_mean_midpoint": midpoint,
                 "log_mean_spread": varied_log_mean1 - varied_log_mean2,
                 "log_mean_long": varied_log_mean1,
@@ -159,7 +167,11 @@ def compute_rows(args: argparse.Namespace) -> tuple[list[dict[str, float]], floa
 def write_csv(rows: list[dict[str, float]], out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=list(rows[0]),
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(rows)
 
@@ -178,6 +190,8 @@ def select_optimal_health(
 def compute_optimal_health_rows(args: argparse.Namespace) -> list[dict[str, float]]:
     """Optimize expected killed payoff over a fixed empirical H0 grid."""
     params, constraint = load_calibrated_params(args.params)
+    log_mean1, log_mean2 = expected_log_return_drift(params)
+    benchmark_spread = log_mean1 - log_mean2
     H0_min = float(constraint["H0_min"])
     if args.optimal_H0_max <= H0_min:
         raise ValueError("--optimal-H0-max must exceed the feasible minimum H0")
@@ -201,8 +215,9 @@ def compute_optimal_health_rows(args: argparse.Namespace) -> list[dict[str, floa
         optimum, score, index = select_optimal_health(reports)
         rows.append(
             {
-                "spread_perturbation_c": float(c),
-                "spread_multiplier": 1.0 + float(c),
+                "spread_shock_c": float(c),
+                "benchmark_log_mean_spread": benchmark_spread,
+                "log_mean_spread": benchmark_spread + float(c),
                 "optimal_h0": optimum["h0"],
                 "optimal_H0": optimum["H0"],
                 "optimal_initial_leverage": optimum["initial_leverage"],
@@ -232,7 +247,7 @@ def plot(rows: list[dict[str, float]], out: Path) -> None:
             "figure.dpi": 180,
         }
     )
-    x = np.array([row["spread_perturbation_c"] for row in rows])
+    x = np.array([row["spread_shock_c"] for row in rows])
     series = {
         "p_liq": np.array([row["p_liq"] for row in rows]),
         "mean": np.array([row["conditional_mean"] for row in rows]),
@@ -276,7 +291,7 @@ def plot(rows: list[dict[str, float]], out: Path) -> None:
         axis.grid(axis="y", color="0.85", lw=0.5)
         axis.set_xlim(x.min(), x.max())
     for axis in axes[1, :]:
-        axis.set_xlabel(r"Spread perturbation $c$")
+        axis.set_xlabel(r"Annualized spread shock $c$")
     axes[0, 0].annotate(
         "benchmark",
         xy=(0.0, np.interp(0.0, x, series["p_liq"])),
@@ -292,7 +307,7 @@ def plot(rows: list[dict[str, float]], out: Path) -> None:
 
 def plot_expected_killed_payoff(rows: list[dict[str, float]], out: Path) -> None:
     """Plot expected killed payoff over signed spread c at fixed H0."""
-    x = np.array([row["spread_perturbation_c"] for row in rows])
+    x = np.array([row["spread_shock_c"] for row in rows])
     y = np.array([row["expected_killed_payoff"] for row in rows])
     fig, ax = plt.subplots(figsize=(6.2, 3.0))
     ax.plot(x, y, color="#1f4e79", lw=1.8)
@@ -306,7 +321,7 @@ def plot_expected_killed_payoff(rows: list[dict[str, float]], out: Path) -> None
         fontsize=8,
         arrowprops={"arrowstyle": "-", "lw": 0.7, "color": "0.35"},
     )
-    ax.set_xlabel(r"Spread perturbation $c$")
+    ax.set_xlabel(r"Annualized spread shock $c$")
     ax.set_ylabel(r"$p_{\rm surv}\,\mathrm{E}[\Pi_T\mid\tau>T]$")
     ax.set_xlim(x.min(), x.max())
     ax.grid(axis="y", color="0.85", lw=0.5)
@@ -318,7 +333,7 @@ def plot_expected_killed_payoff(rows: list[dict[str, float]], out: Path) -> None
 
 def plot_optimal_health_sensitivity(rows: list[dict[str, float]], out: Path) -> None:
     """Plot killed-payoff-optimal health and its objective value against c."""
-    x = np.array([row["spread_perturbation_c"] for row in rows])
+    x = np.array([row["spread_shock_c"] for row in rows])
     H_star = np.array([row["optimal_H0"] for row in rows])
     score = np.array(
         [row["max_expected_killed_payoff"] for row in rows]
@@ -332,7 +347,7 @@ def plot_optimal_health_sensitivity(rows: list[dict[str, float]], out: Path) -> 
     axes[1].set_title("(b) Maximized expected killed payoff")
     for axis in axes:
         axis.axvline(0.0, color="0.35", lw=0.9, ls=":")
-        axis.set_xlabel(r"Spread perturbation $c$")
+        axis.set_xlabel(r"Annualized spread shock $c$")
         axis.set_xlim(x.min(), x.max())
         axis.grid(axis="y", color="0.85", lw=0.5)
     fig.tight_layout()
@@ -352,7 +367,7 @@ def main() -> None:
     plot_optimal_health_sensitivity(optimal_rows, args.optimal_figure_out)
     print(
         f"Benchmark log-mean midpoint={midpoint:.9f}, spread={benchmark_spread:.9f}; "
-        f"evaluated {len(rows)} signed perturbations c at "
+        f"evaluated {len(rows)} additive annualized spread shocks c at "
         f"H0={args.H0:.4f}, T={args.T:.6f}."
     )
     print(f"Wrote {args.csv_out}")

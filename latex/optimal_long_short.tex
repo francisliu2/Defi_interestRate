@@ -1092,29 +1092,35 @@ To isolate spread uncertainty from a common shift in the log-return mean, let
 $\Delta_g^{\mathrm{bm}}=g_1^{\mathrm{bm}}-g_2^{\mathrm{bm}}=0.623184$ and
 $\bar g^{\mathrm{bm}}=(g_1^{\mathrm{bm}}+g_2^{\mathrm{bm}})/2=-0.216447$.
 We hold this midpoint and all calibrated diffusion, jump, correlation, contract, and price
-parameters fixed, and vary only
+parameters fixed. Let $c$ denote an additive shock, in annualized log-return units, to the
+benchmark spread. We set
 \begin{equation}\label{eq:log-mean-spread-perturbation}
- g_1(c)=\bar g^{\mathrm{bm}}+\frac{(1+c)\Delta_g^{\mathrm{bm}}}{2},
+ g_1(c)=g_1^{\mathrm{bm}}+\frac{c}{2},
  \qquad
- g_2(c)=\bar g^{\mathrm{bm}}-\frac{(1+c)\Delta_g^{\mathrm{bm}}}{2},
- \qquad c\in[-1,1].
+ g_2(c)=g_2^{\mathrm{bm}}-\frac{c}{2},
+ \qquad
+ \Delta_g(c)=\Delta_g^{\mathrm{bm}}+c,
+ \qquad c\in[-0.30,0.30].
 \end{equation}
 Thus $c=0$ is the calibrated benchmark, $c<0$ narrows the spread, and $c>0$ widens it;
-the endpoints $c=-1$ and $c=1$ respectively set equal leg means and double the benchmark
-log-mean spread. For each $c$, the implementation maps $g_i(c)$ to
+the endpoints apply a symmetric $\mp15$ percentage-point change to the two annualized leg
+means and move their spread by $\mp30$ percentage points. Hence the scenario range is
+$\Delta_g(c)\in[0.323184,0.923184]$ and does not reverse the calibrated ranking. For each
+$c$, the implementation maps $g_i(c)$ to
 its internal price-growth convention while leaving all ECF shape parameters fixed. This is
-a comparative-static drift perturbation, not a recalibration of those shape parameters.
+a symmetric fixed-midpoint drift scenario, not a recalibration of those shape parameters;
+payoff moments can depend separately on both marginal drifts as well as on their difference.
 
 Figure~\ref{fig:mu-spread-sensitivity} evaluates 41 equally spaced values of
-$c\in[-1,1]$ at
+$c\in[-0.30,0.30]$ at
 $H_0=1.10$ and $T=1/12$. Table~\ref{tab:mu-spread-sensitivity} reports five representative
 points. We refer to $p_{\mathrm{liq}}$ as default risk in this illustration; operationally,
 the event is first passage through the protocol liquidation boundary. Narrowing the spread
-from its benchmark value to zero increases $p_{\mathrm{liq}}$ from $24.44\%$ to $37.68\%$
-and lowers the conditional mean from $1.2372$ to $1.1419$. Doubling the spread lowers
-$p_{\mathrm{liq}}$ to $14.79\%$ and raises the conditional mean to $1.3485$. Relative to
-the benchmark, these endpoints change liquidation probability by $+54.2\%$ and $-39.5\%$,
-respectively. Conditional variance changes by approximately $-15.7\%$ and $+15.8\%$; conditional
+by $0.30$ increases $p_{\mathrm{liq}}$ from $24.44\%$ to $30.40\%$ and lowers the
+conditional mean from $1.2372$ to $1.1893$. Widening it by $0.30$ lowers
+$p_{\mathrm{liq}}$ to $19.33\%$ and raises the conditional mean to $1.2889$. Relative to
+the benchmark, these endpoints change liquidation probability by $+24.4\%$ and $-20.9\%$,
+respectively. Conditional variance changes by approximately $-7.7\%$ and $+7.7\%$; conditional
 skewness and excess kurtosis also move appreciably. Mean uncertainty therefore propagates
 not only to default probability and expected surviving payoff, but to the dispersion and
 shape of the conditional payoff distribution.
@@ -1126,7 +1132,7 @@ shape of the conditional payoff distribution.
 \includegraphics[width=0.92\linewidth]{fig_mu_spread_sensitivity.pdf}
 \caption{Sensitivity to the supplied expected log-return mean spread at $H_0=1.10$ and
 $T=1/12$. The midpoint of $(g_1,g_2)$ and every non-drift input are held at their
-calibrated values while the benchmark spread is multiplied by $1+c$ as in
+calibrated values while the benchmark spread receives the additive annualized shock $c$ as in
 \eqref{eq:log-mean-spread-perturbation}. The dotted vertical line marks the calibrated benchmark
 $c=0$. Conditional moments are computed given $\tau>T$.}
 \label{fig:mu-spread-sensitivity}
@@ -1144,11 +1150,11 @@ $c=0$. Conditional moments are computed given $\tau>T$.}
 $c$ & $g_1-g_2$ & $p_{\mathrm{liq}}$ &
 $\E[\Pi_T\mid\tau>T]$ & $\operatorname{Var}(\Pi_T\mid\tau>T)$ & Skew. & Ex. kurt. \\
 \midrule
-$-1.0$ & $0.0000$ & $0.3768$ & $1.1419$ & $0.0597$ & $0.7099$ & $0.6491$ \\
-$-0.5$ & $0.3116$ & $0.3064$ & $1.1875$ & $0.0652$ & $0.6575$ & $0.5456$ \\
+$-0.30$ & $0.3232$ & $0.3040$ & $1.1893$ & $0.0654$ & $0.6556$ & $0.5420$ \\
+$-0.15$ & $0.4732$ & $0.2731$ & $1.2128$ & $0.0681$ & $0.6303$ & $0.4977$ \\
 $0.0$ & $0.6232$ & $0.2444$ & $1.2372$ & $0.0708$ & $0.6052$ & $0.4572$ \\
-$0.5$ & $0.9348$ & $0.1915$ & $1.2909$ & $0.0765$ & $0.5543$ & $0.3860$ \\
-$1.0$ & $1.2464$ & $0.1479$ & $1.3485$ & $0.0820$ & $0.5063$ & $0.3327$ \\
+$0.15$ & $0.7732$ & $0.2178$ & $1.2626$ & $0.0735$ & $0.5804$ & $0.4207$ \\
+$0.30$ & $0.9232$ & $0.1933$ & $1.2889$ & $0.0762$ & $0.5561$ & $0.3883$ \\
 \bottomrule
 \end{tabular}
 \caption{Selected expected-log-return-mean spread sensitivity results. The calibrated case is $c=0$; all
@@ -1177,9 +1183,9 @@ measure, $M_1$ is an expected-performance criterion rather than an arbitrage-fre
 At fixed $H_0=1.10$, Figure~\ref{fig:expected-killed-payoff} uses the same 41-point spread
 grid, $T=1/12$, and calibrated non-drift inputs as
 Section~\ref{sec:spread-conditional-moments}. The calibrated benchmark gives
-$J_{\mathrm{kill}}=0.9349$. Narrowing the spread to equal leg means ($c=-1$) lowers it to
-$0.7117$, or $23.9\%$ below the benchmark, while doubling the spread ($c=1$) raises it to
-$1.1490$, or $22.9\%$ above the benchmark.
+$J_{\mathrm{kill}}=0.9349$. A $-0.30$ spread shock lowers it to $0.8278$, or $11.5\%$
+below the benchmark, while a $+0.30$ shock raises it to $1.0397$, or $11.2\%$ above the
+benchmark.
 
 % Result-generation script: jobs/mu_spread_sensitivity.py
 % Figure artifact: latex/fig_expected_killed_payoff_sensitivity.pdf
@@ -1204,12 +1210,11 @@ We evaluate \eqref{eq:optimal-h-killed-payoff} on 101 equally spaced health fact
 $H_0\in[1.0685,2]$. At the calibrated benchmark, the grid solution is
 $H_0^\star=1.2734$, $h_0^\star=0.2417$, initial leverage $2.5808$, and
 $J_{\mathrm{kill}}^\star=1.0811$. The optimizer is spread-sensitive: representative
-$H_0^\star$ values are $2.0000$, $1.3479$, $1.2734$, $1.2175$, and $1.1803$ at
-$c=-1,-0.5,0,0.5,1$, respectively. Hence a wider expected-log-return spread supports more
+$H_0^\star$ values are $1.3479$, $1.3014$, $1.2734$, $1.2455$, and $1.2175$ at
+$c=-0.30,-0.15,0,0.15,0.30$, respectively. Hence a wider expected-log-return spread supports more
 initial leverage and a smaller health buffer, while a narrower spread favors deleveraging.
-At $c=-1$ the upper boundary is selected, so that endpoint remains a constrained rather than
-an interior optimum. The corresponding maximized killed payoff rises from $0.9845$ at
-$c=-1$ to $1.2101$ at $c=1$.
+The corresponding maximized killed payoff rises from $1.0293$ at $c=-0.30$ to $1.1398$
+at $c=0.30$; all five representative optimizers are interior to the reported grid.
 
 % Result-generation script: jobs/mu_spread_sensitivity.py
 % Data artifact: results/optimal_h_killed_payoff_sensitivity.csv

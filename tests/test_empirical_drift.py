@@ -129,15 +129,17 @@ def test_signed_spread_perturbation_is_centered_on_calibrated_benchmark():
     midpoint = 0.1
     benchmark_spread = 0.6
 
-    narrowed = expected_log_return_drift(spread_params(benchmark, -1.0))
+    narrowed = expected_log_return_drift(spread_params(benchmark, -0.3))
     centered = expected_log_return_drift(spread_params(benchmark, 0.0))
-    widened = expected_log_return_drift(spread_params(benchmark, 1.0))
+    widened = expected_log_return_drift(spread_params(benchmark, 0.3))
 
-    assert narrowed == pytest.approx((midpoint, midpoint))
+    assert narrowed == pytest.approx((0.25, -0.05))
     assert centered == pytest.approx((0.4, -0.2))
-    assert widened == pytest.approx(
-        (midpoint + benchmark_spread, midpoint - benchmark_spread)
-    )
+    assert widened == pytest.approx((0.55, -0.35))
+    assert sum(narrowed) / 2 == pytest.approx(midpoint)
+    assert sum(widened) / 2 == pytest.approx(midpoint)
+    assert narrowed[0] - narrowed[1] == pytest.approx(benchmark_spread - 0.3)
+    assert widened[0] - widened[1] == pytest.approx(benchmark_spread + 0.3)
 
 
 def test_expected_killed_payoff_definition_and_validation():
