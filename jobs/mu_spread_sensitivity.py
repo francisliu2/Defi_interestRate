@@ -48,16 +48,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--c-min",
         type=float,
-        default=-0.30,
+        default=-0.70,
         help="Minimum additive annualized log-mean-spread shock.",
     )
     parser.add_argument(
         "--c-max",
         type=float,
-        default=0.30,
+        default=0.70,
         help="Maximum additive annualized log-mean-spread shock.",
     )
-    parser.add_argument("--c-count", type=int, default=41)
+    parser.add_argument("--c-count", type=int, default=57)
     parser.add_argument(
         "--csv-out",
         type=Path,
@@ -122,10 +122,6 @@ def compute_rows(args: argparse.Namespace) -> tuple[list[dict[str, float]], floa
     log_mean1, log_mean2 = expected_log_return_drift(params)
     midpoint = 0.5 * (log_mean1 + log_mean2)
     benchmark_spread = log_mean1 - log_mean2
-    if benchmark_spread + args.c_min < -1e-12:
-        raise ValueError(
-            "--c-min must not make the calibrated log-mean spread negative."
-        )
     rows: list[dict[str, float]] = []
     for c in np.linspace(args.c_min, args.c_max, args.c_count):
         varied = spread_params(params, float(c))
@@ -180,6 +176,11 @@ def write_csv(rows: list[dict[str, float]], out: Path) -> None:
         )
         writer.writeheader()
         writer.writerows(rows)
+
+
+def add_benchmark_line(axis) -> None:
+    """Mark the calibrated benchmark c=0."""
+    axis.axvline(0.0, color="0.35", lw=0.9, ls=":")
 
 
 def select_optimal_health(
@@ -314,7 +315,7 @@ def plot(rows: list[dict[str, float]], out: Path) -> None:
     ax.legend(loc="best", fontsize=8)
 
     for axis in axes.flat:
-        axis.axvline(0.0, color="0.35", lw=0.9, ls=":")
+        add_benchmark_line(axis)
         axis.grid(axis="y", color="0.85", lw=0.5)
         axis.set_xlim(x.min(), x.max())
     for axis in axes[1, :]:
@@ -338,7 +339,7 @@ def plot_expected_killed_payoff(rows: list[dict[str, float]], out: Path) -> None
     y = np.array([row["expected_killed_payoff"] for row in rows])
     fig, ax = plt.subplots(figsize=(6.2, 3.0))
     ax.plot(x, y, color="#1f4e79", lw=1.8)
-    ax.axvline(0.0, color="0.35", lw=0.9, ls=":")
+    add_benchmark_line(ax)
     benchmark = float(np.interp(0.0, x, y))
     ax.scatter([0.0], [benchmark], color="#1f4e79", s=18, zorder=3)
     ax.annotate(
@@ -373,7 +374,7 @@ def plot_optimal_health_sensitivity(rows: list[dict[str, float]], out: Path) -> 
     axes[1].set_ylabel(r"$J_{\rm kill}(c,H_0^*)$")
     axes[1].set_title("(b) Maximized expected killed payoff")
     for axis in axes:
-        axis.axvline(0.0, color="0.35", lw=0.9, ls=":")
+        add_benchmark_line(axis)
         axis.set_xlabel(r"Annualized spread shock $c$")
         axis.set_xlim(x.min(), x.max())
         axis.grid(axis="y", color="0.85", lw=0.5)

@@ -1100,27 +1100,29 @@ benchmark spread. We set
  g_2(c)=g_2^{\mathrm{bm}}-\frac{c}{2},
  \qquad
  \Delta_g(c)=\Delta_g^{\mathrm{bm}}+c,
- \qquad c\in[-0.30,0.30].
+ \qquad c\in[-0.70,0.70].
 \end{equation}
 Thus $c=0$ is the calibrated benchmark, $c<0$ narrows the spread, and $c>0$ widens it;
-the endpoints apply a symmetric $\mp15$ percentage-point change to the two annualized leg
-means and move their spread by $\mp30$ percentage points. Hence the scenario range is
-$\Delta_g(c)\in[0.323184,0.923184]$ and does not reverse the calibrated ranking. For each
+the endpoints apply a symmetric $\mp35$ percentage-point change to the two annualized leg
+means and move their spread by $\mp70$ percentage points. Hence the scenario range is
+$\Delta_g(c)\in[-0.076816,1.323184]$. The spread is zero at
+$c=-\Delta_g^{\mathrm{bm}}=-0.623184$ and becomes negative below this threshold, reversing
+the calibrated expected-return ranking. For each
 $c$, the implementation maps $g_i(c)$ to
 its internal price-growth convention while leaving all ECF shape parameters fixed. This is
 a symmetric fixed-midpoint drift scenario, not a recalibration of those shape parameters;
 payoff moments can depend separately on both marginal drifts as well as on their difference.
 
-Figure~\ref{fig:mu-spread-sensitivity} evaluates 41 equally spaced values of
-$c\in[-0.30,0.30]$ at
+Figure~\ref{fig:mu-spread-sensitivity} evaluates 57 equally spaced values of
+$c\in[-0.70,0.70]$ at
 $H_0=1.10$ and $T=1/12$. Table~\ref{tab:mu-spread-sensitivity} reports five representative
 points. We refer to $p_{\mathrm{liq}}$ as default risk in this illustration; operationally,
 the event is first passage through the protocol liquidation boundary. Narrowing the spread
-by $0.30$ increases $p_{\mathrm{liq}}$ from $24.44\%$ to $30.40\%$ and lowers the
-conditional mean from $1.2372$ to $1.1893$. Widening it by $0.30$ lowers
-$p_{\mathrm{liq}}$ to $19.33\%$ and raises the conditional mean to $1.2889$. Relative to
-the benchmark, these endpoints change liquidation probability by $+24.4\%$ and $-20.9\%$,
-respectively. Conditional variance changes by approximately $-7.7\%$ and $+7.7\%$; conditional
+by $0.70$ increases $p_{\mathrm{liq}}$ from $24.44\%$ to $39.52\%$ and lowers the
+conditional mean from $1.2372$ to $1.1313$. Widening it by $0.70$ lowers
+$p_{\mathrm{liq}}$ to $13.85\%$ and raises the conditional mean to $1.3632$. Relative to
+the benchmark, these endpoints change liquidation probability by $+61.7\%$ and $-43.3\%$,
+respectively. Conditional variance changes by approximately $-17.6\%$ and $+17.7\%$; conditional
 skewness and excess kurtosis also move appreciably. Mean uncertainty therefore propagates
 not only to default probability and expected surviving payoff, but to the dispersion and
 shape of the conditional payoff distribution.
@@ -1150,11 +1152,11 @@ $c=0$. Conditional moments are computed given $\tau>T$.}
 $c$ & $g_1-g_2$ & $p_{\mathrm{liq}}$ &
 $\E[\Pi_T\mid\tau>T]$ & $\operatorname{Var}(\Pi_T\mid\tau>T)$ & Skew. & Ex. kurt. \\
 \midrule
-$-0.30$ & $0.3232$ & $0.3040$ & $1.1893$ & $0.0654$ & $0.6556$ & $0.5420$ \\
-$-0.15$ & $0.4732$ & $0.2731$ & $1.2128$ & $0.0681$ & $0.6303$ & $0.4977$ \\
+$-0.70$ & $-0.0768$ & $0.3952$ & $1.1313$ & $0.0584$ & $0.7226$ & $0.6766$ \\
+$-0.35$ & $0.2732$ & $0.3147$ & $1.1817$ & $0.0645$ & $0.6640$ & $0.5576$ \\
 $0.0$ & $0.6232$ & $0.2444$ & $1.2372$ & $0.0708$ & $0.6052$ & $0.4572$ \\
-$0.15$ & $0.7732$ & $0.2178$ & $1.2626$ & $0.0735$ & $0.5804$ & $0.4207$ \\
-$0.30$ & $0.9232$ & $0.1933$ & $1.2889$ & $0.0762$ & $0.5561$ & $0.3883$ \\
+$0.35$ & $0.9732$ & $0.1857$ & $1.2978$ & $0.0771$ & $0.5482$ & $0.3784$ \\
+$0.70$ & $1.3232$ & $0.1385$ & $1.3632$ & $0.0833$ & $0.4950$ & $0.3222$ \\
 \bottomrule
 \end{tabular}
 \caption{Selected expected-log-return-mean spread sensitivity results. The calibrated case is $c=0$; all
@@ -1180,11 +1182,11 @@ structure of a zero-rebate barrier option: crossing the liquidation boundary kno
 claim and sets its terminal payoff to zero. Because the expectation is taken under the physical
 measure, $M_1$ is an expected-performance criterion rather than an arbitrage-free option price.
 
-At fixed $H_0=1.10$, Figure~\ref{fig:expected-killed-payoff} uses the same 41-point spread
+At fixed $H_0=1.10$, Figure~\ref{fig:expected-killed-payoff} uses the same 57-point spread
 grid, $T=1/12$, and calibrated non-drift inputs as
 Section~\ref{sec:spread-conditional-moments}. The calibrated benchmark gives
-$J_{\mathrm{kill}}=0.9349$. A $-0.30$ spread shock lowers it to $0.8278$, or $11.5\%$
-below the benchmark, while a $+0.30$ shock raises it to $1.0397$, or $11.2\%$ above the
+$J_{\mathrm{kill}}=0.9349$. A $-0.70$ spread shock lowers it to $0.6843$, or $26.8\%$
+below the benchmark, while a $+0.70$ shock raises it to $1.1744$, or $25.6\%$ above the
 benchmark.
 
 % Result-generation script: jobs/mu_spread_sensitivity.py
@@ -1211,11 +1213,12 @@ $H_0\in[1.0685,2]$, with absolute tolerance $10^{-7}$ and explicit checks of bot
 At the calibrated benchmark, the solution is
 $H_0^\star=1.2711$, $h_0^\star=0.2399$, initial leverage $2.5882$, and
 $J_{\mathrm{kill}}^\star=1.0811$. The optimizer is spread-sensitive: representative
-$H_0^\star$ values are $1.3450$, $1.3034$, $1.2711$, $1.2445$, and $1.2218$ at
-$c=-0.30,-0.15,0,0.15,0.30$, respectively. Hence a wider expected-log-return spread supports more
+$H_0^\star$ values are $2.0000$, $1.3624$, $1.2711$, $1.2149$, and $1.1751$ at
+$c=-0.70,-0.35,0,0.35,0.70$, respectively. Hence a wider expected-log-return spread supports more
 initial leverage and a smaller health buffer, while a narrower spread favors deleveraging.
-The corresponding maximized killed payoff rises from $1.0293$ at $c=-0.30$ to $1.1398$
-at $c=0.30$; all five representative optimizers are interior to the reported interval.
+The corresponding maximized killed payoff rises from $0.9773$ at $c=-0.70$ to $1.2278$
+at $c=0.70$. On the evaluated grid the upper health-factor constraint binds for
+$c\leq-0.60$; the other four representative optimizers are interior.
 
 % Result-generation script: jobs/mu_spread_sensitivity.py
 % Data artifact: results/optimal_h_killed_payoff_sensitivity.csv
