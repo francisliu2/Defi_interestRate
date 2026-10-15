@@ -10,7 +10,7 @@
 
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usepackage{amsmath,amssymb,booktabs,array}
+\usepackage{amsmath,amssymb,booktabs,array,multirow}
 \usepackage{graphicx}
 \usepackage{tikz}
 \usepackage[numbers,sort&compress]{natbib}
@@ -709,16 +709,16 @@
   $h_0$ & $H_0$ & $p_{\mathrm{surv}}^{\mathrm{Lap}}$ & $p_{\mathrm{surv}}^{\mathrm{MC}}$
   & Mean & Variance & Skewness & Ex.\ Kurt.\\
   \midrule
-  $0.07$ & $1.07$ & $0.3051$ & $0.3163$ & $1.2581$ & $0.0753$ & $0.8767$ & $1.0996$ \\
-  $0.10$ & $1.11$ & $0.4615$ & $0.4750$ & $1.1633$ & $0.0672$ & $0.8525$ & $1.0083$ \\
-  $0.25$ & $1.28$ & $0.9129$ & $0.9156$ & $0.9847$ & $0.0545$ & $0.5676$ & $0.3668$ \\
-  $0.50$ & $1.65$ & $0.9996$ & $0.9995$ & $0.9845$ & $0.0350$ & $0.3132$ & $0.3565$ \\
-  $0.75$ & $2.12$ & $1.0000$ & $1.0000$ & $1.0043$ & $0.0236$ & $0.3791$ & $0.4093$ \\
-  $1.00$ & $2.72$ & $1.0000$ & $1.0000$ & $1.0158$ & $0.0186$ & $0.4158$ & $0.4234$ \\
-  $1.50$ & $4.48$ & $1.0000$ & $1.0000$ & $1.0280$ & $0.0145$ & $0.4318$ & $0.4187$ \\
-  $2.00$ & $7.39$ & $1.0000$ & $1.0000$ & $1.0339$ & $0.0130$ & $0.4263$ & $0.4017$ \\
+  $0.07$ & $1.07$ & $0.3093$ & $0.3206$ & $1.1133$ & $0.0325$ & $0.6550$ & $0.4863$ \\
+  $0.10$ & $1.11$ & $0.4879$ & $0.4985$ & $1.0413$ & $0.0306$ & $0.6320$ & $0.3989$ \\
+  $0.25$ & $1.28$ & $0.9505$ & $0.9524$ & $0.9278$ & $0.0287$ & $0.2692$ & $-0.1028$ \\
+  $0.50$ & $1.65$ & $1.0000$ & $0.9999$ & $0.9573$ & $0.0169$ & $0.0955$ & $0.1592$ \\
+  $0.75$ & $2.12$ & $1.0000$ & $1.0000$ & $0.9812$ & $0.0114$ & $0.2026$ & $0.1463$ \\
+  $1.00$ & $2.72$ & $1.0000$ & $1.0000$ & $0.9949$ & $0.0092$ & $0.2515$ & $0.1444$ \\
+  $1.50$ & $4.48$ & $1.0000$ & $1.0000$ & $1.0095$ & $0.0078$ & $0.2724$ & $0.1428$ \\
+  $2.00$ & $7.39$ & $1.0000$ & $1.0000$ & $1.0166$ & $0.0074$ & $0.2705$ & $0.1380$ \\
   \midrule
-  $\infty$ & $\infty$ & $1.0000$ & --- & $1.0414$ & $0.0114$ & $0.4052$ & $0.3612$ \\
+  $\infty$ & $\infty$ & $1.0000$ & --- & $1.0255$ & $0.0072$ & $0.2627$ & $0.1286$ \\
   \bottomrule
   \end{tabular}}
   \end{center}
@@ -748,14 +748,14 @@
   & $\Delta$Var. & $\Delta$Skew. & $\Delta$Kurt.
   & Lap. & MC \\
   \midrule
-  $0.07$ & $1.07$ & $-0.0112$ & $\phantom{-}0.0042$ & $-0.0019$ & $-0.0233$ & $-0.1959$ & $0.10$ & $50.37$ \\
-  $0.10$ & $1.11$ & $-0.0136$ & $\phantom{-}0.0042$ & $-0.0013$ & $-0.0230$ & $-0.1499$ & $0.10$ & $49.15$ \\
-  $0.25$ & $1.28$ & $-0.0026$ & $-0.0001$ & $-0.0007$ & $-0.0054$ & $-0.0563$ & $0.10$ & $48.90$ \\
-  $0.50$ & $1.65$ & $\phantom{-}0.0001$ & $-0.0005$ & $-0.0003$ & $-0.0110$ & $-0.0347$ & $0.10$ & $49.11$ \\
-  $0.75$ & $2.12$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0107$ & $-0.0382$ & $0.10$ & $49.49$ \\
-  $1.00$ & $2.72$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0123$ & $-0.0378$ & $0.10$ & $49.46$ \\
-  $1.50$ & $4.48$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0001$ & $-0.0144$ & $-0.0369$ & $0.10$ & $49.94$ \\
-  $2.00$ & $7.39$ & $\phantom{-}0.0000$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0152$ & $-0.0362$ & $0.10$ & $49.76$ \\
+  $0.07$ & $1.07$ & $-0.0113$ & $\phantom{-}0.0044$ & $-0.0001$ & $-0.0144$ & $-0.0600$ & $0.15$ & $62.53$ \\
+  $0.10$ & $1.11$ & $-0.0105$ & $\phantom{-}0.0036$ & $-0.0003$ & $-0.0034$ & $-0.0322$ & $0.15$ & $63.68$ \\
+  $0.25$ & $1.28$ & $-0.0019$ & $\phantom{-}0.0005$ & $-0.0002$ & $\phantom{-}0.0035$ & $-0.0177$ & $0.14$ & $61.30$ \\
+  $0.50$ & $1.65$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0001$ & $-0.0116$ & $-0.0153$ & $0.14$ & $61.51$ \\
+  $0.75$ & $2.12$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0001$ & $-0.0122$ & $-0.0459$ & $0.14$ & $61.07$ \\
+  $1.00$ & $2.72$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0001$ & $-0.0142$ & $-0.0587$ & $0.14$ & $60.75$ \\
+  $1.50$ & $4.48$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0000$ & $-0.0152$ & $-0.0665$ & $0.14$ & $64.36$ \\
+  $2.00$ & $7.39$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0000$ & $-0.0149$ & $-0.0651$ & $0.14$ & $61.99$ \\
   \bottomrule
   \end{tabular}}
   \end{center}
@@ -764,7 +764,7 @@
   \begin{itemize}
     \item $\Delta p_{\mathrm{surv}}<0$: MC misses intra-period barrier crossings
     \item Gap largest near $H_0^{\min}$; negligible for larger health buffers
-    \item Runtime: Laplace $\approx0.10$s vs MC $\approx49$--$50$s; about $490\times$ speed-up
+    \item Runtime: Laplace $\approx0.14$s vs MC $\approx62$s; about $440\times$ speed-up
   \end{itemize}
 \end{frame}
 
@@ -795,6 +795,77 @@
 \end{frame}
 
 % ------------------------------------------------------------
+\begin{frame}{Interest-Rate Carry: Supply/Borrow Accrual}
+  \small
+  Collateral earns supply rate $r_s$; debt accrues borrow rate $r_b$ (Aave indices)
+  \[
+    V_{1,t}=n_1S_{1,0}e^{X_{1,t}}e^{r_st},
+    \qquad
+    V_{2,t}=n_2S_{2,0}e^{X_{2,t}}e^{r_bt}
+  \]
+  Health factor picks up the \emph{net} carry $c=r_s-r_b$ in its drift:
+  \[
+    H_t=H_0\exp(Z_t+ct),
+    \qquad
+    h_t=h_0+Z_t+ct
+  \]
+  \vspace{0.15em}
+
+  \textbf{Key point:} deterministic carry $=$ a per-leg drift shift
+  \[
+    \mu_1\mapsto\mu_1+r_s,
+    \qquad
+    \mu_2\mapsto\mu_2+r_b
+  \]
+  \begin{itemize}
+    \item Every killed moment $\E[\Pi_T^k]$ and $\surv(h_0)$ apply verbatim at the shifted drifts
+    \item No new analysis: same $3\times3$ resolvent, same Talbot inversion
+    \item Positive net carry $\Rightarrow$ first-order buffer that \emph{raises} $\surv$ at fixed $h_0$
+  \end{itemize}
+  \vspace{0.15em}
+
+  {\scriptsize Calibrated to live Aave v3 Ethereum rates (\texttt{get\_aave\_hourly.py}, 2026-08-04)}
+\end{frame}
+
+% ------------------------------------------------------------
+\begin{frame}{Carry Books and Depeg Fragility}
+  \scriptsize
+  Two Aave v3 books sized to $\liq^\dagger=10\%$; collateral $=$ asset 1, debt $=$ asset 2
+  \vspace{0.1em}
+
+  \begin{center}
+  \begin{tabular}{@{}llcccc@{}}
+    \toprule
+    Book & carry & $H_0^\dagger$ & $L_0^\dagger$ & $\E[\Pi_T\mid\tau>T]$ & cond.\ Sharpe \\
+    \midrule
+    \multirow{2}{*}{USDC/WETH ($c=+1.18\%$)}
+      & none     & $1.547$ & $2.017$ & $1.0710$ & $4.62$ \\
+      & $+$carry  & $1.543$ & $2.022$ & $1.0840$ & $4.62$ \\
+    \multirow{2}{*}{stETH/ETH ($c=+0.49\%$)}
+      & none     & $1.070$ & $4.110$ & $1.0849$ & $2.18$ \\
+      & $+$carry  & $1.070$ & $4.114$ & $1.0890$ & $2.18$ \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{0.2em}
+
+  \begin{columns}[T]
+    \begin{column}{0.52\linewidth}
+      \begin{itemize}
+        \item Correlation, not carry, sets admissible leverage: collinear stETH/ETH tolerates $L_0\approx4.1$; independent USDC/WETH capped near $2.0$
+        \item Carry shifts the frontier favourably but modestly at these horizons
+        \item \alert{Depeg fragility:} a $d$ haircut $=$ same book at $h_0+\log(1-d)$
+        \item stETH/ETH ($4.1\times$): $5\%$ haircut $\to\liq=58\%$; $10\%\to$ certainty
+        \item USDC/WETH ($2.0\times$) degrades gracefully: $10\%\to19\%$
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\linewidth}
+      \includegraphics[width=\linewidth]{fig_carry_depeg.pdf}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------
 \begin{frame}[plain]
   \begin{tikzpicture}[remember picture,overlay]
     \node at (current page.center) {%
@@ -810,13 +881,14 @@
     \item Central sizing variable: $h_0=\log H_0$
     \item Kou jump diffusion $\rightarrow$ finite-dimensional semi-analytic moments
     \item Fast liquidation-aware sizing; no repeated Monte Carlo
+    \item Interest-rate carry $\rightarrow$ per-leg drift shift; interest-bearing books sized with no re-derivation
   \end{itemize}
   \vspace{0.8em}
   \textbf{Ongoing developments}
   \begin{itemize}
-    \item Robust empirical example
-    \item Sensitivity analysis: strong drift dependence
-    \item Borrowing- and lending-rate modelling
+    \item Liquidation recovery and dynamic collateral management
+    \item \emph{Stochastic} borrowing- and lending-rate modelling
+    \item Oracle-delay and execution-slippage overlays
   \end{itemize}
   \vfill
   \begin{center}

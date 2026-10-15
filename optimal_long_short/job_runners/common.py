@@ -41,7 +41,7 @@ def kou_params_to_dict(params: KouParams) -> dict[str, float]:
     return {k: float(v) for k, v in dataclasses.asdict(params).items()}
 
 
-def load_calibrated_params(
+def load_calibrated_params( # this parameters are obtained by running the `job_runners/calibrate_btc_eth.py` script
     path: Path = RESULTS_DIR / "params_WBTC_WETH.json",
     price_drift_view: dict[str, float] | None = None,
 ) -> tuple[KouParams, dict[str, float]]:

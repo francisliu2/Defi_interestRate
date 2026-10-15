@@ -34,6 +34,7 @@
 % ==== TYPOGRAPHY ====
 \setlength{\parindent}{10pt}
 \setlength{\parskip}{0pt}
+\setlength{\emergencystretch}{2em}
 
 % ==== TITLE (18/22pt bold uppercase, centred, like QF) ====
 \makeatletter
@@ -84,6 +85,7 @@
 }
 
 % ==== HYPERLINKS ====
+\usepackage{xcolor}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 
 % ==== APPENDICES (renames sections to "Appendix A: ...") ====
@@ -104,6 +106,7 @@
 \newcommand{\F}{\mathcal{F}}
 \newcommand{\one}{\mathbf{1}}
 \newcommand{\Rea}{\operatorname{Re}}
+\newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
 
 % ==== THEOREM ENVIRONMENTS ====
 \theoremstyle{plain}
@@ -120,29 +123,39 @@
 
 \begin{document}
 
-\title{A semi-Analytic Framework for Long-Short Position Sizing in DeFi under Liquidation and Jump Risk}
+\title{Leveraged DeFi Long--Short Positions under Liquidation and Jump Risk: A Semi-Analytic Evaluation Framework}
 
 \maketitle
 
 \begin{abstract}
-We study the initial sizing of a leveraged DeFi long--short position whose solvency is
-governed by a protocol health factor. The position is modelled as absorbed when the health
-factor crosses the liquidation boundary; practical liquidation mechanics are outside the
-model scope. Under bivariate Kou double-exponential jump--diffusion dynamics, we reduce
-surviving-path payoff moments to one-dimensional killed expectations of the log
-collateral-to-liability ratio. An exponential change of measure absorbs the short-leg
-price factor, while the exponential jump structure reduces the Laplace-domain resolvent to
-a finite-dimensional linear system. Crucially, the construction is available for every
-admissible integer moment order $k\ge1$ satisfying $k\eta_{2,+}<1$: changing $k$ changes
-the tilt and forcing term, but not the dimension of the $3\times3$ linear system. The
-framework therefore provides fast semi-analytic estimates of survival probabilities and
-conditional payoff moments of arbitrary admissible integer order as functions of the initial
-log health buffer, adapting classical first-passage machinery to the DeFi health-factor payoff
-setting.
+We develop a semi-analytic framework for evaluating leveraged DeFi long--short positions whose
+solvency is governed by a protocol health factor. Under bivariate Kou jump--diffusion dynamics, an
+exponential change of measure absorbs the short-leg price and reduces every admissible payoff moment
+to a killed expectation of the log collateral-to-liability ratio, whose Laplace-domain resolvent is a
+$3\times3$ linear system for every moment order. The same barrier system delivers four further
+objects: the exact liquidation recovery under jump overshoot, through bivariate tilts; the law of the
+overshoot itself --- a creeping atom and two exponential phases whose weights follow from three
+hitting moments --- and with it the exact probability of bad debt; the expected logarithm of
+terminal wealth, so that Kelly sizing is semi-analytic rather than simulated; and deterministic and
+Markov-modulated interest-rate carry, the latter through a $6\times6$ resolvent. The resulting
+objective-independent \emph{evaluation map} from initial buffer to liquidation probability, payoff
+moments and recovery is validated against bridge-corrected Monte Carlo and is two to three orders
+of magnitude faster than simulation. On $3.7$ years of Aave v3 Ethereum data, the map's one-month
+liquidation probabilities lie above realised frequencies out of sample, systematically so for some
+predictors, deterministic carry is small in barrier
+units for cross-asset pairs and up to a barrier standard deviation for some stablecoin pairs, and the jump-overshoot correction ranges from $-3\%$
+to $-11\%$ depending on the calibration window. Applied to sizing, the map gives a closed-form
+break-even drift above which leverage pays, and the data cannot settle whether a pair's drift
+exceeds it. A model-free replay of $37$ Aave v3 pairs under the protocol's liquidation rules shows
+that leverage rarely paid ex post: at $1.25\times$ it beat the unlevered position in $4$ pairs, never
+significantly, and at $2\times$ over 2025 it lost in every cross-asset pair. The same replay identifies the
+model's main restriction. With independent jumps, the calibration cannot reproduce the legs' common
+jumps, so it understates their covariance, overstates spread variance and, for WBTC/WETH, turns a
+negative realised break-even positive. Common jumps are the natural next step.
 \end{abstract}
 
 \begin{keywords}
-DeFi lending; leveraged long--short; health factor; Kou double-exponential jump diffusion; first-passage problem; Laplace resolvent; optimal portfolio sizing
+DeFi lending; leveraged long--short; health factor; Kou double-exponential jump diffusion; first-passage problem; Laplace resolvent; jump overshoot; bad debt; Kelly criterion; interest-rate carry; regime switching
 \end{keywords}
 
 \begin{classcode}
@@ -153,334 +166,248 @@ G11; G12; C65
 \section{Introduction}
 % ============================================================
 
-DeFi lending protocols such as AAVE and Compound enable a leveraged long--short strategy: deposit a
+DeFi lending protocols such as Aave and Compound enable a leveraged long--short strategy: deposit a
 cryptocurrency as collateral, borrow a second asset, and sell it short. The position is governed by a
-real-time \emph{health factor} — a borrowing-power-adjusted ratio of collateral to liability — and is
-liquidated automatically and irrevocably the instant that ratio falls below one. A practitioner must
-choose the initial coin holdings to balance two opposing forces: a more aggressive position amplifies
-expected returns on surviving paths but raises the probability of forced exit. Cryptocurrency markets
-compound the difficulty — daily log-returns of 10--20\% are common and flash crashes can exceed 50\%
-— making fat-tailed jump dynamics essential for realistic liquidation probabilities. 
+real-time \emph{health factor} --- a borrowing-power-adjusted ratio of collateral to liability --- and
+is liquidated automatically the instant that ratio falls below one. The practitioner must choose the
+initial holdings to balance two forces: a more aggressive position amplifies returns on surviving
+paths but raises the probability of forced exit. Crypto spreads are fat-tailed, so realistic
+liquidation probabilities require jump dynamics.
 
-This paper provides the first exact, semi-analytic solution to the optimal sizing problem under a
-\emph{survival-conditioned solvent-path payoff model}: the objective is defined on the payoff
-realised on paths that avoid liquidation, and the liquidation boundary is treated as an absorbing
-barrier.
+We develop a semi-analytic evaluation map for this sizing problem under the Kou double-exponential
+jump--diffusion \citep{Kou2002}, with the liquidation boundary treated as absorbing. The solution
+rests on two reductions. First, an exponential change of measure absorbs the short-leg price factor
+into the path-measure density, collapsing the bivariate barrier problem to a univariate first-exit
+problem for the log-ratio process under a tilted L\'evy measure. Second, because exponentials are
+eigenfunctions of the Kou generator, the Laplace-domain resolvent reduces to a $3\times3$ linear
+system. The system stays $3\times3$ for every admissible moment order $k$ (those with
+$k\max(\eta_{1,+},\eta_{2,+})<1$): changing $k$ changes the forcing polynomial and the phase rates, not the number of
+decaying modes. Time-domain quantities follow by Talbot inversion \citep{Talbot1979}. The whole
+problem becomes a smooth scalar search over the \emph{initial log health factor} $h_0$, with
+noise-free outputs that are two to three orders of magnitude faster than Monte Carlo, whether
+naive or accuracy-matched (Section~\ref{sec:mc-benchmark}).
 
-We work under the Kou double-exponential jump--diffusion framework \citep{Kou2002}. The solution
-rests on two successive dimensional reductions. First, an exponential change of measure absorbs the
-short-leg price factor into the path-measure density, collapsing what is nominally a bivariate barrier
-problem to a \emph{univariate} first-exit problem for the log-ratio process under a tilted
-L\'{e}vy measure. Second, because exponential jump sizes are eigenfunctions of the Kou generator,
-the Laplace-domain resolvent of the first-exit problem reduces to a $3\!\times\!3$ linear system —
-the same size for every admissible integer moment order $k$ — that is solved in closed form.
-Thus the method is not restricted to the first two moments used by mean--variance sizing:
-it computes each integer-order raw or conditional moment for which $k\eta_{2,+}<1$. Time-domain quantities
-follow by numerical Laplace inversion via the Talbot contour algorithm \citep{Talbot1979}. The entire
-optimisation therefore reduces to a scalar search over a single parameter, the \emph{initial log
-health factor}, with the conditional expected payoff, its variance, and the liquidation probability
-all expressible as semi-analytic functions of that scalar. Unlike Monte Carlo, which suffers
-from sampling noise that becomes severe when few paths survive liquidation and requires fresh
-simulation at each candidate $h_0$, the semi-analytic expressions are noise-free and
-differentiable in $h_0$, reducing the optimization to a smooth scalar search; numerical
-experiments confirm a ${\approx}55\times$ speed-up over Monte Carlo.
+The paper sits between the DeFi liquidation literature and the first-passage literature for jump
+diffusions. \citet{Qin2021} and \citet{HeimbachHuang2024} document the incentive structure and
+leverage amplification of DeFi liquidations empirically, without addressing ex-ante sizing.
+\citet{KouWang2003} derive Laplace-transform first-passage results under double-exponential jumps,
+and \citet{Sepp2004} reduces barrier option pricing to a finite algebraic system by the mechanism
+used here; the finiteness is generic for exponential-type L\'evy models --- hyperexponential
+\citep{Cai2009}, mixed-exponential \citep{CaiKou2011} and phase-type
+\citep{AsmussenAvramPistorius2004} --- with dimension set by the number of exponential phases. We
+borrow this machinery at its core. What is new is what it is made to compute: the payoff is a
+barrier-killed long--short \emph{ratio}, which the change-of-numeraire tilt brings within reach of
+the machinery, and bivariate tilts of the same barrier system then deliver the joint law of the leg
+values at liquidation, the overshoot law and the expected log of wealth.
+More distantly, \citet{JacobsLevyStarer1999} advocate joint optimisation of long and short legs and
+\citet{DangForsyth2016} study dynamic mean--variance control under jump risk; our setting is static
+and the binding constraint is an endogenous first-passage event.
 
-This paper sits at the intersection of the DeFi liquidation literature and the analytical
-first-passage literature for jump diffusions.
-\citet{Qin2021} and \citet{HeimbachHuang2024} document the incentive structure and leverage
-amplification of DeFi liquidations; these papers are empirical and do not address the ex-ante optimal
-sizing problem. Filling that gap requires tools from the first-passage literature for jump diffusions:
-\citet{KouWang2003} derive explicit Laplace-transform results for first-passage times under
-double-exponential jump diffusion, and \citet{Sepp2004} extends this to single- and double-barrier
-option pricing, reducing the resolvent to a finite algebraic system — the same structural advantage
-exploited here. The difference is that the payoff is a barrier-killed long--short ratio, not a
-single-asset barrier option; the change-of-measure reduction is the key step that bridges the two
-settings. More distantly, \citet{JacobsLevyStarer1999} advocate joint optimisation of long and short
-legs, while \citet{DangForsyth2016} study dynamic mean--variance control under jump risk; our setting
-is static and the binding constraint is an endogenous first-passage event rather than a variance bound.
+The paper makes five contributions.
+\emph{(i)} It reduces the position to the scalar initial log health factor $h_0$ and assembles an
+objective-independent \emph{health-buffer evaluation map} \eqref{eq:eval-map}: the liquidation
+probability and every admissible raw killed moment $\E[\Pi_T^k]$, from one $3\times3$ barrier system
+(Sections~\ref{sec:setup}--\ref{sec:resolvent}).
+\emph{(ii)} It computes the exact liquidation recovery under jump overshoot from joint hitting
+moments under bivariate tilts, and shows that the overshoot is a creeping atom plus two exponential
+phases whose weights follow from three hitting moments. This gives the exact bad-debt probability
+(Section~\ref{sec:recovery}, Proposition~\ref{prop:overshoot-law}).
+\emph{(iii)} It evaluates the expected log of terminal wealth semi-analytically, by a convergent
+series of tilted killed moments on survival and the overshoot law on liquidation, so that Kelly
+sizing needs no simulation (Section~\ref{sec:log-wealth}).
+\emph{(iv)} It incorporates protocol interest: deterministic carry as a per-leg drift shift
+(Proposition~\ref{prop:carry}) and the convexity of the kinked rate curve through a two-state
+Markov-modulated carry with a $6\times6$ resolvent (Proposition~\ref{prop:regime}).
+\emph{(v)} It validates the map numerically --- against an accuracy-matched, Brownian-bridge-corrected
+simulator (Section~\ref{sec:mc-benchmark}) --- and empirically on $3.7$ years of Aave v3 data, where an
+out-of-sample backtest over $33$ months shows its one-month liquidation probabilities to lie above
+realised frequencies, significantly so for some predictors (Appendix~\ref{sec:full-history}).
+Section~\ref{sec:discussion} then applies the map to sizing. Leverage pays once the relative-drift
+view exceeds a closed-form break-even of a few percent per year, and the data cannot establish
+whether it does. A model-free replay of $37$ Aave v3 pairs with the protocol's liquidation rules
+(Section~\ref{sec:realised}) shows that leverage rarely paid ex post, and identifies the model's
+independent-jump restriction as a main reason why its break-evens and liquidation probabilities
+differ from the realised ones. A decision-theoretic treatment of the sizing problem is outlined as an extension.
 
-The paper makes three contributions to the sizing of leveraged DeFi positions.
-First, it establishes the initial log health factor $h_0$ as the natural scalar sizing
-variable: once a unit-initial-value constraint is imposed, the two-dimensional portfolio
-problem collapses to a scalar health-buffer decision, with the raw killed moments
-$\E[\Pi_T^k]$ for every admissible integer order $k\ge1$ satisfying
-$k\eta_{2,+}<1$, and the liquidation
-probability $p_{\mathrm{liq}}(h_0)$, all explicit in $h_0$ alone.
-Second, it delivers those quantities semi-analytically — noise-free, differentiable in
-$h_0$, and ${\approx}55\times$ faster than Monte Carlo. For each admissible integer
-$k$, the calculation requires a new tilt and Laplace inversion but retains the same
-$3\times3$ resolvent system; its algebraic dimension does not grow with $k$. This makes
-gradient-based optimisation of any criterion of the form
-$\Phi\!\left(\E[\Pi_T\mid\tau>T],\ldots,\E[\Pi_T^K\mid\tau>T],p_{\mathrm{liq}}\right)$
-practical for any finite admissible integer $K$.
-Third, it characterises how the optimal buffer trades conditional upside against
-liquidation risk, providing a principled alternative to the ad-hoc collateral ratios
-used in practice.
-The framework abstracts away liquidation execution, dynamic collateral management,
-stochastic borrow rates, and oracle delays; it is a liquidation-buffer evaluation engine
-for ex-ante position sizing, not a complete trading system.
+The framework abstracts from liquidation execution, dynamic collateral management and oracle
+delays, and from protocol features that rescale the effective collateral factor or cap position
+size (E-mode, supply/borrow caps, isolation mode); E-mode would enter only through a larger $b$.
 
-The remainder of the paper is organised as follows. Section~\ref{sec:setup} introduces the position,
-health factor, payoff, and the one-dimensional reduction to a scalar optimisation.
-Section~\ref{sec:model} specifies the asset dynamics under the Kou model;
-Section~\ref{sec:tilted} introduces the tilted-measure machinery.
-Section~\ref{sec:moments} shows how the change of measure decouples the short-leg factor from the
-barrier problem, reducing each raw killed moment $\E[\Pi_T^k]$ to a one-dimensional killed
-expectation for every integer $k\ge1$ satisfying $k\eta_{2,+}<1$; dividing by
-$p_{\mathrm{surv}}(h_0)$ yields
-the conditional moments entering the general objective \eqref{eq:Phi-general}. Section~\ref{sec:resolvent} derives the respective resolvents.
-Section~\ref{sec:numerical} presents numerical results, comparing the Laplace--resolvent method
-against Monte Carlo simulation across a range of initial log health factor values and verifying the
-analytical no-shorting limit.
-Section~\ref{sec:discussion} concludes and discusses the practical interpretation of the results.
-Appendix~\ref{sec:calibration} describes the empirical characteristic function estimator used to
-calibrate the bivariate Kou parameters from observed bivariate log-returns.
-Appendix~\ref{app:proofs} collects the proofs.
+Section~\ref{sec:setup} sets up the position and the scalar reduction; Section~\ref{sec:model}
+specifies the dynamics and tilt; Sections~\ref{sec:moments}--\ref{sec:resolvent} derive the moments
+and resolvents; Section~\ref{sec:numerical} reports numerical results; Section~\ref{sec:recovery}
+adds recovery, the overshoot law and expected log wealth; Section~\ref{sec:carry} adds carry;
+Section~\ref{sec:discussion} applies the map to sizing, confronts it with a realised backtest and
+outlines the decision-theoretic extension;
+Section~\ref{sec:conclusion} concludes. The appendices give the calibration and its full-history
+validation, the pair cross-section, the $6\times6$ resolvent, and the proofs.
 
 % ============================================================
 \section{Problem Setup}\label{sec:setup}
 % ============================================================
 
-We consider a leveraged long--short portfolio in which an investor holds a long position in asset $S_1$
-and a short position in asset $S_2$, financed so that the net initial value of the book equals one unit of
-account. The strategy is subject to a risk-management rule that forces liquidation if the long leg falls
-sufficiently relative to the short leg, reflecting margin requirements or stop-loss constraints common in
-practice. The objective is to choose the initial coin holdings so as to optimise a performance criterion
-defined on the terminal payoff, conditional on surviving the liquidation threshold.
-
 \subsection{Surviving-path terminal wealth}
-Let $(\Omega,\F,(\F_t)_{t\ge 0},\P)$ be a filtered probability space.
-Two strictly positive asset prices $S_1,S_2$ evolve as
-\[
-S_{i,t}=S_{i,0}e^{X_{i,t}},\qquad X_{i,0}=0,\quad i=1,2,
-\]
-where $X_1,X_2$ are log-price processes to be specified in Section~\ref{sec:model}.
-The investor holds $n_1>0$ units of asset $S_1$ (long leg) and $n_2>0$ units of asset $S_2$ (short leg).
-
-Let
-\[
-V_{1,t}:=n_1 S_{1,t},\qquad V_{2,t}:=n_2 S_{2,t}
-\]
-denote the \emph{collateral value} (long leg) and the \emph{borrow value} (outstanding liability) at
-time $t$. Fix $b\in(0,1)$, the \emph{liquidation threshold} of asset $S_1$ (the Aave v3 parameter of the
-same name; distinct from the maximum LTV at origination, which is a separate and typically lower
-protocol constant): the protocol liquidates the position the first time the borrow value
-exceeds the $b$-adjusted collateral,
-\[
-b\,V_{1,t} \;\ge\; V_{2,t}.
-\]
-The \emph{health factor} summarises this margin condition as a single ratio,
+Let $(\Omega,\F,(\F_t)_{t\ge 0},\P)$ be a filtered probability space carrying two strictly positive
+prices $S_{i,t}=S_{i,0}e^{X_{i,t}}$, $X_{i,0}=0$, $i=1,2$, with log-price processes specified in
+Section~\ref{sec:model}. The investor holds $n_1>0$ units of $S_1$ (collateral, long) and owes
+$n_2>0$ units of $S_2$ (debt, short), with leg values $V_{1,t}:=n_1S_{1,t}$ and
+$V_{2,t}:=n_2S_{2,t}$. Fix $b\in(0,1)$, the Aave v3 \emph{liquidation threshold} of $S_1$ (distinct
+from the lower maximum LTV at origination). The protocol liquidates the first time
+$b\,V_{1,t}\le V_{2,t}$, i.e.\ when the \emph{health factor}
 \begin{equation}\label{eq:health-factor}
 H_t := \frac{b\,V_{1,t}}{V_{2,t}} = \frac{b\,n_1 S_{1,t}}{n_2 S_{2,t}},
 \qquad
 h_t := \log H_t,
 \end{equation}
-where $h_t$ is the \emph{log health factor}. The solvency condition is $H_t\ge 1$
-($h_t\ge 0$); breaching it is equivalent to the borrow value exceeding the $b$-adjusted collateral.
-Liquidation is triggered at the first such instant:
-\[
-\tau:=\inf\{t\ge 0:\;H_t<1\} = \inf\{t\ge 0:\;h_t<0\}.
-\]
-A larger $b$ permits a larger borrow-to-collateral ratio $V_2/V_1\le b$ before liquidation,
-giving the position more room to absorb adverse price moves; a smaller $b$ is more conservative,
-triggering earlier forced exit and limiting the protocol's risk of bad debt.
-
-Since
-\[
-h_t
-=
-\log\!\Big(\frac{b\,n_1S_{1,0}}{n_2S_{2,0}}\Big)+(X_{1,t}-X_{2,t}),
-\]
-define the initial log health factor and the log-ratio process by
+falls below one. Writing
 \[
 h_0:=\log\!\Big(\frac{b\,n_1S_{1,0}}{n_2S_{2,0}}\Big),
 \qquad
 Z_t:=X_{1,t}-X_{2,t},
 \]
-so that $h_t=h_0+Z_t$ and the liquidation time is equivalently
+we have $h_t=h_0+Z_t$, and the liquidation time is
 \[
-\tau=\inf\{t\ge 0:\; Z_t<-h_0\}.
+\tau:=\inf\{t\ge 0:\;h_t<0\}=\inf\{t\ge 0:\; Z_t<-h_0\}.
 \]
-The one-dimensional process $Z$ thus inherits all the relevant risk: the position survives if and only if
-$Z$ stays above the absorbing level $-h_0$. The parameter $h_0 = \log H_0$ is therefore the
-\emph{initial log-cushion} — the log-distance of the initial health factor from the liquidation
-boundary $H=1$. A larger $h_0$ means the position starts further from forced exit; $h_0\to 0^+$
-means the position starts almost at the boundary with negligible cushion.
+The one-dimensional process $Z$ carries all the liquidation risk, and $h_0$ is the initial
+log-distance of the health factor from the boundary $H=1$.
 
 The \emph{surviving-path terminal wealth} at horizon $T$ is
 \[
 \Pi_T:=(n_1S_{1,T}-n_2S_{2,T})\,\one_{\{\tau>T\}}.
 \]
-On $\{\tau>T\}$ the health factor satisfies $H_T\ge 1$, so $b\,n_1S_{1,T}\ge n_2S_{2,T}$;
-since $b\in(0,1)$ this forces $n_1S_{1,T}>n_2S_{2,T}$, meaning the position carries strictly
-positive terminal equity on every surviving path. No positive-part truncation is needed.
-The indicator $\one_{\{\tau>T\}}$ assigns zero terminal wealth to liquidated paths; the remark
-below explains why zero is used as a conservative proxy for the residual recovery value.
-Since the initial net book value is normalised to one unit of account (Section~\ref{sec:1d}),
-net profit on a surviving path is $R_T:=\Pi_T-1$, but all moments in this paper are stated in
-terms of $\Pi_T$ directly.
-This paper characterises the distribution of $\Pi_T$ on the event $\{\tau>T\}$ and the
-probability of that event, with the boundary $H_t=1$ treated as an absorbing state; the
-liquidation mechanics are outside the model scope.
+On $\{\tau>T\}$, $H_T\ge1$ gives $n_1S_{1,T}\ge n_2S_{2,T}/b>n_2S_{2,T}$, so equity is strictly
+positive on every surviving path and no positive-part truncation is needed. Liquidated paths are
+assigned zero; Remark~\ref{rem:liquidation} explains the convention and Section~\ref{sec:recovery}
+restores the recovery value.
 
-\begin{remark}[Liquidation mechanics]\label{rem:liquidation}
-When $H_t$ hits one, a DeFi lending protocol does not simply extinguish the position: it
-initiates a protocol-specific liquidation procedure executed by third-party keepers.
-In AAVE v3, a keeper may close up to 50\% of the debt (100\% if the health factor falls below a
-secondary threshold), claiming a \emph{liquidation bonus} of 5--15\% of the seized collateral as
-compensation; Compound uses a fixed close factor with a similar bonus structure
-\citep{Qin2021,HeimbachHuang2024}.
-
-The execution price received by the keeper — and hence the residual recovery value for the
-borrower — is itself uncertain. Liquidations in DeFi are settled on-chain via decentralised
-exchanges: in stressed markets, the available liquidity may be insufficient to absorb a large
-collateral sale without significant slippage, compressing the borrower's recovery further
-\citep{Qin2021}. The mechanics therefore depend on the specific protocol version, the pool
-liquidity at the moment of liquidation, the gas price environment, and the speed of keeper
-response — none of which are captured by a single-barrier first-passage model.
-
-For these reasons we assign zero payoff to liquidated paths: $\Pi_T := 0$ on $\{\tau\le T\}$.
-This is a \emph{conservative proxy} — it understates the expected residual value whenever the
-borrower retains a fractional recovery, and overstates the loss relative to protocols that
-execute partial liquidations. Its practical justification is two-fold. First, the borrower
-typically has no control over the execution details once the boundary is breached; from an
-ex-ante sizing perspective the liquidation payoff is a zero-mean random variable with uncertain
-sign, and setting it to zero is the risk-neutral midpoint. Second, the penalty term
-$\delta\,p_{\mathrm{liq}}$ in the objective of \eqref{eq:Phi} provides a separate lever to
-price liquidation risk at whatever level the investor deems appropriate, without requiring an
-explicit model of the post-liquidation cash flow. Assigning zero to liquidated paths is
-therefore \emph{conservative} — it never overstates residual value — and \emph{practical}:
-it avoids an unverifiable recovery model while keeping the payoff specification tractable.
+\begin{remark}[Liquidation convention]\label{rem:liquidation}
+On Aave v3 a keeper may repay up to $50\%$ of the debt ($100\%$ below a secondary threshold) and
+claims a liquidation bonus of $5$--$15\%$ of seized collateral; Compound is similar
+\citep{Qin2021,HeimbachHuang2024}. Execution is settled on-chain, so the borrower's residual depends
+on pool liquidity, gas prices and keeper speed. We treat the barrier as absorbing and set
+$\Pi_T:=0$ on $\{\tau\le T\}$. Two caveats. First, a partial liquidation typically \emph{restores}
+$H>1$ and the position continues at reduced size, so absorption models a borrower who is fully
+closed out or treats the first liquidation as terminal. Second, the zero is a bookkeeping convention
+that moves recovery out of $\Pi_T$, not a claim that it is worthless. It is \emph{not} conservative
+for survival-conditional moments --- conditioning on $\{\tau>T\}$ discards exactly the liquidated
+paths --- which is one reason Section~\ref{sec:eval-map} builds the objective on unconditional
+wealth. What it does bound is unconditional wealth on the loss event: it never overstates $W_T$
+relative to any contract with non-negative recovery.
 \end{remark}
 
-\begin{remark}[Dynamic collateral management]\label{rem:dynamic}
-A practitioner who monitors the health factor in continuous time could top up collateral
-or partially unwind the short leg to steer $H_t$ away from the liquidation boundary.
-Such a strategy would replace the absorbing barrier with a reflecting or controlled
-boundary and the static sizing problem with a stochastic control problem.
-We do not pursue this extension for two reasons.
-First, on-chain collateral top-ups incur gas costs and are subject to block-confirmation
-delays; during a flash crash the position may be liquidated before a remedial transaction
-is confirmed, so the absorbing-barrier model represents the practically relevant worst case.
-Second, the paper's central question is the ex-ante buffer decision — how much initial
-cushion to hold given that dynamic intervention may be unavailable — and a static
-framework isolates that question cleanly.
+\begin{remark}[Static position]\label{rem:dynamic}
+A continuously monitored book could top up collateral or unwind the short leg, replacing the
+absorbing barrier with a controlled one. We do not pursue this. During a flash crash --- the
+jump-driven event that dominates liquidation --- a position may be liquidated within one or two
+blocks, before a remedial transaction confirms; and the ex-ante buffer decision is cleanly isolated
+by a static model. The static model is therefore accurate for stress episodes short relative to a
+monitoring cycle and pessimistic for a well-monitored book in calm markets, where it overstates the
+cushion required. The one-month horizon is a compromise and is varied in
+Section~\ref{sec:sensitivity}.
 \end{remark}
 
-Taken together, the two modelling choices — zero recovery at liquidation and no dynamic
-intervention — define a \emph{conservative floor} for position sizing: any position that
-is viable under these assumptions remains viable whenever protocol outcomes are more
-favourable.
-
-Using the definition of $H_T$, one obtains the following factorization.
+\begin{remark}[Oracle prices]\label{rem:oracle}
+Aave liquidates against Chainlink prices that update on a heartbeat or deviation threshold. Discrete
+monitoring means a dip that recovers between updates does not liquidate, so the continuous barrier
+\emph{overstates} liquidation frequency; but a stale oracle that gaps down liquidates at the gapped
+level, so the continuous model \emph{understates} the recovery loss (compounding the jump overshoot of
+Section~\ref{sec:overshoot}). We retain continuous monitoring for tractability. Calibration prices
+are reserve-level oracle-implied values (TVL divided by supplied balance), not the block-by-block
+feed.
+\end{remark}
 
 \begin{lemma}[Payoff factorization]\label{lem:payoff-factor}
 \begin{equation}\label{eq:payoff-factor}
 \Pi_T
 =
-\frac{n_2}{b}\,S_{2,0}e^{X_{2,T}}\,(e^{h_0+Z_T}-b)\,\one_{\{\tau>T\}}.
+\frac{n_2}{b}\,S_{2,0}e^{X_{2,T}}\,(e^{h_0+Z_T}-b)\,\one_{\{\tau>T\}},
 \end{equation}
-The factor $(e^{h_0+Z_T}-b)$ is strictly positive on $\{\tau>T\}$ because $H_T=e^{h_0+Z_T}\ge 1>b$,
-consistent with the definition of $\Pi_T$.
+and the factor $(e^{h_0+Z_T}-b)$ is strictly positive on $\{\tau>T\}$.
 \end{lemma}
-This separates the payoff into a numeraire factor driven by $S_2$, and a barrier-killed option on the
-log-ratio $Z$ with moneyness controlled by $h_0$.
+The payoff thus separates into a numeraire factor driven by $S_2$ and a barrier-killed claim on $Z$
+with moneyness set by $h_0$.
 
 \subsection{Optimization setup}\label{sec:1d}
 
-The two coin holdings $(n_1,n_2)$ represent two degrees of freedom. A normalisation reduces this to a single
-scalar, and the structure of the payoff then identifies $h_0$ as the natural optimisation variable.
-
-We impose the unit-initial-value constraint
-\[
-n_1S_{1,0}-n_2S_{2,0}=1,
-\]
-which fixes the net book value at inception. Setting $x:=n_2S_{2,0}$, one has $n_1S_{1,0}=1+x$ and
-$e^{h_0}=b(1+x)/x$. Solving for $x$,
-\[
-x=\frac{b}{e^{h_0}-b},
-\]
-which yields the holding map
+Imposing the unit-initial-value constraint $n_1S_{1,0}-n_2S_{2,0}=1$ and writing $x:=n_2S_{2,0}$
+gives $e^{h_0}=b(1+x)/x$, hence the holding map
 \begin{equation}\label{eq:n-from-h0}
 n_2(h_0)=\frac{b}{S_{2,0}(e^{h_0}-b)},
 \qquad
-n_1(h_0)=\frac{e^{h_0}}{S_{1,0}(e^{h_0}-b)}.
+n_1(h_0)=\frac{e^{h_0}}{S_{1,0}(e^{h_0}-b)},
+\qquad h_0>\ln b,
 \end{equation}
-Positivity of both holdings requires $e^{h_0}>b$, i.e.
-\[
-h_0>\ln b.
-\]
-The initial gross leverage — long-leg value per unit of equity — follows directly from
-\eqref{eq:n-from-h0}:
+and initial gross leverage
 \begin{equation}\label{eq:leverage}
-L_0 := n_1(h_0)\,S_{1,0} = \frac{e^{h_0}}{e^{h_0}-b}.
+L_0 := n_1(h_0)\,S_{1,0} = \frac{e^{h_0}}{e^{h_0}-b},
 \end{equation}
-$L_0$ is strictly decreasing in $h_0$: as $h_0\downarrow\ln b$, leverage $L_0\uparrow\infty$;
-as $h_0\to\infty$, leverage $L_0\downarrow 1$ (the short leg vanishes and the position becomes
-unlevered). Equivalently, the borrow-to-equity ratio is $L_0 - 1 = b/(e^{h_0}-b)$, which also
-collapses the initial health factor back to $H_0=e^{h_0}$ via $H_0 = b\,L_0/(L_0-1)$.
-Choosing $h_0$ is therefore equivalent to choosing the initial leverage.
+strictly decreasing from $\infty$ at $h_0\downarrow\ln b$ to $1$ (unlevered) as $h_0\to\infty$.
+Holdings exist for $h_0>\ln b$, but a position with $h_0\le0$ is liquidated at once and the protocol
+allows origination only at $h_0\ge h_0^{\min}:=\log(b/\mathrm{LTV}_{\max})$, so the feasible range
+is $h_0\in[h_0^{\min},\infty)$ ($h_0^{\min}=0.066$ and $L_0\le3.70$ for WBTC collateral). Choosing
+$h_0$ is therefore equivalent to choosing leverage, and the portfolio problem reduces to
+$\max_{h_0\ge h_0^{\min}}\Phi(h_0)$; we call the maximiser $h_0^\star$ the \emph{optimal initial
+health buffer}.
 
-Since every quantity of interest is determined by $h_0$ through \eqref{eq:n-from-h0} and the
-killed process $(Z,\tau)$, the portfolio problem reduces to a scalar optimisation
-\[
-\max_{h_0\,\in\,(\ln b,\,\infty)}\;\Phi\!\left(h_0\right).
-\]
-The optimal holdings are recovered by substituting $h_0^\star$ back into \eqref{eq:n-from-h0};
-we call $h_0^\star$ the \emph{optimal initial health buffer}.
-
-The framework supports any performance criterion of the form
+The framework supports any criterion of the form
 \begin{equation}\label{eq:Phi-general}
-\Phi(h_0) \;=\; f\!\left(\E[\Pi_T\mid\tau>T],\,\ldots,\,\E[\Pi_T^K\mid\tau>T],\;p_{\mathrm{liq}}(h_0)\right),
+\Phi(h_0) \;=\; f\!\left(\E[W_T],\,\ldots,\,\E[W_T^K],\;p_{\mathrm{liq}}(h_0)\right),
 \end{equation}
-where $\E[\Pi_T^k\mid\tau>T]=\E[\Pi_T^k]/p_{\mathrm{surv}}(h_0)$ are the conditional moments
-obtained from the raw killed moments $\E[\Pi_T^k]$ delivered in Section~\ref{sec:moments},
-$p_{\mathrm{liq}}(h_0):=1-p_{\mathrm{surv}}(h_0)$, and $f$ is any smooth function.
-The admissible range of moment orders is $k=1,\ldots,K$ with
-$K\eta_{2,+}<1$, a bound determined by the integrability of $e^{kX_{2,T}}$ under the
-exponential tilt (Proposition~\ref{prop:integer-moments}).
-Here $K$ is not fixed by the method: any positive integer $K$ satisfying the integrability
-bound may be selected, and the same construction is applied separately at each
-$k\in\{1,\ldots,K\}$.
-This class covers the classical mean--variance criterion \citep{Markowitz1952}, which uses
-$\E[\Pi_T\mid\tau>T]$ and $\E[\Pi_T^2\mid\tau>T]$; higher-moment objectives that penalise skewness or excess kurtosis, which
-use $\E[\Pi_T\mid\tau>T],\ldots,\E[\Pi_T^4\mid\tau>T]$; the conditional Sharpe ratio; and polynomial approximations to
-expected utility of arbitrary order.
-\citet{DangForsyth2016} and \citet{ShenZou2022} adopt mean--variance criteria in related
-jump-diffusion settings; the distinguishing feature here is that $p_{\mathrm{liq}}(h_0)$ is
-an explicit, separately computed building block rather than an implicit risk charge.
+where $W_T$ is terminal wealth \eqref{eq:wealth}, whose moments combine the raw killed moments
+$\E[\Pi_T^k]$ of Section~\ref{sec:moments} with the recovery of Section~\ref{sec:recovery},
+$p_{\mathrm{liq}}:=1-p_{\mathrm{surv}}$, and $K\max(\eta_{1,+},\eta_{2,+})<1$
+(Proposition~\ref{prop:integer-moments}). This covers mean--variance ($K=2$), skewness/kurtosis
+penalties ($K=4$), the Sharpe ratio and polynomial approximations to utility; unlike the
+mean--variance jump-diffusion criteria of \citet{DangForsyth2016} and \citet{ShenZou2022},
+$p_{\mathrm{liq}}$ is a separately computed building block rather than an implicit risk charge.
 
-For the numerical illustration in Section~\ref{sec:numerical} we adopt the penalised
-conditional mean--variance criterion
+We build the objective on \emph{unconditional} wealth. The survival-conditional moments
+$\E[\Pi_T^k\mid\tau>T]=\E[\Pi_T^k]/p_{\mathrm{surv}}(h_0)$ are useful diagnostics but should not be
+maximised: conditioning keeps only favourable paths, so the conditional mean \emph{rises} as the
+buffer thins toward the barrier (Table~\ref{tab:results}), rewarding leverage for a survivorship artefact. For
+illustration we use
 \begin{equation}\label{eq:Phi}
 \Phi(h_0)
 :=
-\E[\Pi_T\mid\tau>T]
+\E[W_T]
 -
-\tfrac{\alpha}{2}\,\mathrm{Var}(\Pi_T\mid\tau>T)
+\tfrac{\alpha}{2}\,\mathrm{Var}(W_T)
 -
 \delta\,p_{\mathrm{liq}}(h_0),
 \end{equation}
-where $\alpha\ge 0$ is a risk-aversion coefficient and $\delta\ge 0$ penalises forced
-liquidation. The optimal $h_0^\star$ balances leverage against downside protection: a lower
-$h_0$ implies higher leverage and a larger conditional upside but a higher liquidation
-probability; a higher $h_0$ provides more cushion at the cost of a smaller conditional
-payoff. We do not refer to $h_0^\star$ as ``optimal leverage'' because leverage is a derived
-quantity \eqref{eq:leverage}; the investor chooses the health buffer and leverage follows.
+with risk aversion $\alpha\ge0$ and an optional penalty $\delta\ge0$. Since $W_T$ already carries
+the liquidation loss, $\delta$ deliberately double-counts the event and so prices only its
+\emph{non-pecuniary} costs (lost optionality, re-entry gas and slippage); $\delta=0$ unless stated
+otherwise. Without recovery, $W_T=\Pi_T$.
 
-The remainder of the paper is devoted to computing the building blocks of \eqref{eq:Phi-general}:
-the raw killed moments $\E[\Pi_T^k]$ for every admissible integer $k\ge1$ satisfying
-$k\eta_{2,+}<1$, and the
-survival probability $p_{\mathrm{surv}}(h_0)$, each as an explicit semi-analytic function
-of $h_0$ via the Laplace--resolvent method of Section~\ref{sec:resolvent}.
-The conditional moments $\E[\Pi_T^k\mid\tau>T]$ and liquidation probability $p_{\mathrm{liq}}(h_0)$
-then follow immediately.
+\subsection{The health-buffer evaluation map}\label{sec:eval-map}
+
+The model's objective-independent output is, for every feasible $h_0$, the \emph{evaluation map}
+\begin{equation}\label{eq:eval-map}
+h_0 \;\longmapsto\;
+\left(
+p_{\mathrm{liq}}(T,h_0),\;
+M_1(T,h_0),\ldots,M_K(T,h_0),\;
+\frac{M_1(T,h_0)}{p_{\mathrm{surv}}(T,h_0)},\ldots,\frac{M_K(T,h_0)}{p_{\mathrm{surv}}(T,h_0)}
+\right),
+\end{equation}
+with $M_k(T,h_0)=\E[\Pi_T^k]$. No preference parameter enters it; a liquidation limit or a criterion
+such as \eqref{eq:Phi} is applied afterwards. Section~\ref{sec:recovery} extends the map with the
+moments of terminal wealth, the overshoot law and $\E[\log W_T]$. Adding a recovery value $R_\tau$
+carried to $T$, investor wealth is
+\begin{equation}\label{eq:wealth}
+W_T \;=\; \Pi_T + R_\tau\one_{\{\tau\le T\}}.
+\end{equation}
+The separation matters in practice: the map is an exact function of its parameter inputs, whereas
+the selected buffer turns on the input the data estimate worst (Section~\ref{sec:discussion}).
 
 % ============================================================
 \section{Asset Dynamics}\label{sec:model}
 % ============================================================
+
 \subsection{Bivariate Kou model}
-We assume under $\P$ that each log-price satisfies the SDE
+Under $\P$ each log-price satisfies
 \begin{equation}\label{eq:log-price-sde}
 \diff X_{i,t}
 =
@@ -491,10 +418,9 @@ We assume under $\P$ that each log-price satisfies the SDE
 \diff\!\left(\sum_{n=1}^{N_{i,t}} J_i^{(n)}\right),
 \qquad i=1,2,
 \end{equation}
-where $B_1,B_2$ are correlated standard Brownian motions with $\diff\langle B_1,B_2\rangle_t=\rho\,\diff t$,
-$N_i$ is a Poisson process with intensity $\lambda_i$ independent of $(B_1,B_2)$, and the jump sizes
-$J_i^{(n)}$ are i.i.d.\ with the Kou double-exponential law.
-The jump density, characteristic function, and moment generating function are
+where $\diff\langle B_1,B_2\rangle_t=\rho\,\diff t$, $N_i$ is Poisson with intensity $\lambda_i$
+independent of $(B_1,B_2)$, and the jumps $J_i^{(n)}$ are i.i.d.\ double-exponential with density,
+characteristic function and moment generating function
 \begin{equation}\label{eq:Kou-char-mgf}
 f_i(j)
 =
@@ -517,96 +443,66 @@ M_i(s)
 \qquad
 s\in\left(-\tfrac{1}{\eta_{i,-}},\,\tfrac{1}{\eta_{i,+}}\right).
 \end{equation}
-Here $\eta_{i,+}$ and $\eta_{i,-}$ are the \emph{means} of the positive and negative jump sizes
-(not exponential rates); the corresponding rates are $1/\eta_{i,+}$ and $1/\eta_{i,-}$.
-The constraint $\eta_{i,+}<1$ is required for the price-jump compensator $\chi_i$ defined below to be finite.
-
-The parameter $\mu_i$ is the \emph{continuously compounded expected asset-price growth rate},
-i.e.\ $\E_\P[S_{i,t}/S_{i,0}]=e^{\mu_i t}$.
-Define the price-jump compensator
+Here $\eta_{i,\pm}$ are the \emph{mean} jump sizes (not rates), with $\eta_{i,+}<1$. We parametrise
+by the continuously compounded price growth rate $\mu_i$, $\E_\P[S_{i,t}/S_{i,0}]=e^{\mu_i t}$. With
+the price-jump compensator
 \begin{equation}\label{eq:chi}
 \chi_i
 :=
 M_i(1)-1
 =
-\E[e^{J_i}-1]
-=
-\frac{p_i}{1-\eta_{i,+}}+\frac{1-p_i}{1+\eta_{i,-}}-1.
+\frac{p_i}{1-\eta_{i,+}}+\frac{1-p_i}{1+\eta_{i,-}}-1,
 \end{equation}
-Since $\E_\P[e^{X_{i,t}}]=\exp(t[\mu_i^X+\tfrac12\sigma_i^2+\lambda_i\chi_i])$,
-matching to $e^{\mu_i t}$ gives the log-price drift coefficient
+the log-price drift is
 \begin{equation}\label{eq:muX-drift}
 \mu_i^X := \mu_i - \tfrac12\sigma_i^2 - \lambda_i\chi_i.
 \end{equation}
-All analytical and numerical objects in the sequel use $\mu_i^X$.
-
-The bivariate process $(X_1,X_2)$ is a L\'evy process with joint characteristic exponent
+$(X_1,X_2)$ is a L\'evy process with $\E_\P[e^{i(uX_{1,t}+vX_{2,t})}]=e^{t\Psi(u,v)}$, where
 \begin{equation}\label{eq:Psi}
 \begin{aligned}
 \Psi(u,v)
 &:= i(\mu_1^X u+\mu_2^X v)
 -\tfrac12\Big(\sigma_1^2u^2+\sigma_2^2v^2+2\rho\sigma_1\sigma_2uv\Big)\\
 &\quad +\lambda_1\big(\varphi_{J_1}(u)-1\big)
-+\lambda_2\big(\varphi_{J_2}(v)-1\big),
++\lambda_2\big(\varphi_{J_2}(v)-1\big).
 \end{aligned}
 \end{equation}
-so that $\E_\P[e^{i(uX_{1,t}+vX_{2,t})}]=e^{t\Psi(u,v)}$.
-
-Table~\ref{tab:params} collects all model parameters and their roles.
+Table~\ref{tab:params} collects the notation.
 
 \begin{table}[ht]
 \centering\small
-\renewcommand{\arraystretch}{1.35}
-\begin{tabularx}{\linewidth}{l l X l}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l X l}
 \hline
-Symbol & Asset & Economic meaning / role & Constraint \\
+Symbol & Meaning & Constraint \\
 \hline
-$\mu_i$ & $i=1,2$ & Continuously compounded expected price growth rate: $\E[S_{i,t}/S_{i,0}]=e^{\mu_i t}$ & \\
-$\sigma_i$ & $i=1,2$ & Diffusion volatility of log-price $X_i$ & $\sigma_i>0$ \\
-$\rho$ & --- & Correlation between the two Brownian drivers & $|\rho|<1$ \\
-$\lambda_i$ & $i=1,2$ & Jump arrival intensity (expected jumps per unit time) & $\lambda_i>0$ \\
-$p_i$ & $i=1,2$ & Probability that a jump in $X_i$ is upward & $p_i\in(0,1)$ \\
-$\eta_{i,+}$ & $i=1,2$ & Mean size of upward jumps in $X_i$ & $0<\eta_{i,+}<1$ \\
-$\eta_{i,-}$ & $i=1,2$ & Mean size of downward jumps in $X_i$ & $\eta_{i,-}>0$ \\
+$\mu_i$ & Continuously compounded expected price growth: $\E[S_{i,t}/S_{i,0}]=e^{\mu_i t}$ & \\
+$\sigma_i$, $\rho$ & Diffusion volatility of $X_i$; Brownian correlation & $\sigma_i>0$, $|\rho|<1$ \\
+$\lambda_i$, $p_i$ & Jump intensity; probability a jump is upward & $\lambda_i>0$, $p_i\in(0,1)$ \\
+$\eta_{i,\pm}$ & Mean upward / downward jump size & $0<\eta_{i,+}<1$, $\eta_{i,-}>0$ \\
+$\chi_i$, $\mu_i^X$ & Jump compensator \eqref{eq:chi}; log-price drift \eqref{eq:muX-drift} & \\
 \hline
-$\chi_i$ & $i=1,2$ & Price-jump compensator $M_i(1)-1=\E[e^{J_i}-1]$; enters $\mu_i^X$ via \eqref{eq:muX-drift} & \\
-$\mu_i^X$ & $i=1,2$ & Actual drift coefficient in the log-price SDE \eqref{eq:log-price-sde} & \\
-$\Psi(u,v)$ & --- & Joint characteristic exponent; $e^{T\Psi(0,-ik)}=\E[e^{kX_{2,T}}]$ appears in the moment formula & \\
-\hline
-$S_{i,0}$ & $i=1,2$ & Initial price of asset $i$ & $S_{i,0}>0$ \\
-$b$ & --- & Liquidation threshold: maximum borrow-to-collateral ratio $V_2/V_1$ before forced liquidation (Aave v3 liquidation threshold; distinct from maximum LTV) & $b\in(0,1)$ \\
-$T$ & --- & Investment horizon & $T>0$ \\
-$n_i$ & $i=1,2$ & Number of coins held: $n_1>0$ long in $S_1$, $n_2>0$ short in $S_2$ & $n_i>0$ \\
-\hline
-$H_t$ & --- & Health factor: $b\,n_1 S_{1,t}/(n_2 S_{2,t})$; liquidated when $H_t<1$ & \\
-$h_t$ & --- & Log health factor: $h_t=\log H_t=h_0+Z_t$ & \\
-$h_0$ & --- & Initial log health factor; the optimisation variable; determines $n_i$ via \eqref{eq:n-from-h0} & $h_0>\log b$ \\
-$\tau$ & --- & Liquidation time: $\tau=\inf\{t\ge 0: H_t<1\}$ & \\
-$\Pi_T$ & --- & Surviving-path terminal wealth: $(n_1 S_{1,T}-n_2 S_{2,T})\,\one_{\{\tau>T\}}$ & \\
+$b$ & Liquidation threshold (max.\ borrow-to-collateral ratio before liquidation) & $b\in(0,1)$ \\
+$T$, $S_{i,0}$, $n_i$ & Horizon; initial prices; coin holdings & positive \\
+$h_0$ & Initial log health factor; the sizing variable, determines $n_i$ via \eqref{eq:n-from-h0} & $h_0>\log b$ \\
+$\tau$, $\Pi_T$ & Liquidation time; surviving-path terminal wealth & \\
 \hline
 \end{tabularx}
-\caption{Model parameters and derived quantities. The first block contains freely chosen Kou model
-inputs; the second block contains derived model quantities; the third block contains portfolio and
-contract inputs; the fourth block contains derived portfolio quantities.}
+\caption{Model inputs (top) and portfolio quantities (bottom).}
 \label{tab:params}
 \end{table}
 
-% ============================================================
-\subsection{Tilted Dynamics}\label{sec:tilted}
-% ============================================================
+\subsection{Tilted dynamics}\label{sec:tilted}
 
-For each integer $k\ge 0$, define the $k$-tilted measure $\P^{(k)}$ by
+For each integer $k\ge 0$ with $k\eta_{2,+}<1$ define the $k$-tilted measure $\P^{(k)}$ by
 \[
 \left.\frac{\diff\P^{(k)}}{\diff\P}\right|_{\F_t}
 =
-\frac{e^{kX_{2,t}}}{\E_{\P}[e^{kX_{2,t}}]}
-=
-\exp\!\left(kX_{2,t}-t\,\Psi(0,-ik)\right),
-\qquad
-k\eta_{2,+}<1.
+\exp\!\left(kX_{2,t}-t\,\Psi(0,-ik)\right).
 \]
-\begin{lemma}[Lévy exponent under $\P^{(k)}$]\label{lem:psiZk}
-Under $\P^{(k)}$, the log-ratio $Z=X_1-X_2$ is again a Lévy process with exponent
+$k=0$ recovers $\P$; a superscript $(k)$ always denotes evaluation under $\P^{(k)}$.
+\begin{lemma}[L\'evy exponent under $\P^{(k)}$]\label{lem:psiZk}
+Under $\P^{(k)}$, $Z=X_1-X_2$ is a L\'evy process with Laplace exponent
 \begin{equation}\label{eq:psiZk}
 \psi_Z^{(k)}(s)
 =
@@ -614,30 +510,15 @@ Under $\P^{(k)}$, the log-ratio $Z=X_1-X_2$ is again a Lévy process with expone
 +\lambda_1\big(M_1(s)-1\big)
 +\lambda_2\big(M_2(k-s)-M_2(k)\big),
 \end{equation}
-where
-\[
-\sigma_Z^2:=\sigma_1^2+\sigma_2^2-2\rho\sigma_1\sigma_2\ge 0,
-\qquad
-\mu_Z^{(k)}:=(\mu_1^X-\mu_2^X)-k(\sigma_2^2-\rho\sigma_1\sigma_2).
-\]
-In particular, the generator satisfies
+where $\sigma_Z^2:=\sigma_1^2+\sigma_2^2-2\rho\sigma_1\sigma_2$ and
+$\mu_Z^{(k)}:=(\mu_1^X-\mu_2^X)-k(\sigma_2^2-\rho\sigma_1\sigma_2)$. Its generator satisfies
 \begin{equation}\label{eq:generator-eigen}
 \mathcal{L}^{(k)}e^{sz}=\psi_Z^{(k)}(s)\,e^{sz}.
 \end{equation}
 \end{lemma}
 \proofref{proof:lem:psiZk}
 
-This eigenrelation is the key identity used in Section~\ref{sec:resolvent} to build the resolvent equation.
-
-\begin{remark}[Superscript $(k)$ convention]\label{rem:k-notation}
-A superscript $(k)$ indicates evaluation under $\P^{(k)}$. The untilted case $k=0$ recovers the
-original dynamics of $Z$ under $\P$. For $k\ge 1$, the $k$-th moment $\E[\Pi_T^k]$ is computed
-under $\P^{(k)}$; the constraint $k\eta_{2,+}<1$ ensures the tilted measure and the characteristic
-root structure remain well-defined. Throughout, $k$ is an integer. There is no restriction
-to $k=1$ or $k=2$: every positive integer satisfying the integrability condition is covered.
-\end{remark}
-
-For the Kou structure, the tilt transforms the jump rates of $Z$ into the $k$-dependent phase rates
+Under the tilt the jumps of $Z$ have phase rates
 \[
 r_{1,+}^{(k)}:=\frac{1}{\eta_{1,+}},
 \quad
@@ -647,11 +528,10 @@ r_{2,+}^{(k)}:=\frac{1}{\eta_{2,-}}+k,
 \quad
 r_{2,-}^{(k)}:=\frac{1}{\eta_{2,+}}-k.
 \]
-Because $Z=X_1-X_2$, positive jumps of $X_2$ appear as downward jumps of $Z$: the tilt by $e^{kX_2}$
-changes the downward phase rate from $1/\eta_{2,+}$ to $1/\eta_{2,+}-k$, which is positive precisely
-when $k\eta_{2,+}<1$.
+Because $Z=X_1-X_2$, upward jumps of $X_2$ are downward jumps of $Z$, and the tilt moves their rate
+to $1/\eta_{2,+}-k$, positive precisely when $k\eta_{2,+}<1$.
 \begin{definition}[Phase operators]\label{def:phase-ops}
-For $j=1,2$, the \emph{phase operators} associated with the tilted jump kernels of $Z$ under $\P^{(k)}$ are
+For $j=1,2$ let
 \[
 K_{j,+}^{(k)}[f](z)
 :=
@@ -661,11 +541,7 @@ K_{j,-}^{(k)}[f](z)
 :=
 \int_{-\infty}^0 f(z+y)\,r_{j,-}^{(k)}e^{r_{j,-}^{(k)}y}\,\diff y.
 \]
-This construction originates in \citet{KouWang2003} for first-passage problems under the
-double-exponential model, and is used by \citet{Sepp2004} to reduce double-barrier pricing
-to a finite linear system.
-For any $\gamma$ with $\gamma < r_{j,+}^{(k)}$ and $\gamma > -r_{j,-}^{(k)}$, evaluating
-the integrals directly gives the eigenfunction identity
+For $-r_{j,-}^{(k)}<\gamma<r_{j,+}^{(k)}$ they act on exponentials as
 \begin{equation}\label{eq:phase-on-exp}
 K_{j,+}^{(k)}[e^{\gamma\cdot}](z)
 =
@@ -676,303 +552,151 @@ K_{j,-}^{(k)}[e^{\gamma\cdot}](z)
 \frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma}\,e^{\gamma z}.
 \end{equation}
 \end{definition}
-Each phase operator maps an exponential to a scalar multiple of the same exponential, which is
-the key algebraic identity exploited in Section~\ref{sec:resolvent} to convert the resolvent
-PIDE into a finite-dimensional linear system.
-
-Table~\ref{tab:tilted-params} collects the quantities introduced in this subsection.
-
-\begin{table}[ht]
-\centering\small
-\renewcommand{\arraystretch}{1.35}
-\begin{tabularx}{\linewidth}{l l X}
-\hline
-Symbol & Definition & Role \\
-\hline
-$\P^{(k)}$ & $\diff\P^{(k)}/\diff\P\propto e^{kX_{2,t}}$ & Measure under which moment reduction is carried out \\
-$k$ & Non-negative integer, $k\eta_{2,+}<1$ & Tilting order; $k\ge 1$ for moments, $k=0$ for survival probability \\
-$\psi_Z^{(k)}(s)$ & L\'evy exponent of $Z$ under $\P^{(k)}$ & Characteristic root equation $\psi_Z^{(k)}(\gamma)=q$ governs the resolvent \\
-$\sigma_Z^2$ & $\sigma_1^2+\sigma_2^2-2\rho\sigma_1\sigma_2$ & Variance of the Brownian part of $Z$; appears in $\psi_Z^{(k)}$ \\
-$\mu_Z^{(k)}$ & $(\mu_1^X-\mu_2^X)-k(\sigma_2^2-\rho\sigma_1\sigma_2)$ & Drift of $Z$ under $\P^{(k)}$; appears in $\psi_Z^{(k)}$ \\
-$\mathcal{L}^{(k)}$ & Generator of $Z$ under $\P^{(k)}$ & $\mathcal{L}^{(k)}e^{sz}=\psi_Z^{(k)}(s)e^{sz}$; used in the resolvent PIDE \\
-$r_{j,\pm}^{(k)}$ & Phase rates (see above) & Exponential rates of the jump components of $Z$ under $\P^{(k)}$ \\
-$K_{j,\pm}^{(k)}$ & Phase operators (see above) & Convert jump integrals to scalars on exponential ansatz \\
-\hline
-\end{tabularx}
-\caption{Tilted-dynamics quantities. Subscript $j=1$ refers to the contribution from $X_1$ jumps;
-$j=2$ to that from $X_2$ jumps (sign-reversed because $Z=X_1-X_2$).}
-\label{tab:tilted-params}
-\end{table}
+This construction is due to \citet{KouWang2003} and is the identity that \citet{Sepp2004} uses to
+reduce barrier pricing to a finite linear system; Section~\ref{sec:resolvent} uses it the same way. On a half-line the downward operator acts on the zero-extended solution, where the integral is
+over a finite range and \eqref{eq:phase-on-exp} holds up to a boundary term for every
+$\gamma\neq-r_{j,-}^{(k)}$ (proof of Proposition~\ref{prop:Ubar}).
 
 % ============================================================
 \section{Moments via Measure Change}\label{sec:moments}
 % ============================================================
 
-Fix any integer $k\ge1$ satisfying $k\eta_{2,+}<1$. Computing
-$\E_\P[\Pi_T^k]$ directly under $\P$ is intractable: the payoff couples the joint
-process $(X_1,X_2)$ to the barrier event $\{\tau>T\}$ in a way that is neither separable nor
-analytically tractable. An exponential change of measure resolves this by tilting the path measure by
-$e^{kX_{2,T}}$, which absorbs the short-leg factor into the density and leaves a purely one-dimensional
-killed expectation for the log-ratio $Z=X_1-X_2$ under the $k$-tilted measure $\P^{(k)}$. Since $Z$
-remains a L\'{e}vy process under $\P^{(k)}$, no information about the joint dynamics is lost: the
-tilted characteristic exponent encodes the full marginal law of $Z$. The $k$-th moment then factorises
-as the known scalar $e^{T\Psi(0,-ik)}=\E_\P[e^{kX_{2,T}}]$ times the barrier-killed expectation
-$m_k(T;h_0)$ under $\P^{(k)}$, which is computed via the Laplace--resolvent of
-Section~\ref{sec:resolvent}.
-
-The argument below is order-generic. It is applied independently at each desired integer
-$k$, and the resulting resolvent always has a $3\times3$ barrier system. Higher integer
-orders enlarge only the finite forcing sum from $j=0,\ldots,k$; they do not enlarge the
-linear system.
-
-Define
+Computing $\E_\P[\Pi_T^k]$ directly couples $(X_1,X_2)$ to the barrier event. Tilting by
+$e^{kX_{2,T}}$ absorbs the short-leg factor into the density and leaves a one-dimensional killed
+expectation of $Z$, which remains L\'evy under $\P^{(k)}$. Let
 \[
-g_k(z;h_0):=(e^{h_0+z}-b)^k.
+g_k(z;h_0):=(e^{h_0+z}-b)^k,
 \]
-Since the survival event $\{\tau>T\}$ implies $Z_T>-h_0$, we have $e^{h_0+Z_T}>1>b$ on $\{\tau>T\}$, so $g_k(Z_T;h_0)=(e^{h_0+Z_T}-b)^k>0$ and is a polynomial in $e^{Z_T}$.
-From \eqref{eq:payoff-factor},
-\[
-\Pi_T^k
-=
-\Big(\frac{n_2}{b}\Big)^k S_{2,0}^k e^{kX_{2,T}}\,g_k(Z_T;h_0)\,\one_{\{\tau>T\}}.
-\]
+positive on $\{\tau>T\}$ and a polynomial in $e^{Z_T}$. By \eqref{eq:payoff-factor},
+$\Pi_T^k=(n_2S_{2,0}/b)^k e^{kX_{2,T}}g_k(Z_T;h_0)\one_{\{\tau>T\}}$, and changing measure gives
 \begin{equation}\label{eq:moment-reduction}
 \E_{\P}[\Pi_T^k]
 =
-\Big(\frac{n_2}{b}\Big)^k S_{2,0}^k\,e^{T\Psi(0,-ik)}\;
+\Big(\frac{n_2S_{2,0}}{b}\Big)^k\,e^{T\Psi(0,-ik)}\;
 \E_{\P^{(k)}}\!\Big[g_k(Z_T;h_0)\,\one_{\{\tau>T\}}\Big].
 \end{equation}
 
 \begin{proposition}[Every admissible integer-order moment]\label{prop:integer-moments}
-Let $k\ge 1$ be an integer satisfying $k\eta_{2,+}<1$. Define
+For every integer $k\in\mathcal K:=\{n\in\mathbb N:\ n\max(\eta_{1,+},\eta_{2,+})<1\}$, with
+$m_k(T;h_0):=\E_{\P^{(k)}}[g_k(Z_T;h_0)\one_{\{\tau>T\}}]$ and \eqref{eq:n-from-h0},
 \[
-m_k(T;h_0):=\E_{\P^{(k)}}\!\Big[g_k(Z_T;h_0)\,\one_{\{\tau>T\}}\Big].
+\E[\Pi_T^k]=\frac{e^{T\Psi(0,-ik)}}{(e^{h_0}-b)^k}\,m_k(T;h_0),
 \]
-Then
-\[
-\E[\Pi_T^k]:=\E_{\P}[\Pi_T^k]=\frac{e^{T\Psi(0,-ik)}}{(e^{h_0}-b)^k}\,m_k(T;h_0),
-\]
-where $m_k(T;h_0)=U^{(k)}(T,0;h_0)$ is computed via the Laplace--resolvent method of
-Section~\ref{sec:resolvent}. Consequently, the method computes $\E[\Pi_T^k]$ for every
-integer
-\[
-k\in\mathcal K:=\{n\in\mathbb N:\ n\eta_{2,+}<1\}.
-\]
+where $m_k(T;h_0)$ is computed by the Laplace resolvent of Section~\ref{sec:resolvent}.
 \end{proposition}
+The two conditions in $\mathcal K$ play different roles. $k\eta_{1,+}<1$ is needed for the moment to
+be finite at all, since $\Pi_T\ge(1-b)\,n_1S_{1,T}$ on survival, and for $\psi_Z^{(k)}(j)$, $j\le k$,
+to be finite in the particular solution below. $k\eta_{2,+}<1$ is needed by the tilt. At the
+headline calibration the binding condition is the second ($k\le88$).
 
-Let $p_{\mathrm{surv}}(h_0):=\P(\tau>T)$ and $p_{\mathrm{liq}}(h_0):=1-p_{\mathrm{surv}}(h_0)$.
-Since $\Pi_T$ already contains the survival indicator $\one_{\{\tau>T\}}$, the conditional $k$-th
-moment on surviving paths is
-\[
-\E[\Pi_T^k\mid\tau>T]
-=
-\frac{\E[\Pi_T^k]}{p_{\mathrm{surv}}(h_0)},
-\qquad k\ge 1,\quad k\eta_{2,+}<1.
-\]
-In particular,
-\[
-\E[\Pi_T\mid\tau>T]
-=
-\frac{\E[\Pi_T]}{p_{\mathrm{surv}}(h_0)},
-\qquad
-\mathrm{Var}(\Pi_T\mid\tau>T)
-=
-\frac{\E[\Pi_T^2]}{p_{\mathrm{surv}}(h_0)}
--
-\left(\frac{\E[\Pi_T]}{p_{\mathrm{surv}}(h_0)}\right)^{\!2}.
-\]
-The mean--variance--liquidation objective is therefore
-\begin{equation}\label{eq:objective}
-\Phi(h_0)
-=
-\frac{\E[\Pi_T]}{p_{\mathrm{surv}}(h_0)}
--
-\frac{\alpha}{2}
-\!\left[
-\frac{\E[\Pi_T^2]}{p_{\mathrm{surv}}(h_0)}
--
-\!\left(\frac{\E[\Pi_T]}{p_{\mathrm{surv}}(h_0)}\right)^{\!2}
-\right]
--
-\delta\,p_{\mathrm{liq}}(h_0),
-\end{equation}
-and the portfolio optimization reduces to the one-dimensional problem
-\[
-\max_{h_0\in(\ln b,\infty)}\Phi(h_0),
-\]
-after which the optimal coin holdings are recovered from \eqref{eq:n-from-h0}.
+With $p_{\mathrm{surv}}(h_0):=\P(\tau>T)$, the objective \eqref{eq:Phi} without recovery is
+$\E[\Pi_T]-\tfrac{\alpha}{2}(\E[\Pi_T^2]-\E[\Pi_T]^2)-\delta\,p_{\mathrm{liq}}(h_0)$; with recovery,
+$\E[\Pi_T^k]$ is replaced by the wealth moments of Section~\ref{sec:recovery}.
 
 \begin{remark}[No-shorting limit]\label{rem:no-shorting}
-As $h_0\to\infty$ the holding map gives $n_2 S_{2,0}\to 0$ and $n_1 S_{1,0}\to 1$, so liquidation
-becomes impossible and the portfolio converges to a unit long position in asset~$1$. For every $k\ge 1$,
+As $h_0\to\infty$, $n_2S_{2,0}\to0$ and $n_1S_{1,0}\to1$, so liquidation becomes impossible and
 \[
 \lim_{h_0\to\infty}\E[\Pi_T^k]=\E[e^{kX_{1,T}}]=e^{T\Psi(-ik,0)},
 \]
-which provides a useful diagnostic: the formula for $\E[\Pi_T^k]$ must satisfy this limit exactly.
-The $k=1$ case gives $e^{\mu_1 T}$ by the drift normalisation \eqref{eq:muX-drift}.
+which equals $e^{\mu_1T}$ for $k=1$ by \eqref{eq:muX-drift}. The formula must reproduce this limit
+exactly, which provides a numerical check.
 \end{remark}
-
-The remainder of the analysis is devoted to computing $m_k(T;h_0)$ for every admissible integer $k\ge 1$
-and $p_{\mathrm{surv}}(h_0)$ via the Laplace--resolvent construction.
 
 % ============================================================
 \section{Resolvent Equations for Moments and Survival Probability}\label{sec:resolvent}
 % ============================================================
 
-Proofs of all results in Sections~\ref{sec:tilted}--\ref{sec:resolvent} are collected in
+Proofs of the results in Sections~\ref{sec:tilted}--\ref{sec:resolvent} are in
 Appendix~\ref{app:proofs}.
 
-With the moment problem reduced to a one-dimensional killed expectation under $\P^{(k)}$, the
-function $U(t,z)=\E_z^{(k)}[g_k(Z_t;h_0)\one_{\{\tau>t\}}]$ satisfies a PIDE in $(t,z)$.
-Taking the Laplace transform in $t$ converts this to a stationary integro-differential equation in
-$z$ alone, with the Laplace parameter acting as a discount rate. The Kou structure then reduces
-it further: because exponentials are eigenfunctions of the generator, every integro-differential
-term acts algebraically on an exponential ansatz, and the resolvent collapses to a finite-dimensional
-linear system. Three boundary conditions at the absorbing barrier close the $3\times 3$ system.
-Importantly, this system remains $3\times3$ for every admissible integer $k$; increasing the
-moment order changes its coefficients and the forcing polynomial, not its dimension.
-The survival probability follows by the same architecture at zero tilt ($k=0$). This section derives
-both resolvents in closed form.
+\subsection{Killed moment resolvent}\label{sec:moment-resolvent}
 
-\subsection{Killed Moment Resolvent}\label{sec:moment-resolvent}
-
-Fix an integer $k\ge 1$ with $k\eta_{2,+}<1$. Define the killed moment function
-\[
-U(t,z) := \E_z^{(k)}\!\left[g_k(Z_t;h_0)\,\one_{\{\tau(h_0)>t\}}\right],
-\qquad z > -h_0,
-\]
-with $U(t,z)=0$ for $z\le -h_0$. This satisfies the PIDE
-\[
-\partial_t U = \mathcal{L}^{(k)} U, \qquad z > -h_0,
-\]
-with initial condition $U(0,z) = g_k(z;h_0)$. Define the Laplace transform
-\[
-\widehat{U}(q,z) := \int_0^\infty e^{-qt}U(t,z)\,\diff t, \qquad q > 0.
-\]
-Applying it to both sides of the PIDE proceeds in two steps.
-
-\textit{Left-hand side.} Integrate by parts in $t$:
-\[
-\int_0^\infty e^{-qt}\,\partial_t U(t,z)\,\diff t
-=
-\Bigl[e^{-qt}U(t,z)\Bigr]_0^\infty
-+
-q\int_0^\infty e^{-qt}U(t,z)\,\diff t
-=
--U(0,z) + q\widehat{U}(q,z),
-\]
-where the boundary term at $t=\infty$ vanishes by integrability.
-
-\textit{Right-hand side.} Since $\mathcal{L}^{(k)}$ acts only in $z$, it commutes with the $t$-integral:
-\[
-\int_0^\infty e^{-qt}\,\mathcal{L}^{(k)}U(t,z)\,\diff t
-=
-\mathcal{L}^{(k)}\widehat{U}(q,z).
-\]
-
-Equating and substituting the initial condition $U(0,z)=g_k(z;h_0)$ gives the resolvent equation
+Fix $k\in\mathcal K$. The killed moment function
+$U(t,z) := \E_z^{(k)}[g_k(Z_t;h_0)\one_{\{\tau>t\}}]$, $z>-h_0$, with $U=0$ for $z\le -h_0$, solves
+$\partial_t U = \mathcal{L}^{(k)} U$ with $U(0,z) = g_k(z;h_0)$. Its Laplace transform
+$\widehat{U}(q,z) := \int_0^\infty e^{-qt}U(t,z)\,\diff t$ therefore satisfies, after integrating
+by parts in $t$, the resolvent equation
 \begin{equation}\label{eq:resolvent}
 (q - \mathcal{L}^{(k)})\widehat{U}(q,z) = g_k(z;h_0), \qquad z > -h_0,
 \end{equation}
 with $\widehat{U}(q,z)=0$ for $z\le -h_0$.
 
 \begin{assumption}[Generic six-root regime]\label{ass:six-root}
-Fix an integer $k\ge 0$ satisfying $k\eta_{2,+}<1$, and let $q>0$. Assume:
+Fix $k\in\mathcal K\cup\{0\}$ and $q>0$. Assume:
 \begin{enumerate}[(i)]
 \item $\sigma_Z>0$;
-\item the characteristic equation $\psi_Z^{(k)}(\gamma)=q$ has six simple roots $\gamma_1(q),\dots,\gamma_6(q)$,
-ordered so that
-\[
-\Rea(\gamma_{1,2,3})>0,\qquad \Rea(\gamma_{4,5,6})<0;
-\]
+\item $\psi_Z^{(k)}(\gamma)=q$ has six simple roots with
+$\Rea(\gamma_{1,2,3})>0$ and $\Rea(\gamma_{4,5,6})<0$;
 \item $q\neq \psi_Z^{(k)}(j)$ for $j=0,\dots,k$.
 \end{enumerate}
 \end{assumption}
 
-Since $b\in(0,1)$ and $z>-h_0$ together imply $e^{h_0+z}>1>b$, the payoff kernel expands as a polynomial in $e^z$:
+\noindent
+For real $q>0$ with distinct poles ($r_{1,+}^{(k)}\neq r_{2,+}^{(k)}$ and $r_{1,-}^{(k)}\neq r_{2,-}^{(k)}$)
+the three-and-three split is automatic. Each Kou term of $\psi_Z^{(k)}$ changes sign
+through its pole, tending to $+\infty$ on the side facing the origin and to $-\infty$ on the other;
+$\psi_Z^{(k)}(0)-q=-q<0$; and the diffusion term sends $\psi_Z^{(k)}-q$ to $+\infty$ as
+$|\gamma|\to\infty$. By the intermediate value theorem there is a real root in each of the six
+intervals cut out by the origin and the poles $\{r_{1,+}^{(k)},r_{2,+}^{(k)},-r_{1,-}^{(k)},-r_{2,-}^{(k)}\}$,
+three on each side, and since clearing denominators gives a polynomial of degree six these are all the
+roots and they are simple \citep{KouWang2003,Sepp2004,CaiKou2011}. The assumption has content for the
+complex $q$ at which the Talbot contour evaluates the transform, part of which lies in
+$\Rea q<0$. There the roots are continued analytically from the real case, and the implementation
+classifies them by the rank of their real parts rather than by sign. At the headline calibration the
+sign split holds at every Talbot node, and node counts from $M=16$ to $48$ agree to $10^{-8}$.
+
+On $z>-h_0$ the forcing expands as
 \begin{equation}\label{eq:forcing-expansion}
 g_k(z;h_0) = \sum_{j=0}^k c_{k,j}(h_0)\,e^{jz},
 \qquad
 c_{k,j}(h_0) := \binom{k}{j}(-1)^{k-j}b^{k-j}e^{jh_0}.
 \end{equation}
 
-\begin{lemma}[Particular solution]\label{lem:Upart}
-Under Assumption~\ref{ass:six-root}(iii),
+\begin{lemma}[Particular and homogeneous solutions]\label{lem:Upart}
+Under Assumption~\ref{ass:six-root},
 \begin{equation}\label{eq:Upart}
 \widehat{U}_{\mathrm{part}}(q,z;h_0) = \sum_{j=0}^{k} \frac{c_{k,j}(h_0)}{q - \psi_Z^{(k)}(j)}\,e^{jz}
 \end{equation}
-is a particular solution to~\eqref{eq:resolvent}.
+solves \eqref{eq:resolvent}, and the exponential solutions of $(q-\mathcal{L}^{(k)})u=0$ on
+$z>-h_0$ that are bounded at $+\infty$ are
+\begin{equation}\label{eq:Uhom}
+\widehat{U}_{\mathrm{hom}}(q,z;h_0) = \sum_{m=1}^{3} B_m^{(k)}(q;h_0)\,e^{\gamma_{m+3}(q)(z+h_0)}.
+\end{equation}
 \end{lemma}
 \proofref{proof:lem:Upart}
-
-\begin{lemma}[Homogeneous solution]\label{lem:Uhom}
-Under Assumption~\ref{ass:six-root}(i)--(ii), the general solution to $(q-\mathcal{L}^{(k)})u=0$ on $z>-h_0$ that
-is admissible at $+\infty$ is
-\begin{equation}\label{eq:Uhom}
-\widehat{U}_{\mathrm{hom}}(q,z;h_0) = \sum_{m=1}^{3} B_m^{(k)}(q;h_0)\,e^{\gamma_{m+3}(q)(z+h_0)},
-\end{equation}
-where $B_1^{(k)},B_2^{(k)},B_3^{(k)}$ are free constants.
-\end{lemma}
-\proofref{proof:lem:Uhom}
-
-The general solution on $z>-h_0$ is then
-\[
-\widehat{U}(q,z;h_0) = \widehat{U}_{\mathrm{part}}(q,z;h_0) + \widehat{U}_{\mathrm{hom}}(q,z;h_0).
-\]
 
 \begin{proposition}[Barrier resolvent]\label{prop:Ubar}
 Under Assumption~\ref{ass:six-root} and the nondegeneracy condition
 \begin{equation}\label{eq:nondeg-bar}
 r_{1,-}^{(k)}\neq r_{2,-}^{(k)},
 \end{equation}
-the boundary conditions at $z=-h_0^+$ uniquely determine
-$\mathbf{B}^{(k)}(q;h_0):=(B_1^{(k)},B_2^{(k)},B_3^{(k)})^\top$ via the linear system
-\[
-\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\,\mathbf{B}^{(k)}(q;h_0)=-\mathbf{b}^{(k)}(q;h_0),
-\]
-where the $3\times 3$ barrier matrix is
+$\widehat U=\widehat U_{\mathrm{part}}+\widehat U_{\mathrm{hom}}$ with
+$\mathbf{B}^{(k)}:=(B_1^{(k)},B_2^{(k)},B_3^{(k)})^\top$ the unique solution of
+$\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\,\mathbf{B}^{(k)}=-\mathbf{b}^{(k)}(q;h_0)$, where
 \[
 \mathbf{M}_{\mathrm{bar}}^{(k)}(q)=
 \begin{pmatrix}
-1 & 1 & 1\\[6pt]
-\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_4(q)} &
-\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_5(q)} &
-\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_6(q)}\\[12pt]
-\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_4(q)} &
-\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_5(q)} &
-\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_6(q)}
-\end{pmatrix}
-\]
-and the forcing vector is
-\[
+1 & 1 & 1\\[4pt]
+\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_4} &
+\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_5} &
+\dfrac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+\gamma_6}\\[10pt]
+\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_4} &
+\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_5} &
+\dfrac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+\gamma_6}
+\end{pmatrix},
+\qquad
 \mathbf{b}^{(k)}(q;h_0)
 =
+\sum_{j=0}^{k}\frac{c_{k,j}(h_0)\,e^{-jh_0}}{q-\psi_Z^{(k)}(j)}
 \begin{pmatrix}
-\widehat{U}_{\mathrm{part}}(q,-h_0;h_0)\\[4pt]
-K_{1,-}^{(k)}\!\left[\widehat{U}_{\mathrm{part}}(q,\cdot\,;h_0)\right](-h_0)\\[4pt]
-K_{2,-}^{(k)}\!\left[\widehat{U}_{\mathrm{part}}(q,\cdot\,;h_0)\right](-h_0)
-\end{pmatrix}
-=
-\begin{pmatrix}
-\displaystyle\sum_{j=0}^{k}\frac{c_{k,j}(h_0)}{q-\psi_Z^{(k)}(j)}\,e^{-jh_0}\\[10pt]
-\displaystyle\sum_{j=0}^{k}\frac{c_{k,j}(h_0)}{q-\psi_Z^{(k)}(j)}\,\frac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+j}\,e^{-jh_0}\\[10pt]
-\displaystyle\sum_{j=0}^{k}\frac{c_{k,j}(h_0)}{q-\psi_Z^{(k)}(j)}\,\frac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+j}\,e^{-jh_0}
+1\\[2pt]
+\frac{r_{1,-}^{(k)}}{r_{1,-}^{(k)}+j}\\[4pt]
+\frac{r_{2,-}^{(k)}}{r_{2,-}^{(k)}+j}
 \end{pmatrix}.
 \]
-By Lemma~\ref{lem:Mbar-inv} below, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is invertible, giving
-\[
-\mathbf{B}^{(k)}(q;h_0) = -\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\bigr)^{-1}\mathbf{b}^{(k)}(q;h_0).
-\]
-\end{proposition}
-\proofref{proof:prop:Ubar}
-
-\begin{lemma}[Invertibility of $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$]\label{lem:Mbar-inv}
-Under Assumption~\ref{ass:six-root} and condition~\eqref{eq:nondeg-bar},
-the barrier matrix $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ of Proposition~\ref{prop:Ubar} is invertible.
-\end{lemma}
-\proofref{proof:lem:Mbar-inv}
-
-Evaluating $\widehat{U}$ at the initial state $Z_0=0$ gives
+The rows of $\mathbf{b}^{(k)}$ are $\widehat U_{\mathrm{part}}$ and
+$K_{j,-}^{(k)}[\widehat U_{\mathrm{part}}]$, $j=1,2$, evaluated at $z=-h_0$. The killed moment is
+$m_k(T;h_0)=\mathcal{L}^{-1}_{q\to T}[\widehat{U}(q,0;h_0)]$ with
 \begin{equation}\label{eq:Uhat-zero}
 \widehat{U}(q,0;h_0)
 =
@@ -980,351 +704,835 @@ Evaluating $\widehat{U}$ at the initial state $Z_0=0$ gives
 +
 \sum_{m=1}^{3}B_m^{(k)}(q;h_0)\,e^{\gamma_{m+3}(q)h_0}.
 \end{equation}
-The killed moment is then recovered by Laplace inversion:
-\[
-m_k(T;h_0) = \mathcal{L}^{-1}_{q\to T}\!\left[\widehat{U}(q,0;h_0)\right].
-\]
+\end{proposition}
+\proofref{proof:prop:Ubar}
 
-\subsection{Survival Probability}\label{sec:liquidation}
+\begin{lemma}[Invertibility]\label{lem:Mbar-inv}
+Under Assumption~\ref{ass:six-root} and \eqref{eq:nondeg-bar}, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$
+is invertible for every admissible $k\ge0$.
+\end{lemma}
+\proofref{proof:lem:Mbar-inv}
 
-The same resolvent architecture yields the survival probability. Define
-\[
-p_{\mathrm{surv}}(t,z;h_0):=\P_z(\tau(h_0)>t),
-\qquad
-p_{\mathrm{liq}}(t,z;h_0):=1-p_{\mathrm{surv}}(t,z;h_0).
-\]
-Let $\mathcal L^{(0)}$ denote the generator of $Z$ under the untilted measure, with exponent $\psi_Z^{(0)}$, and define
-\[
-\widehat U_{\mathrm{surv}}(q,z;h_0)
-:=
-\int_0^\infty e^{-qt}p_{\mathrm{surv}}(t,z;h_0)\,\diff t.
-\]
+\subsection{Survival probability}\label{sec:liquidation}
 
-The problem is
-\[
-(q-\mathcal L^{(0)})\widehat U_{\mathrm{surv}}(q,z;h_0)=1,
-\qquad z>-h_0,
-\]
-with
-\[
-\widehat U_{\mathrm{surv}}(q,z;h_0)=0,\qquad z\le -h_0.
-\]
-The domain is the half-line $(-h_0,\infty)$, the boundary is absorbing at $z=-h_0$, and there is no interface because
-the source is constant.
+The survival probability is the $k=0$, $g\equiv1$ case of the same construction. Its transform
+$\widehat U_{\mathrm{surv}}(q,z;h_0):=\int_0^\infty e^{-qt}\P_z(\tau>t)\,\diff t$ solves
+$(q-\mathcal L^{(0)})\widehat U_{\mathrm{surv}}=1$ on $z>-h_0$, vanishing below.
 
-\begin{proposition}[Survival resolvent and liquidation probability]\label{prop:survival}
-Under Assumption~\ref{ass:six-root} and the nondegeneracy condition
+\begin{proposition}[Survival resolvent]\label{prop:survival}
+Under Assumption~\ref{ass:six-root} with $k=0$ and
 \begin{equation}\label{eq:nondeg-surv}
 r_{1,-}^{(0)}\neq r_{2,-}^{(0)},
-\quad\text{i.e.,}\quad
+\quad\text{i.e.}\quad
 \eta_{1,-}\neq\eta_{2,+},
 \end{equation}
-let $\gamma_4^{(0)}(q),\gamma_5^{(0)}(q),\gamma_6^{(0)}(q)$ be the three roots of
-$\psi_Z^{(0)}(\gamma)=q$ with negative real part. Then
+let $\gamma_{4,5,6}^{(0)}(q)$ be the roots of $\psi_Z^{(0)}(\gamma)=q$ with negative real part. Then
 \[
 \widehat U_{\mathrm{surv}}(q,z;h_0)
 =
 \frac{1}{q}
 +
-C_1(q;h_0)e^{\gamma_4^{(0)}(q)(z+h_0)}
-+
-C_2(q;h_0)e^{\gamma_5^{(0)}(q)(z+h_0)}
-+
-C_3(q;h_0)e^{\gamma_6^{(0)}(q)(z+h_0)},
-\]
-where the coefficients $\mathbf{C}(q;h_0):=(C_1,C_2,C_3)^\top$ satisfy the linear system
-\[
-\mathbf{M}_{\mathrm{surv}}(q)\,\mathbf{C}(q;h_0)
-=
--\begin{pmatrix}1/q\\1/q\\1/q\end{pmatrix},
-\]
-with the $3\times 3$ survival matrix
-\[
-\mathbf{M}_{\mathrm{surv}}(q)=
-\begin{pmatrix}
-1 & 1 & 1\\[6pt]
-\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_4^{(0)}(q)} &
-\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_5^{(0)}(q)} &
-\dfrac{r_{1,-}^{(0)}}{r_{1,-}^{(0)}+\gamma_6^{(0)}(q)}\\[12pt]
-\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_4^{(0)}(q)} &
-\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_5^{(0)}(q)} &
-\dfrac{r_{2,-}^{(0)}}{r_{2,-}^{(0)}+\gamma_6^{(0)}(q)}
-\end{pmatrix}.
-\]
-By Lemma~\ref{lem:Msurv-inv} below, $\mathbf{M}_{\mathrm{surv}}(q)$ is invertible, giving
-\[
-\mathbf{C}(q;h_0) = -\bigl(\mathbf{M}_{\mathrm{surv}}(q)\bigr)^{-1}\begin{pmatrix}1/q\\1/q\\1/q\end{pmatrix}.
-\]
-At the initial state $Z_0=0$,
-\[
-\widehat U_{\mathrm{surv}}(q,0;h_0)
-=
-\frac{1}{q}
-+
-C_1(q;h_0)e^{\gamma_4^{(0)}(q)h_0}
-+
-C_2(q;h_0)e^{\gamma_5^{(0)}(q)h_0}
-+
-C_3(q;h_0)e^{\gamma_6^{(0)}(q)h_0}.
-\]
-Hence
-\[
-p_{\mathrm{surv}}(T,0;h_0)
-=
-\mathcal L^{-1}_{q\to T}\!\left[\widehat U_{\mathrm{surv}}(q,0;h_0)\right],
+\sum_{m=1}^3 C_m(q)\,e^{\gamma_{m+3}^{(0)}(q)(z+h_0)},
 \qquad
-p_{\mathrm{liq}}(T,0;h_0)=1-p_{\mathrm{surv}}(T,0;h_0).
+\mathbf{M}_{\mathrm{bar}}^{(0)}(q)\,\mathbf{C}(q)
+=
+-\tfrac1q\,(1,1,1)^\top,
 \]
+and $p_{\mathrm{surv}}(T;h_0)=\mathcal L^{-1}_{q\to T}[\widehat U_{\mathrm{surv}}(q,0;h_0)]$,
+$p_{\mathrm{liq}}=1-p_{\mathrm{surv}}$.
 \end{proposition}
 \proofref{proof:prop:survival}
-
-\begin{lemma}[Invertibility of $\mathbf{M}_{\mathrm{surv}}(q)$]\label{lem:Msurv-inv}
-Under Assumption~\ref{ass:six-root} and condition~\eqref{eq:nondeg-surv},
-the survival matrix $\mathbf{M}_{\mathrm{surv}}(q)$ of Proposition~\ref{prop:survival} is invertible.
-\end{lemma}
-\proofref{proof:lem:Msurv-inv}
 
 % ============================================================
 \section{Numerical Results}\label{sec:numerical}
 % ============================================================
 
-We validate the Laplace--resolvent method against Monte Carlo (MC) simulation for
-$k=0,1,2,3,4$ and verify the analytical no-shorting limit as $h_0\to\infty$.
-These orders illustrate rather than limit the method: the same implementation applies to
-every admissible integer $k$, which under the calibrated parameters includes $k=1,\ldots,79$.
-Time-domain quantities are recovered via the Talbot deformed-contour algorithm
-\citep{Talbot1979}. No Bromwich shift needs to be chosen by hand.
+We validate the resolvent against Monte Carlo (MC) for $k=0,\ldots,4$ --- an illustration, not a
+limit: the same code handles every $k\in\mathcal K$ --- and check the no-shorting limit. Inversion
+uses the Talbot contour \citep{Talbot1979} with $M=32$ nodes.
 
-The Kou model and contract parameters are given in Table~\ref{tab:num-params}.
-Parameters are calibrated by ECF matching to 540 four-hour WBTC (asset~1) and
-WETH (asset~2) log-returns on AAVE v3 Ethereum after subtracting an exponentially
-weighted return mean; the drifts $\mu_i$ are adjusted for AAVE supply/borrow
-APRs (see caption). The AAVE liquidation threshold $b=0.78$ and maximum origination LTV
-$0.73$ impose a minimum feasible log-buffer $h_0^{\min}=\log(0.78/0.73)\approx0.066$.
-WBTC and WETH have distinct downward phase rates
-$r_{1,-}^{(0)}=1/\eta_{1,-}\neq r_{2,-}^{(0)}=1/\eta_{2,+}$, so the barrier matrix
-$\mathbf{M}_{\mathrm{bar}}^{(k)}$ is non-singular for every admissible integer $k$
-(here the calibrated parameters permit integer orders through $k=79$).
-Because the first moment is weakly identified in high-frequency ECF matching,
-the fitted $\mu_i$ values in Table~\ref{tab:num-params} should be read as model
-price-growth normalizers rather than directional forecasts; user views can replace
-them in downstream moment and liquidation calculations.
-
-\begin{table}[h]
-\centering
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{llcc}
-\toprule
-Group & Parameter & WBTC & WETH \\
-\midrule
-\multirow{9}{*}{Kou}
- & ECF price-growth normalizer $\mu_i$ & $0.487$ & $1.200$ \\
- & Log-price drift $\mu_i^X$ & $-0.305$ & $0.257$ \\
- & Model log-return drift $\E[\diff X_i]/\diff t$ & $0.425$ & $1.111$ \\
- & Empirical de-meaned log drift & $0.352$ & $0.606$ \\
- & Diffusion volatility $\sigma_i$ & $0.241$ & $0.307$ \\
- & Jump intensity $\lambda_i$ & $372.95$ & $588.95$ \\
- & Upward-jump probability $p_i$ & $0.508$ & $0.357$ \\
- & Mean upward-jump size $\eta_{i,+}$ & $0.0111$ & $0.0125$ \\
- & Mean downward-jump size $\eta_{i,-}$ & $0.00743$ & $0.00469$ \\
-\midrule
-\multirow{2}{*}{Correlation / contract}
- & Brownian correlation $\rho$ & \multicolumn{2}{c}{$0.858$} \\
- & Collateral factor $b$ & \multicolumn{2}{c}{$0.78$} \\
-\midrule
-\multirow{2}{*}{Portfolio}
- & Initial price $S_{i,0}$ & $75{,}060.57$ & $2{,}060.33$ \\
- & Horizon $T$ & \multicolumn{2}{c}{$1/12$ (one month)} \\
-\bottomrule
-\end{tabular}
-\caption{Kou model and contract parameters calibrated by ECF matching to four-hour
-WBTC/WETH log-returns on AAVE v3 Ethereum
-(2026-02-26 -- 2026-05-27), after EWM de-meaning with span 30. Drifts adjusted
-for AAVE average APRs: $\mu_1 {+}{=}\, 0.0056\%\,\mathrm{yr}^{-1}$ (WBTC supply),
-$\mu_2 {+}{=}\, 2.7855\%\,\mathrm{yr}^{-1}$ (WETH borrow). Jump intensities are
-estimated under the broad calibration bound $\lambda_{\max}=5000$.
-AAVE liquidation threshold $b=0.78$; maximum origination LTV $0.73$ gives
-$h_0^{\min}\approx0.066$. Derived quantities:
-$\chi_1+\tfrac12\sigma_1^2\approx0.793$, $\chi_2+\tfrac12\sigma_2^2\approx0.943$,
-$\mu_1^X\approx-0.305$, $\mu_2^X\approx0.257$. The empirical de-meaned
-price-growth normalizers are $0.432$ (WBTC) and $0.755$ (WETH), so the fitted
-WETH $\mu_2$ is a weakly identified ECF normalizer rather than a robust return forecast.
-Initial prices are the last aligned AAVE sample, at block $25{,}189{,}091$.}
-\label{tab:num-params}
-\end{table}
-
-For each initial health factor $H_0=e^{h_0}$, with
-$h_0\in\{0.07,0.10,0.25,0.50,0.75,1.00,1.50,2.00\}$, we report the survival
-probability $p_{\mathrm{surv}}$ and the following conditional statistics of $\Pi_T\mid\{\tau>T\}$,
-where $\mu_k:=\E[\Pi_T^k\mid\tau>T]$:
-\begin{equation}\label{eq:stdmom}
-\begin{aligned}
-&\text{mean}:=\mu_1,\qquad
-\text{variance}:=\mu_2-\mu_1^2,\\
-&\text{skewness}:=\frac{\mu_3-3\mu_1\mu_2+2\mu_1^3}{(\mu_2-\mu_1^2)^{3/2}},\qquad
-\text{ex.\ kurt}:=\frac{\mu_4-4\mu_1\mu_3+6\mu_1^2\mu_2-3\mu_1^4}{(\mu_2-\mu_1^2)^{2}}-3.
-\end{aligned}
-\end{equation}
-
-As $h_0\to\infty$ the short holding $n_2\to 0$ and the portfolio converges to a unit long
-position in asset $1$ (Remark~\ref{rem:no-shorting}), so all conditional statistics
-converge to those of $e^{X_{1,T}}$ under $\P$:
-\[
-\lim_{h_0\to\infty}\mu_k = \E_\P\!\left[e^{kX_{1,T}}\right]
-= \exp\!\bigl(T\,\Psi(-ik,0)\bigr).
-\]
-Table~\ref{tab:results} reports all statistics together with these analytical limits.
+Parameters (Table~\ref{tab:num-params}) are calibrated by ECF matching
+(Appendix~\ref{sec:calibration}) to $840$ four-hour WBTC (asset~1) and WETH (asset~2) log-returns on
+Aave v3 Ethereum after subtracting an exponentially weighted mean, with drifts adjusted for Aave
+supply/borrow APRs. The liquidation threshold $b=0.78$ and maximum origination LTV $0.73$ give a
+minimum feasible buffer $h_0^{\min}=\log(0.78/0.73)\approx0.066$. WBTC and WETH have distinct
+downward phase rates, so \eqref{eq:nondeg-bar} holds for every admissible $k$. The ECF is fitted to
+de-meaned returns, so the fitted $\mu_i$ are price-growth normalizers, not estimates of the window's
+drift: their difference $\mu_1-\mu_2=-0.86$ even has the opposite sign to the window's realised spread
+drift, which is $+0.13$ per year in price-growth terms ($+0.10$ net of carry) and $+0.19$ in raw log
+terms (from the two raw log drifts in Table~\ref{tab:num-params}). The tables of this section use the calibrated
+normalizers as stated; Section~\ref{sec:discussion} uses sample drifts.
 
 \begin{table}[ht]
 \centering\small
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lcc}
+\toprule
+Parameter & WBTC & WETH \\
+\midrule
+ECF price-growth normalizer $\mu_i$ & $0.302$ & $1.161$ \\
+Log-price drift $\mu_i^X$ & $-0.575$ & $0.222$ \\
+Model log-return drift $\E[\diff X_i]/\diff t$ & $0.262$ & $1.072$ \\
+Empirical de-meaned log drift & $0.234$ & $0.297$ \\
+Realised (raw) log drift & $-0.390$ & $-0.578$ \\
+Diffusion volatility $\sigma_i$ & $0.264$ & $0.328$ \\
+Jump intensity $\lambda_i$ & $358.29$ & $450.65$ \\
+Upward-jump probability $p_i$ & $0.770$ & $0.457$ \\
+Mean upward / downward jump $\eta_{i,+}$ / $\eta_{i,-}$ & $0.00413$ / $0.00367$ & $0.01126$ / $0.00601$ \\
+Initial price $S_{i,0}$ & $64{,}125.20$ & $1{,}872.81$ \\
+\midrule
+Brownian correlation $\rho$; threshold $b$; horizon $T$ & \multicolumn{2}{c}{$0.847$;\ \ $0.78$;\ \ $1/12$} \\
+\bottomrule
+\end{tabular}
+\caption{Calibrated parameters: $840$ four-hour WBTC/WETH log-returns, Aave v3 Ethereum,
+2026-03-17 to 2026-08-04, EWM de-meaning (span 30). Prices are oracle-implied USD values (reserve
+TVL / supplied balance) resampled to four hours; initial prices are the last sample (2026-08-04 16:00
+UTC). Drifts include realised average APRs: $\mu_1\mathrel{+}=0.0061\%$ (WBTC supply),
+$\mu_2\mathrel{+}=2.5104\%$ (WETH borrow). The empirical de-meaned price-growth rates are $0.303$ and
+$0.421$, so the fitted WETH $\mu_2$ is a weakly identified normalizer, not a return forecast.}
+\label{tab:num-params}
+\end{table}
+
+For $h_0\in\{0.07,0.10,0.25,0.50,0.75,1.00,1.50,2.00\}$ Table~\ref{tab:results} reports
+$p_{\mathrm{surv}}$ and the survival-conditional mean, variance, skewness and excess kurtosis of
+$\Pi_T$, computed from $\mu_k:=\E[\Pi_T^k\mid\tau>T]$ in the usual way, together with the
+$h_0\to\infty$ limits $\mu_k\to\exp(T\Psi(-ik,0))$ of Remark~\ref{rem:no-shorting}.
+
+\begin{table}[ht]
+\centering\small
+\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{cc cc cccc}
 \toprule
 & & \multicolumn{2}{c}{$p_{\mathrm{surv}}$} & & & & \\
 \cmidrule(lr){3-4}
 $h_0$ & $H_0$ & Lap. & MC & Mean & Variance & Skewness & Ex.\ Kurt. \\
 \midrule
-$0.07$ & $1.07$ & $0.3051$ & $0.3163$ & $1.2581$ & $0.0753$ & $0.8767$ & $1.0996$ \\
-$0.10$ & $1.11$ & $0.4615$ & $0.4750$ & $1.1633$ & $0.0672$ & $0.8525$ & $1.0083$ \\
-$0.25$ & $1.28$ & $0.9129$ & $0.9156$ & $0.9847$ & $0.0545$ & $0.5676$ & $0.3668$ \\
-$0.50$ & $1.65$ & $0.9996$ & $0.9995$ & $0.9845$ & $0.0350$ & $0.3132$ & $0.3565$ \\
-$0.75$ & $2.12$ & $1.0000$ & $1.0000$ & $1.0043$ & $0.0236$ & $0.3791$ & $0.4093$ \\
-$1.00$ & $2.72$ & $1.0000$ & $1.0000$ & $1.0158$ & $0.0186$ & $0.4158$ & $0.4234$ \\
-$1.50$ & $4.48$ & $1.0000$ & $1.0000$ & $1.0280$ & $0.0145$ & $0.4318$ & $0.4187$ \\
-$2.00$ & $7.39$ & $1.0000$ & $1.0000$ & $1.0339$ & $0.0130$ & $0.4263$ & $0.4017$ \\
+$0.07$ & $1.07$ & $0.3303$ & $0.3421$ & $1.1035$ & $0.0322$ & $0.6535$ & $0.4790$ \\
+$0.10$ & $1.11$ & $0.4879$ & $0.4985$ & $1.0413$ & $0.0306$ & $0.6320$ & $0.3989$ \\
+$0.25$ & $1.28$ & $0.9505$ & $0.9524$ & $0.9278$ & $0.0287$ & $0.2692$ & $-0.1028$ \\
+$0.50$ & $1.65$ & $1.0000$ & $0.9999$ & $0.9573$ & $0.0169$ & $0.0955$ & $0.1592$ \\
+$0.75$ & $2.12$ & $1.0000$ & $1.0000$ & $0.9812$ & $0.0114$ & $0.2026$ & $0.1463$ \\
+$1.00$ & $2.72$ & $1.0000$ & $1.0000$ & $0.9949$ & $0.0092$ & $0.2514$ & $0.1444$ \\
+$1.50$ & $4.48$ & $1.0000$ & $1.0000$ & $1.0095$ & $0.0078$ & $0.2724$ & $0.1428$ \\
+$2.00$ & $7.39$ & $1.0000$ & $1.0000$ & $1.0166$ & $0.0074$ & $0.2705$ & $0.1380$ \\
 \midrule
-$\infty$ & $\infty$ & $1.0000$ & --- & $1.0414$ & $0.0114$ & $0.4052$ & $0.3612$ \\
+$\infty$ & $\infty$ & $1.0000$ & --- & $1.0255$ & $0.0072$ & $0.2627$ & $0.1286$ \\
 \bottomrule
 \end{tabular}
-\caption{Laplace--resolvent conditional statistics and the no-shorting analytical limit
-for WBTC/WETH calibrated parameters (Table~\ref{tab:num-params}).
-Mean, variance, skewness, and excess kurtosis are conditional on survival ($\tau>T$)
-and computed via the resolvent method (Laplace); MC benchmark uses $10^5$ Euler--Poisson
-paths ($252$ steps, seed 42). The smallest tabulated $h_0=0.07$ is the AAVE-feasible
-minimum ($h_0^{\min}\approx0.066$, $H_0^{\min}\approx1.068$); at this value
-Laplace gives $p_{\mathrm{surv}}=0.305$
-versus MC $0.316$ --- the $1.1\%$ gap reflects discrete-time MC missing intra-period
-liquidation events at high jump intensity
-($\lambda_1\approx373$, $\lambda_2\approx589$), not path scarcity
-($\approx\!32{,}000$ surviving MC paths).
-The bottom row gives the analytical limits as $h_0\to\infty$; Laplace at $h_0=100$ matches
-these values to relative error $<10^{-6}$, confirming internal consistency of the
-resolvent construction, Talbot inversion, and the drift normalisation
-$\mu_i^X=\mu_i-\tfrac{1}{2}\sigma_i^2-\lambda_i\chi_i$.}
+\caption{Laplace--resolvent survival and survival-conditional statistics for the calibrated
+WBTC/WETH book. MC uses $10^5$ Euler--Poisson paths with $252$ steps over the month (seed 42). The
+bottom row is the analytical no-shorting limit; Laplace at $h_0=100$ matches it to relative error
+below $3\times10^{-6}$.}
 \label{tab:results}
 \end{table}
 
+The conditional moments agree with MC to within $0.005$ (mean), $0.0003$ (variance), $0.016$
+(skewness) and $0.07$ (excess kurtosis) at every tabulated buffer. In this run the Laplace method
+took about $0.14$\,s for all five inversions against $61$--$66$\,s for MC, a speed-up of about
+$440\times$; timings are machine- and load-dependent, so only the order of magnitude is meaningful. The only systematic discrepancy is in survival: MC exceeds Laplace by about one point near
+$h_0^{\min}$ and by nothing for $h_0\ge0.5$. Section~\ref{sec:mc-benchmark} shows this is MC
+discretisation, not analytic error.
+
+\subsection{An accuracy-matched Monte Carlo benchmark}\label{sec:mc-benchmark}
+The Euler--Poisson scheme checks the barrier only at step ends, so it misses intra-step crossings and
+\emph{overstates} survival. An accuracy-matched simulator draws the diffusion on a grid and adds the
+Brownian-bridge probability of an intra-step crossing analytically \citep{Glasserman2004}, with jumps
+applied and checked at step ends. At $h_0=0.07$ (Table~\ref{tab:mcconv}) the bridge-corrected
+estimate is within two standard errors of the Laplace value $0.33029$ at every tabulated step
+count, and within $0.2$ standard errors at all but one, while the naive check is biased by $+0.011$ at $125$ steps and still
+$+0.003$ at $4{,}000$. The analytic survival probability is therefore unbiased. Talbot inversion is
+also stable: varying $M$ from $16$ to $48$ changes $p_{\mathrm{surv}}(h_0{=}0.07)$ by less than
+$10^{-8}$. The bridge-corrected simulator is already unbiased at $125$ steps, where $200{,}000$ paths take
+$5.6$--$8.6$\,s across our runs for a standard error of $10^{-3}$, against $16$--$20$\,ms for the
+noise-free Laplace survival probability: again two to three orders of magnitude, and without sampling
+error.
+
 \begin{table}[ht]
 \centering\small
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{cc rrrrr rr}
+\begin{tabular}{lccc}
 \toprule
-& & \multicolumn{5}{c}{Laplace $-$ MC} & \multicolumn{2}{c}{CPU time (s)} \\
-\cmidrule(lr){3-7}\cmidrule(lr){8-9}
-$h_0$ & $H_0$ & $\Delta p_{\mathrm{surv}}$ & $\Delta$Mean & $\Delta$Var.\ & $\Delta$Skew.\ & $\Delta$Kurt.\ & Lap.\ & MC \\
+Steps & bridge-corrected $p_{\mathrm{surv}}$ & naive grid $p_{\mathrm{surv}}$ & naive bias \\
 \midrule
-$0.07$ & $1.07$ & $-0.0112$ & $\phantom{-}0.0042$ & $-0.0019$ & $-0.0233$ & $-0.1959$ & $0.10$ & $50.37$ \\
-$0.10$ & $1.11$ & $-0.0136$ & $\phantom{-}0.0042$ & $-0.0013$ & $-0.0230$ & $-0.1499$ & $0.10$ & $49.15$ \\
-$0.25$ & $1.28$ & $-0.0026$ & $-0.0001$ & $-0.0007$ & $-0.0054$ & $-0.0563$ & $0.10$ & $48.90$ \\
-$0.50$ & $1.65$ & $\phantom{-}0.0001$ & $-0.0005$ & $-0.0003$ & $-0.0110$ & $-0.0347$ & $0.10$ & $49.11$ \\
-$0.75$ & $2.12$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0107$ & $-0.0382$ & $0.10$ & $49.49$ \\
-$1.00$ & $2.72$ & $\phantom{-}0.0000$ & $-0.0002$ & $-0.0002$ & $-0.0123$ & $-0.0378$ & $0.10$ & $49.46$ \\
-$1.50$ & $4.48$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0001$ & $-0.0144$ & $-0.0369$ & $0.10$ & $49.94$ \\
-$2.00$ & $7.39$ & $\phantom{-}0.0000$ & $\phantom{-}0.0000$ & $-0.0001$ & $-0.0152$ & $-0.0362$ & $0.10$ & $49.76$ \\
+$125$   & $0.3303\ (z{=}{-}0.01)$ & $0.3408$ & $+0.0106$ \\
+$500$   & $0.3304\ (z{=}{-}0.13)$ & $0.3367$ & $+0.0064$ \\
+$1{,}000$ & $0.3324\ (z{=}{-}1.99)$ & $0.3344$ & $+0.0041$ \\
+$4{,}000$ & $0.3302\ (z{=}{+}0.11)$ & $0.3333$ & $+0.0030$ \\
 \bottomrule
 \end{tabular}
-\caption{Laplace minus MC differences ($\Delta = \text{Lap.} - \text{MC}$) and wall-clock
-computation time. The persistent $\Delta p_{\mathrm{surv}}<0$ reflects the discrete-time
-Euler--Poisson scheme ($252$ steps yr$^{-1}$) missing intra-period liquidation events; the
-effect is strongest near $H_0^{\min}\approx1.068$ where paths frequently approach the barrier.
-Higher-moment differences shrink as $H_0$ increases and more paths survive into the interior.
-The Laplace method covers five Talbot inversions ($k=0,\ldots,4$); the
-${\approx}490{\times}$ speed-up over MC is uniform across all tabulated values.}
-\label{tab:diff}
+\caption{Survival at $h_0=0.07$ against steps over the month; $200{,}000$ paths, MC standard error
+${\approx}1.1\times10^{-3}$, Laplace reference $0.33029$; $z$ is the standardised gap to Laplace.
+Script \texttt{mc\_convergence.py}.}
+\label{tab:mcconv}
 \end{table}
 
 \subsection{Parameter sensitivity}\label{sec:sensitivity}
 
-Figure~\ref{fig:sensitivity} shows how $p_{\mathrm{surv}}$ (left column) and the conditional
-mean $\E[\Pi_T\mid\tau>T]$ (right column) vary with $H_0$ as each parameter is swept in turn.
-For the collateral factor $b$ (row~e--f), survival probability is independent of $b$ at fixed
-$H_0$ — only the payoff kernel changes — so the left panel shows the initial leverage
-$L_0 = H_0/(H_0-b)$ instead.
-
-Three patterns dominate. (i)~\emph{Volatility} is the strongest driver: at $0.3\times$ scale,
-almost all paths survive for $H_0\gtrsim1.35$; at $2\times$ scale, the same cushion yields
-survival below 40\%. (ii)~\emph{Correlation} acts through the effective variance of
-$Z=X_1-X_2$: the calibrated benchmark already sits at $\rho=0.858$, where the spread
-variance is small; moving to lower $\rho$ sharply depresses the survival curve, while
-negligible effect on the conditional mean confirms that correlation works purely through
-barrier-crossing risk. (iii)~\emph{Jump intensity} and \emph{horizon} compress survival
-monotonically, while increasing the conditional mean at low $H_0$ through selective survivor
-effects. For $b$, initial leverage $L_0=H_0/(H_0-b)$ reaches ${\approx}6.3\times$
-at the AAVE minimum $H_0^{\min}\approx1.068$ for $b=0.90$, explaining the strong sensitivity
-of the conditional mean to $b$ near the minimum buffer.
+Figure~\ref{fig:sensitivity} sweeps each parameter in turn. At $H_0=1.2$ (benchmark survival
+$0.83$) the \emph{horizon} matters most: survival is $1.00$ at one week and $0.32$ at three months.
+\emph{Jump intensity} and \emph{diffusion volatility} come next: scaling the intensities from $0.1$
+to $2$ times the benchmark moves survival from $0.96$ to $0.73$, and scaling $\sigma_1,\sigma_2$ from
+$0.3$ to $2$ times moves it from $0.88$ to $0.71$. Jumps carry about three quarters of the spread
+variance at the benchmark, which is why the intensity sweep matters as much as the volatility sweep.
+\emph{Correlation} acts only through the spread variance: lowering $\rho$ from $0.85$ to $0.5$ cuts
+survival to $0.74$, and the conditional mean barely moves. Jump intensity and horizon also raise the
+conditional mean at low $H_0$ through survivor selection. Survival does not depend on $b$ at fixed $H_0$ --- only the payoff kernel
+does --- so row~(e) plots leverage $L_0=H_0/(H_0-b)$, which reaches ${\approx}6.3\times$ at
+$H_0^{\min}$ for $b=0.90$.
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=\linewidth]{fig_sensitivity.pdf}
-\caption{Left column: survival probability $p_{\mathrm{surv}}$ (rows~a--d) and initial
-leverage $L_0$ (row~e, log scale) versus $H_0$. Right column: conditional mean
-$\E[\Pi_T\mid\tau>T]$. Each row varies one parameter; all others fixed at
-Table~\ref{tab:num-params}. Encoding: colour and line style identify parameter values
-(solid/green = benchmark); the heavier line is the baseline.
-Laplace--resolvent, $H_0\in[1.068,2.000]$, 40 points per curve.}
+\includegraphics[width=0.95\linewidth]{fig_sensitivity.pdf}
+\caption{Left: survival probability (rows~a--d) and initial leverage $L_0$ (row~e, log scale) versus
+$H_0$. Right: conditional mean $\E[\Pi_T\mid\tau>T]$. Each row varies one parameter, others at
+Table~\ref{tab:num-params}; the heavier solid line is the benchmark. $H_0\in[1.068,2.000]$, 40
+points per curve.}
 \label{fig:sensitivity}
 \end{figure}
 
-\clearpage
 % ============================================================
-\section{Conclusion and Discussion}\label{sec:discussion}
+\section{Liquidation Recovery, Overshoot and Log Wealth}\label{sec:recovery}
 % ============================================================
 
-This paper develops a semi-analytic method for sizing a leveraged DeFi long--short position
-subject to health-factor liquidation. The initial log health factor $h_0$ reduces the sizing
-problem to one dimension, while an exponential change of measure reduces each payoff moment
-to a killed expectation of the log-ratio process. Under Kou jump--diffusion dynamics, the
-corresponding Laplace resolvent is obtained from a $3\times3$ linear system.
+This section supplies $R_\tau$ in \eqref{eq:wealth} under the protocol's liquidation convention, at
+the cost of one additional Laplace inversion per moment order and with the barrier system
+unchanged. The same objects then give the law of the overshoot, the probability of bad debt and
+the expected log of terminal wealth.
 
-A central feature is that the construction applies to every admissible integer order
-$k\ge1$ satisfying $k\eta_{2,+}<1$. Higher-order moments require a different tilt and forcing
-polynomial, but do not increase the dimension of the resolvent system. The framework therefore
-supports mean--variance sizing as well as criteria involving skewness, kurtosis, higher-moment
-penalties, or polynomial utility approximations. The numerical results show close agreement
-with Monte Carlo, while the semi-analytic method is substantially faster and free of simulation
-noise.
+\subsection{Recovery at the barrier}
+A liquidator repays debt and seizes collateral worth $(1+\ell)$ times the repayment, $\ell$ being the
+liquidation bonus (Aave v3 Ethereum: $0.05$ for WETH, $0.045$ for major stablecoins, $0.05$--$0.075$
+for wrapped BTC). Full repayment leaves $R_\tau=V_{1,\tau}-(1+\ell)V_{2,\tau}$. On a continuous
+crossing $V_{2,\tau}=b\,V_{1,\tau}$, so
+\begin{equation}\label{eq:recovery}
+R_\tau \;=\; V_{2,\tau}\,\frac{1-b(1+\ell)}{b},
+\end{equation}
+positive when $\ell<1/b-1$ ($0.282$ at $b=0.78$). Writing recovery through the \emph{debt} leg makes
+it proportional to $e^{X_{2,\tau}}$, the factor the framework already tilts by.
 
-For practical use, an investor can first choose a maximum liquidation probability and invert
-$p_{\mathrm{liq}}(H_0)$ to obtain a minimum health factor. Within the resulting feasible set,
-the investor then maximises the preferred moment-based objective. The optimal leverage follows
-from the selected health factor through $L_0=H_0/(H_0-b)$. Figure~\ref{fig:frontier}
-summarises this tradeoff between conditional payoff, variance, and liquidation probability.
+\begin{remark}[Continuous-crossing approximation]\label{rem:overshoot}
+A downward jump can carry $H$ strictly below one, leaving less recovery than \eqref{eq:recovery},
+possibly negative (bad debt). Equation~\eqref{eq:recovery} is therefore an upper bound;
+Section~\ref{sec:overshoot} computes the exact value.
+\end{remark}
 
-The model deliberately abstracts from oracle delays, liquidation execution and recovery,
-dynamic collateral adjustments, and stochastic borrowing rates. It should therefore be read
-as an ex-ante liquidation-buffer and sizing tool rather than a complete trading or execution
-model.
+\subsection{The first-passage transform}
+We need $\E[e^{kX_{2,\tau}}\one_{\{\tau\le T\}}]$ for $k=1,2$. Since
+$\exp(kX_{2,t}-t\Psi_k)$, $\Psi_k:=\Psi(0,-ik)$, is a martingale, changing measure on $\F_\tau$
+gives $\E[e^{kX_{2,\tau}}\one_{\{\tau\le T\}}]=\E^{(k)}[e^{\Psi_k\tau}\one_{\{\tau\le T\}}]$, with
+Laplace transform
+\begin{equation}\label{eq:fp-transform}
+\int_0^\infty e^{-qT}\,\E\!\left[e^{kX_{2,\tau}}\one_{\{\tau\le T\}}\right]\diff T
+=\frac{1}{q}\Bigl(1-(q-\Psi_k)\,\widehat p^{\,(k)}_{\mathrm{surv}}(q-\Psi_k)\Bigr),
+\qquad q>\Psi_k,
+\end{equation}
+where $\widehat p^{\,(k)}_{\mathrm{surv}}$ is the survival transform of
+Proposition~\ref{prop:survival} under the $k$-tilted dynamics. Because $\Pi_T$ and
+$R_\tau\one_{\{\tau\le T\}}$ live on disjoint events,
+\begin{equation}\label{eq:wealth-moments}
+\E[W_T]=\E[\Pi_T]+\E[R_\tau\one_{\{\tau\le T\}}],
+\qquad
+\E[W_T^2]=\E[\Pi_T^2]+\E[R_\tau^2\one_{\{\tau\le T\}}].
+\end{equation}
+At $k=0$, \eqref{eq:fp-transform} returns $p_{\mathrm{liq}}$ and agrees with
+Proposition~\ref{prop:survival} to $1.7\times10^{-11}$.
 
-Further work may incorporate liquidation recovery, dynamic collateral management, and
-stochastic funding costs.
+Recovery is material. At $H_0=1.16$ it raises mean terminal wealth from $0.694$ to $0.856$ and cuts
+its variance from $0.217$ to $0.057$ by removing the total-loss atom at zero. It does not change the
+sizing conclusion of Section~\ref{sec:discussion}.
+
+\subsection{Exact recovery under jump overshoot}\label{sec:overshoot}
+With the actual leg values at liquidation and $h_\tau:=h_0+Z_\tau\le0$ (zero at a continuous
+crossing),
+\begin{equation}\label{eq:recovery-exact}
+R_\tau \;=\; V_{2,\tau}\!\left(\frac{e^{h_\tau}}{b}-(1+\ell)\right),
+\end{equation}
+which is smaller than \eqref{eq:recovery} whenever $h_\tau<0$. Rather than integrating against the
+(exponential-mixture) overshoot density, we note that per unit initial equity
+\begin{equation}\label{eq:joint-hit}
+R_\tau=A\,e^{X_{1,\tau}}-B\,e^{X_{2,\tau}},
+\qquad
+\mathrm{Hit}(a_1,a_2):=\E\!\left[e^{a_1X_{1,\tau}+a_2X_{2,\tau}}\one_{\{\tau\le T\}}\right],
+\end{equation}
+with $A=H_0/(H_0-b)$ and $B=(1+\ell)b/(H_0-b)$, so $\E[R_\tau\one]=A\,\mathrm{Hit}(1,0)-B\,\mathrm{Hit}(0,1)$
+and $\E[R_\tau^2\one]=A^2\mathrm{Hit}(2,0)-2AB\,\mathrm{Hit}(1,1)+B^2\mathrm{Hit}(0,2)$. The tilted
+first-passage law already integrates over the landing point, so overshoot is captured exactly.
+Tilting by $\exp(a_1X_{1,t}+a_2X_{2,t}-t\Psi_{\mathrm{M}}(a_1,a_2))$, with
+$\Psi_{\mathrm{M}}(a_1,a_2):=\log\E[e^{a_1X_{1,1}+a_2X_{2,1}}]$, gives
+\begin{equation}\label{eq:joint-hit-transform}
+\int_0^\infty e^{-qT}\,\mathrm{Hit}(a_1,a_2)\,\diff T
+=\frac1q\Bigl(1-(q-\Psi_{\mathrm{M}})\,\widehat p^{\,(a_1,a_2)}_{\mathrm{surv}}(q-\Psi_{\mathrm{M}})\Bigr),
+\qquad q>\Psi_{\mathrm{M}}(a_1,a_2),
+\end{equation}
+where $\widehat p^{\,(a_1,a_2)}_{\mathrm{surv}}$ is the survival transform under the
+$(a_1,a_2)$-tilted dynamics of $Z$, with exponent
+$\psi_Z^{(a_1,a_2)}(s)=\Psi_{\mathrm{M}}(a_1+s,a_2-s)-\Psi_{\mathrm{M}}(a_1,a_2)$ and phase rates
+$r_{1,+}=1/\eta_{1,+}-a_1$, $r_{1,-}=1/\eta_{1,-}+a_1$, $r_{2,+}=1/\eta_{2,-}+a_2$,
+$r_{2,-}=1/\eta_{2,+}-a_2$; $(a_1,a_2)=(0,k)$ recovers Lemma~\ref{lem:psiZk}. The barrier system
+stays $3\times3$. $\mathrm{Hit}(0,k)$ reproduces \eqref{eq:fp-transform} to $6\times10^{-14}$ and
+$\mathrm{Hit}(0,0)$ reproduces $1-p_{\mathrm{surv}}$ to $3\times10^{-11}$; against an MC recording
+leg values at the crossing step, all five moments agree up to a discretisation bias that shrinks with
+the step count.
+
+At the headline calibration's jump sizes ($\eta\approx0.4$--$1.1\%$) the correction is small: at $H_0=1.16$ mean
+recovery falls from $0.162$ to $0.157$ ($-3.1\%$) and wealth variance rises from $0.057$ to $0.060$.
+To see when overshoot bites, Table~\ref{tab:overshoot} scales the jumps two ways. Design~A scales
+the mean jump size by $s$ at fixed intensity, which multiplies jump variance by $s^2$ --- a far more
+volatile market. The correction reaches $-58\%$ at $s=10$ and mean recovery turns negative at
+$s=20$: the continuous formula reports positive recovery where the protocol absorbs bad debt. Design~B
+also divides intensity by $s^2$, holding jump variance fixed --- genuinely rarer, larger jumps. The
+correction is milder ($-36\%$ at $s=20$) and mean recovery stays positive. The driver is jump size
+rather than jump variance: at fixed variance the correction still reaches $-36\%$, while the headline
+jumps carry about three quarters of the spread variance yet give only $-3\%$ because each is small.
+Throughout, $R_\tau$ is the signed residual equity; a non-recourse borrower receives $R_\tau^+$,
+which differs from it only on bad-debt paths, whose probability Section~\ref{sec:overshoot-law}
+gives in closed form. The headline
+calibration produces its kurtosis from many small jumps (cf.\ the identification ridge of
+\citealt{RamezaniZeng2007} and Appendix~\ref{sec:ecf-ident}), so there the correction is small. It is
+not small under every calibration: the full-history daily fit of Appendix~\ref{sec:full-history},
+whose jumps are fewer and larger ($\eta_{2,+}\approx3.2\%$), gives a correction of $-11\%$ at
+$H_0=1.16$.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{Design A: variance $\propto s^2$} & \multicolumn{2}{c}{Design B: variance fixed} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Jump scale $s$ & $\E[R_\tau]$ exact & rel.\ corr. & $\E[R_\tau]$ exact & rel.\ corr. \\
+\midrule
+$1\times$ (fitted)  & $0.157$ & $-3.1\%$  & $0.157$ & $-3.1\%$ \\
+$3\times$           & $0.263$ & $-15.1\%$ & $0.129$ & $-9\%$ \\
+$10\times$          & $0.175$ & $-58.4\%$ & $0.065$ & $-26\%$ \\
+$20\times$          & $-0.090$ & $-119.6\%$ & $0.041$ & $-36\%$ \\
+\bottomrule
+\end{tabular}
+\caption{Exact mean recovery at $H_0=1.16$ and its correction relative to the continuous-crossing
+value \eqref{eq:recovery}. The continuous-crossing \emph{expected} recovery still moves with
+$p_{\mathrm{liq}}$: under Design~A $p_{\mathrm{liq}}$ rises from $0.29$ to $0.70$ (continuous mean
+recovery $0.162\to0.461$); under Design~B it falls to $0.11$ ($\to0.064$). Script
+\texttt{overshoot\_table.py}.}
+\label{tab:overshoot}
+\end{table}
+
+\subsection{The overshoot law and the probability of bad debt}\label{sec:overshoot-law}
+The joint hitting moments integrate over the landing point without exposing it. The landing point
+itself has a simple law. Write $u:=-h_\tau\ge0$ for the overshoot of the log health factor below the
+barrier.
+
+\begin{proposition}[Overshoot law]\label{prop:overshoot-law}
+For every $T$ there are weights $P_0,P_1,P_2\ge0$, with $P_0+P_1+P_2=p_{\mathrm{liq}}(T)$, such that
+for every bounded measurable $f$
+\begin{equation}\label{eq:overshoot-law}
+\E\!\left[f(u)\,\one_{\{\tau\le T\}}\right]
+= P_0\,f(0)+\sum_{i=1}^{2}P_i\int_0^\infty f(u)\,r_ie^{-r_iu}\,\diff u,
+\qquad r_1=\frac1{\eta_{1,-}},\quad r_2=\frac1{\eta_{2,+}}.
+\end{equation}
+The weights solve the $3\times3$ system
+$e^{jh_0}\mathrm{Hit}(j,-j)=P_0+P_1\,r_1/(r_1+j)+P_2\,r_2/(r_2+j)$ for $j=0,1,2$.
+\end{proposition}
+\proofref{proof:prop:overshoot-law}
+
+\noindent
+$Z$ reaches the barrier either continuously (the diffusion creeps across, $u=0$) or by a downward
+jump, which is a down-jump of $X_1$ (rate $r_1$) or an up-jump of $X_2$ (rate $r_2$). By
+memorylessness, the excess of a crossing jump over the distance to the barrier is exponential with
+the rate of that jump, whatever the path before it \citep{Kou2002,KouWang2003}; Appendix~\ref{app:proofs}
+makes this precise with the compensation formula. This gives \eqref{eq:overshoot-law}. Taking $f(u)=e^{-ju}$, with
+$e^{-ju}=e^{jh_0}e^{jZ_\tau}$ and $\mathrm{Hit}$ from \eqref{eq:joint-hit-transform}, yields the
+system. At the benchmark the weights reproduce the hitting moments at $j=5$ and $j=10$ to about
+$10^{-10}$, which checks the structure independently.
+
+Recovery is non-positive exactly when $u\ge u^\star:=-\log\bigl(b(1+\ell)\bigr)$ ($0.200$ at
+$b=0.78$, $\ell=0.05$). On those paths the protocol absorbs bad debt and a non-recourse borrower ends
+with nothing. Proposition~\ref{prop:overshoot-law} gives the bad-debt probability in closed form,
+\begin{equation}\label{eq:bad-debt}
+\P\!\left(R_\tau\le0,\ \tau\le T\right)=P_1e^{-r_1u^\star}+P_2e^{-r_2u^\star}.
+\end{equation}
+It is $3\times10^{-9}$ at $H_0=1.16$ under the headline calibration, where jumps are below one
+percent, and $3\times10^{-4}$ under the full-history daily calibration.
+
+\subsection{Expected log wealth}\label{sec:log-wealth}
+Moments of every admissible order cover polynomial criteria. The log of wealth, which defines the
+growth-optimal (Kelly) investor \citep{Kelly1956,MacLeanThorpZiemba2011}, is not polynomial, but it
+is also within reach. Per unit equity, $\Pi_T=e^{X_{2,T}}(e^{h_T}-b)/(H_0-b)$ on survival and
+$R_\tau=e^{X_{2,\tau}}(e^{-u}-c)/(H_0-b)$ on liquidation, with $c:=b(1+\ell)$. Since
+$\log(e^{h}-b)=h-\sum_{n\ge1}(b^n/n)e^{-nh}$ for $h\ge0$,
+\begin{equation}\label{eq:log-wealth}
+\begin{aligned}
+\E[\log W_T]={}&\E\!\left[(X_{2,T}+h_T)\one_{\{\tau>T\}}\right]
+-\sum_{n\ge1}\frac{b^n}{n}\,e^{-nh_0}S(-n,n)-\log(H_0-b)\\
+&+\E\!\left[X_{2,\tau}\one_{\{\tau\le T\}}\right]
++\E\!\left[\log(e^{-u}-c)\,\one_{\{\tau\le T\}}\right],
+\end{aligned}
+\end{equation}
+where $S(a_1,a_2):=\E[e^{a_1X_{1,T}+a_2X_{2,T}}\one_{\{\tau>T\}}]$ is a killed joint moment. Its
+Laplace transform is the tilted survival transform at $q-\Psi_{\mathrm M}(a_1,a_2)$, by the change of
+measure behind \eqref{eq:joint-hit-transform} applied on $\F_T$. The linear terms are tilt
+derivatives of $S$ and $\mathrm{Hit}$ at zero, and the last term is a one-dimensional integral
+against \eqref{eq:overshoot-law}. The series converges geometrically because
+$b\,e^{-h_T}\le b<1$ on survival. The tilt $(-n,n)$ is admissible only for $n<\min(1/\eta_{2,+},1/\eta_{1,-})$, which
+caps the series under heavy jump tails. Since $\E[e^{-nh_T}\one_{\{\tau>T\}}]$ decreases in $n$, the
+truncation error after $N$ terms is at most $\E[e^{-Nh_T}\one_{\{\tau>T\}}]\,b^{N+1}/((N+1)(1-b))$,
+which is below $10^{-5}$ in every case reported. The last term of \eqref{eq:log-wealth} is taken
+over paths without bad debt; the next paragraph treats the rest.
+
+Two features matter. First, under the zero-payoff convention $\log W_T=-\infty$ on every liquidated
+path, so a Kelly investor never levers; recovery is what makes the criterion usable. Second, on
+bad-debt paths $W_T=0$ even with recovery, so strict Kelly is $-\infty$ at every levered buffer
+whenever \eqref{eq:bad-debt} is positive. On those paths we replace $\log(e^{-u}-c)$ in \eqref{eq:log-wealth}
+by $\log10^{-4}$, which floors wealth at $10^{-4}e^{X_{2,\tau}}/(H_0-b)$, and report
+\eqref{eq:bad-debt} alongside. Kelly quantities below refer to this floored objective. The floor is
+immaterial at the headline calibration and of order $10^{-3}$ in $\E[\log W_T]$ at the thinnest
+buffer under the full-history one. Evaluating \eqref{eq:log-wealth} takes about $0.3$\,s per buffer. A
+bridge-corrected Monte Carlo that records the exact leg values at liquidation agrees to within $1.6$
+standard errors at $H_0\in\{1.07,1.16,1.30\}$, and as $h_0\to\infty$ the expression tends to
+$\E[X_{1,T}]$ to $10^{-6}$.
+
+% ============================================================
+\section{Carry-Adjusted Position Sizing}\label{sec:carry}
+% ============================================================
+
+On Aave the collateral earns a supply rate and the debt accrues a borrow rate, both compounding
+through the protocol's indices. This section shows that deterministic carry is a per-leg drift shift,
+that it is small in barrier terms for cross-asset pairs, and that the one non-level channel --- the kink in the rate curve
+--- is also small at a monthly horizon.
+
+\subsection{Carry as an effective drift}\label{sec:carry-drift}
+Let $r_s$ and $r_b$ be the supply rate on $S_1$ and the borrow rate on $S_2$, constant over $[0,T]$.
+Then $V_{1,t}=n_1S_{1,0}e^{X_{1,t}+r_st}$, $V_{2,t}=n_2S_{2,0}e^{X_{2,t}+r_bt}$, and
+$h_t=h_0+Z_t+ct$ with net carry $c:=r_s-r_b$. The carry-adjusted log-prices
+$\widetilde X_{i,t}:=X_{i,t}+r_it$ ($r_1:=r_s$, $r_2:=r_b$) are Kou processes with the same
+diffusion and jump law; under the price-growth convention the shift is exactly
+$\mu_i\mapsto\mu_i+r_i$, leaving $\chi_i$ and $k\eta_{2,+}<1$ untouched.
+
+\begin{proposition}[Carry is an effective drift]\label{prop:carry}
+The carry-adjusted book coincides with the book of Sections~\ref{sec:setup}--\ref{sec:resolvent}
+under $(\mu_1,\mu_2)\mapsto(\mu_1+r_s,\mu_2+r_b)$. Survival and every killed moment
+$\E[\widetilde\Pi_T^{\,k}]$, $k\in\mathcal K$, are given by the formulas of
+Sections~\ref{sec:moments}--\ref{sec:resolvent} at the shifted drifts.
+\end{proposition}
+
+\noindent
+The first-passage problem is that of $\widetilde Z=Z+ct$ below $-h_0$, and $\widetilde\Pi_T$ is
+\eqref{eq:payoff-factor} with $X_i$ replaced by $\widetilde X_i$. Positive $c$ raises survival at
+fixed $h_0$; whether by an amount that matters is a quantitative question.
+
+\subsection{The cross-section: when deterministic carry matters}\label{sec:carry-crosssection}
+
+We screen the Aave v3 Ethereum universe by a rule fixed in advance --- blue-chip majors and canonical
+wrappers, not frozen or paused, listed for the full window, ranked by USD TVL \emph{at the window
+start}, collateral legs with positive origination LTV, debt legs with borrowing enabled --- and
+report \emph{every} admissible ordered pair: eight reserves, $37$ pairs
+(Appendix~\ref{app:cross-section}). The diagnostic is the number of barrier standard deviations that
+carry is worth over the horizon,
+\begin{equation}\label{eq:carry-ratio}
+\mathrm{CB} \;:=\; \frac{c\,T}{\bar\sigma_Z\sqrt{T}},
+\end{equation}
+where $\bar\sigma_Z$ is the \emph{realised} total (diffusion plus jump) volatility of $Z$, measured
+on daily returns; $\mathrm{CB}$ is independent of $h_0$. We fix $T=1/12$, long enough for carry to
+accrue yet short enough for the static assumption of Remark~\ref{rem:dynamic}. The sampling
+interval matters. Oracle-implied prices carry microstructure noise at hourly frequency
+(Appendix~\ref{sec:full-history}), and for near-pegged pairs that noise is most of the hourly
+variance: hourly sampling puts $\bar\sigma_Z$ for wstETH/WETH at $0.39$, daily at $0.08$.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{llrrrr}
+\toprule
+Collateral & Debt & $\bar\sigma_Z$ & $r_s-r_b$ & $\mathrm{CB}$ & debt $U>U_{\mathrm{opt}}$ \\
+\midrule
+\multicolumn{6}{l}{\emph{Stablecoin pairs}}\\
+USDT & USDC  & $0.0039$ & $-1.42\%$ & $-1.043$ & $10.4\%$ \\
+USDC & USDT  & $0.0039$ & $-0.43\%$ & $-0.318$ & $8.5\%$ \\
+USDT & USDe  & ${<}10^{-4}$ & $-0.51\%$ & --- & $5.2\%$ \\
+\midrule
+\multicolumn{6}{l}{\emph{Same-underlying pairs}}\\
+wstETH & WETH & $0.078$ & $-2.51\%$ & $-0.093$ & $13.6\%$ \\
+weETH & WETH  & $0.176$ & $-2.51\%$ & $-0.041$ & $13.6\%$ \\
+WBTC & cbBTC  & $0.073$ & $-0.30\%$ & $-0.012$ & $0.0\%$ \\
+\midrule
+\multicolumn{6}{l}{\emph{Cross-asset pairs}}\\
+WETH & USDC  & $0.514$ & $-2.67\%$ & $-0.015$ & $10.4\%$ \\
+WETH & WBTC  & $0.238$ & $+1.52\%$ & $+0.018$ & $0.0\%$ \\
+WBTC & WETH  & $0.238$ & $-2.51\%$ & $-0.030$ & $13.6\%$ \\
+cbBTC & USDC & $0.375$ & $-4.54\%$ & $-0.035$ & $10.4\%$ \\
+\bottomrule
+\end{tabular}
+\caption{Representative rows of the $37$-pair cross-section, 2026-03-17 to 2026-08-04, $T=1/12$.
+$\bar\sigma_Z$: annualised realised volatility of the daily log price ratio; $\mathrm{CB}$:
+carry-to-barrier ratio \eqref{eq:carry-ratio}; last column: share of hours the debt reserve's
+curve-implied utilization exceeds its kink (Section~\ref{sec:carry-regime}). The USDT/USDe oracle
+ratio does not move at daily resolution, so $\mathrm{CB}$ is undefined.}
+\label{tab:carry-xs}
+\end{table}
+
+Three groups emerge (Table~\ref{tab:carry-xs}). \emph{For every cross-asset pair, deterministic
+carry is negligible}: $|\mathrm{CB}|\le0.035$, a few percent of one barrier standard deviation over
+a month, so it cannot change a sizing decision. \emph{Same-underlying pairs} (a liquid-staking token
+against WETH, or two BTC wrappers) are near-pegged, with $\bar\sigma_Z$ between $0.07$ and $0.18$.
+There carry is two to three times more material, up to $\mathrm{CB}=-0.09$ for wstETH/WETH, though
+still under a tenth of a barrier standard deviation; their liquidation risk lies mainly in depegs
+(Section~\ref{sec:carry-depeg}). \emph{Stablecoin pairs} collapse $\bar\sigma_Z$ to below $0.004$, and
+there carry reaches a full barrier standard deviation ($\mathrm{CB}=-1.04$ for USDT/USDC). The
+barrier then sits tens of standard deviations away, so liquidation risk is carried by jumps and
+depegs; for USDT/USDe the oracle ratio does not move at all at daily resolution, and the barrier
+cannot be reached by price.
+
+A second regularity concerns sign: \emph{a leveraged long-crypto book generally pays carry}. Every
+pair with crypto collateral and stablecoin or ETH debt has net carry between $-1.8\%$ and $-4.5\%$.
+Wrapped-BTC debt is the exception: those reserves sit at utilization $0.03$--$0.05$ and charge a
+near-floor rate, so the carry is near zero for staking-token collateral and positive for WETH
+collateral (WETH/WBTC $+1.52\%$, WETH/cbBTC $+1.56\%$); even there $\mathrm{CB}\approx+0.02$.
+
+\subsection{Regime-switching carry and the \texorpdfstring{$6\times6$}{6x6} resolvent}\label{sec:carry-regime}
+
+With the rate \emph{level} ruled out, what remains is its \emph{shape}. Aave's variable borrow rate
+is a deterministic, piecewise-linear function of reserve utilization $U$,
+\begin{equation}\label{eq:rate-curve}
+r_b(U)=
+\begin{cases}
+r_0+s_1\,U/U_{\mathrm{opt}}, & U\le U_{\mathrm{opt}},\\[2pt]
+r_0+s_1+s_2\,(U-U_{\mathrm{opt}})/(1-U_{\mathrm{opt}}), & U> U_{\mathrm{opt}},
+\end{cases}
+\end{equation}
+with parameters published on-chain. Two consequences follow. First, the curve is invertible, so the
+observed rate is a sufficient statistic for utilization. This matters because the naive
+borrowed/supplied ratio is badly biased: for USDC it reports mean utilization $0.881$ and a maximum
+above one, against curve-implied $0.677$ and $0.931$, and so misclassifies $25.4\%$ of hours as
+stressed against a true $10.4\%$. Second, the slope jumps at $U_{\mathrm{opt}}$ (published $s_2$ of
+$0.60$--$0.80$ for WETH and the major stablecoins and $3.00$ for wrapped BTC, against $s_1$ of
+$0.027$--$0.055$), so the borrower is short a call on utilization. Fitting a smooth affine diffusion
+to this kinked transform of a bounded state manufactures spurious jumps and mean reversion.
+
+We therefore let net carry switch between a normal and a stressed state following a two-state Markov
+chain, with rates $(q_1,q_2)$ and state carries $(c_1,c_2)$ calibrated by thresholding utilization at
+$U_{\mathrm{opt}}$. Only the drift switches, so this is Proposition~\ref{prop:carry} applied state by
+state. The barrier system grows from $3\times3$ to $6\times6$ and reduces to two decoupled
+single-regime copies at zero switching (Appendix~\ref{app:regime}, Proposition~\ref{prop:regime}).
+
+Thresholding the WETH debt leg's hourly utilization at $U_{\mathrm{opt}}=0.90$ gives a stressed
+fraction of $19.9\%$ and mean stressed spells of $134$ hours ($q_1=16.3$, $q_2=65.5$ per year), with
+mean borrow rates of $2.1\%$ (normal) and $4.0\%$ (stressed), so $c_1=-2.1\%$ and $c_2=-4.0\%$.
+This uses the raw series; the curve-implied measure gives $13.6\%$ stressed and would shrink the
+effect further. Starting from price-only drifts and adding carry back (Table~\ref{tab:regime}), the
+deterministic mean carry $c=-2.5\%$ lowers survival by $0.8$ percentage points near the barrier. The
+opening regime adds at most $0.1$ point, and averaging the two opening states with their stationary
+weights reproduces the deterministic mean carry to within $0.001$ point. The regime channel
+is \emph{inert at a monthly horizon}: stressed spells of a few days wash out over a month. The
+$0.8$-point cost of mean carry, which $\mathrm{CB}\approx-0.03$ does not reveal, also shows that
+$\mathrm{CB}$ understates carry's influence near the barrier, where survival is most sensitive to
+drift. The mechanism is not wrong, only small here: WETH and the stablecoins spend $5$--$14\%$ of
+hours above their kinks and would show more at longer horizons or with steeper stressed rates, while
+wrapped-BTC debt (utilization $0.03$--$0.05$ against $U_{\mathrm{opt}}=0.45$) has no rate channel at
+all.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+$h_0$ & price-only & det.\ mean carry & open normal & open stressed \\
+\midrule
+$0.10$ & $0.4957$ & $0.4879$ & $0.4882$ & $0.4870$ \\
+$0.25$ & $0.9524$ & $0.9505$ & $0.9505$ & $0.9503$ \\
+$0.50$ & $1.0000$ & $1.0000$ & $1.0000$ & $1.0000$ \\
+\bottomrule
+\end{tabular}
+\caption{Survival at calibrated regime parameters ($q_1=16.3$, $q_2=65.5$, $c_1=-2.1\%$,
+$c_2=-4.0\%$), benchmark WBTC/WETH dynamics, $T=1/12$. All runs start from price-only drifts (APRs of
+Table~\ref{tab:num-params} removed). ``Det.\ mean carry'' applies the stationary $c=-2.5\%$
+(Proposition~\ref{prop:carry}); ``open normal/stressed'' start the chain in each state. Script
+\texttt{regime\_calibration.py}.}
+\label{tab:regime}
+\end{table}
+
+\begin{remark}[The kink as a convexity]\label{rem:jensen}
+With $r_b(U)$ convex and $U$ random, Jensen's inequality gives
+\begin{equation}\label{eq:jensen}
+\mathcal J\;=\;\E\!\big[r_b(U)\big]-r_b(\E[U])\;>\;0
+\end{equation}
+whenever $U$ has mass on both sides of $U_{\mathrm{opt}}$. A deterministic carry evaluated at the
+mean utilization would set $\mathcal J=0$. The carry used here is the realised average rate, which
+averages $r_b$ over the observed utilization path and therefore already contains $\mathcal J$. What
+no deterministic carry can represent is the dependence on the state in which the position opens and
+on when stress arrives; that is what the regime model adds, and Table~\ref{tab:regime} shows it is
+small at a monthly horizon.
+\end{remark}
+
+\subsection{Collateral-depeg sensitivity}\label{sec:carry-depeg}
+A depeg that haircuts collateral by a fraction $d$ scales $H_0$ by $(1-d)$, so it is the same book at
+cushion $h_0+\log(1-d)$, re-evaluated on the existing map \eqref{eq:eval-map}. It matters most for
+the stablecoin and same-underlying pairs the cross-section flags. Their low $\bar\sigma_Z$ makes a
+thin buffer look safe, and that apparent safety is what permits high leverage. A haircut of a few
+percent is many times the spread's one-month standard deviation for stablecoin pairs
+($\bar\sigma_Z\sqrt T\approx0.1\%$) and comparable to it for same-underlying pairs ($2$--$5\%$),
+so the leverage that low $\bar\sigma_Z$ makes affordable is exactly what makes the book
+depeg-fragile. We
+treat the depeg as a scenario overlay so the base dynamics stay pure price. A full treatment would let
+it co-move with the regime channel, since the deleveraging that breaks a peg also drives utilization
+through the kink.
+
+% ============================================================
+\section{Sizing on the Map: Illustration, Realised Evidence and an Extension}\label{sec:discussion}
+% ============================================================
+
+This section applies the evaluation map to the sizing problem of Section~\ref{sec:1d}. Its purpose
+is to show what the map supports, not to recommend a buffer. The answer turns on a relative-drift
+input that the data estimate poorly. A full treatment of that problem belongs to a separate exercise,
+which Section~\ref{sec:extension} outlines.
+
+\subsection{Break-even drift views}
+Write $x:=n_2S_{2,0}=b/(e^{h_0}-b)$ for the debt per unit of equity, so that $x=0$ is the unlevered
+position and $L_0=1+x$. Leverage improves on the unlevered position exactly when the first unit of
+debt does, and that is a closed-form question. As $x\to0$ the buffer becomes infinite and the
+liquidation probability vanishes, so $W_T=(1+x)e^{X_{1,T}}-x\,e^{X_{2,T}}$ to first order, and
+\begin{equation}\label{eq:breakeven}
+\left.\frac{\diff\Phi}{\diff x}\right|_{x=0}
+=\bigl(\E e^{X_{1,T}}-\E e^{X_{2,T}}\bigr)-\alpha\,\mathrm{Cov}\bigl(e^{X_{1,T}},\,e^{X_{1,T}}-e^{X_{2,T}}\bigr),
+\qquad
+\left.\frac{\diff\,\E[\log W_T]}{\diff x}\right|_{x=0}=1-\E\,e^{X_{2,T}-X_{1,T}},
+\end{equation}
+for mean--variance \eqref{eq:Phi} and for Kelly. All terms are joint exponential moments
+$e^{T\Psi_{\mathrm M}(a_1,a_2)}$. The \emph{break-even drift view} $\nu^\star$ is the spread drift
+$\nu=\mu_1-\mu_2$ (price growth plus net carry) at which the derivative vanishes, holding the level
+$\mu_2$ at its sample value. Without liquidation both objectives are concave in $x$ (mean--variance
+is a concave quadratic, $\log$ a concave function of an affine one), so the sign of the derivative at
+$x=0$ decides between the unlevered position and some leverage. Liquidation breaks this argument, so
+we check it numerically: a search over $30$ debt levels spanning the full buffer range, from
+$x=10^{-3}$ ($H_0\approx781$) to the origination maximum, with exact recovery and the floored Kelly
+objective of Section~\ref{sec:log-wealth}, confirms the switch at $\nu^\star$ for every objective
+and calibration.
+
+For Kelly the condition $\E e^{X_{2,T}-X_{1,T}}=1$ is $\Psi_{\mathrm M}(-1,1)=0$, which does not
+depend on $T$ and, with independent jump processes, solves in closed form:
+\begin{equation}\label{eq:kelly-breakeven}
+\nu^\star_{\mathrm{Kelly}}=\underbrace{\sigma_1^2-\rho\sigma_1\sigma_2}_{\text{diffusion}}
++\underbrace{\lambda_1\bigl[M_1(1)+M_1(-1)-2\bigr]}_{\text{WBTC jumps}},
+\qquad M_1(s)=\frac{p_1}{1-s\eta_{1,+}}+\frac{1-p_1}{1+s\eta_{1,-}}.
+\end{equation}
+The break-even views are small (Table~\ref{tab:thresholds}): about $0.4$--$1.6\%$ per year under the
+headline calibration and $2.4$--$11\%$ under the full-history ones, close to linear in $\alpha$, with
+Kelly near $\alpha=1$. Equation~\eqref{eq:kelly-breakeven} says why. The diffusion part is negative,
+because WBTC is the less volatile leg ($\sigma_1<\rho\sigma_2$): at the margin, shorting WETH
+against WBTC reduces diffusive risk. The break-even is positive only through WBTC's own jumps, which
+the short leg does not hedge: $-0.004+0.012$ under the headline calibration, $-0.017+0.065$ under the
+full-history daily one and $-0.009+0.054$ under the 2024 one. The second term rests on the
+jump parameters, which the data identify weakly (Appendix~\ref{sec:calibration}), and a common jump
+component, which the model excludes, would reduce it by the covariance of the two legs' jumps.
+Section~\ref{sec:realised} shows that this is the case in the data: the realised break-even of
+WBTC/WETH is negative. With no
+relative-drift view at all, $\nu$ equals the net carry ($\approx-2.5\%$), below every break-even, so
+the unlevered position is optimal for every objective. Above $\nu^\star$ the optimal leverage rises
+quickly with the view (Figure~\ref{fig:buffer-drift}).
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+Calibration & model $\bar\sigma_Z$ & $\alpha=0.5$ & $\alpha=1$ & Kelly & $\alpha=2$ \\
+\midrule
+Headline, 4h, 2026-03 to 08 ($0.38$ y) & $0.335$ & $+0.004$ & $+0.008$ & $+0.008$ & $+0.016$ \\
+Full history, daily ($3.7$ y) & $0.478$ & $+0.027$ & $+0.054$ & $+0.048$ & $+0.110$ \\
+2024 onward, 4h ($2.8$ y) & $0.485$ & $+0.024$ & $+0.049$ & $+0.045$ & $+0.099$ \\
+\bottomrule
+\end{tabular}
+\caption{Break-even spread-drift views $\nu^\star$ (per year, price growth plus net carry): the
+unlevered position is optimal below $\nu^\star$ and some leverage above it, for mean--variance on
+terminal wealth with exact recovery and for Kelly, from \eqref{eq:breakeven}, with $\mu_2$ at the
+sample level of the matching window (the full-history one for the 2024 calibration). ``Model
+$\bar\sigma_Z$'' is the calibrated total (diffusion plus jump) spread volatility. Script
+\texttt{breakeven\_drift.py}.}
+\label{tab:thresholds}
+\end{table}
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.92\linewidth]{fig_frontier.pdf}
-\caption{Mean--variance--liquidation frontier of $\Pi_T\mid\{\tau>T\}$ for the benchmark
-parametrisation.
-Axes: $x=\mathrm{Var}(\Pi_T\mid\tau>T)$, $y=p_\ell=1-p_{\mathrm{surv}}$,
-$z=\mathrm{E}[\Pi_T\mid\tau>T]$ (vertical).
-The curve is parametrised by $H_0\in[1.068,2.000]$; decreasing $H_0$ moves the curve toward
-higher variance and higher $p_\ell$, while the conditional mean becomes U-shaped near the
-liquidation boundary.
-Grey projections on the three coordinate planes recover the pairwise two-dimensional tradeoffs;
-panel (a) plots the increasing efficient branch of the mean--liquidation projection.
-Script \texttt{jobs/frontier\_analysis.py}.}
-\label{fig:frontier}
+\includegraphics[width=0.95\linewidth]{fig_buffer_drift.pdf}
+\caption{Optimal initial leverage $L_0^\star$ against a drift view $\nu=\mu_1-\mu_2$, mean--variance
+on terminal wealth ($\alpha=0.5,1,2$) and Kelly, exact recovery, over the full buffer range. Left:
+headline calibration; right: full-history daily calibration. The optimum is unlevered ($L_0^\star=1$)
+below the break-even view and rises quickly above it. The vertical line marks the sample drift of
+each window. The optimum is located on $30$ debt levels plus the unlevered position, hence the steps. Script
+\texttt{breakeven\_drift.py}.}
+\label{fig:buffer-drift}
 \end{figure}
 
-\clearpage
+\subsection{What the data say about the drift}
+The spread drift has two parts, $\nu=\nu_{\mathrm{price}}+c$. The net carry $c=r_s-r_b$ is observed
+on-chain, about $-2.5\%$ per year for WBTC/WETH. The relative price growth $\nu_{\mathrm{price}}$ is
+the expected outperformance of WBTC over WETH, and it is estimated poorly at any sampling
+frequency, because the standard error of a drift depends only on calendar length
+\citep{Merton1980}. The ECF drift normalizers of Table~\ref{tab:num-params} are fitted to de-meaned
+returns and are not estimates of it, so we use sample means. The headline window gives
+$\nu=+0.10$ (price $+0.13$, carry $-0.025$) with a Newey--West standard error of $0.34$; the full
+$3.7$-year daily history gives $\nu=+0.10$ (price $+0.13$, carry $-0.03$) with a Newey--West and
+block-bootstrap standard error of $0.19$; and the yearly estimates of $\nu_{\mathrm{price}}$ range
+from $-0.16$ to $+0.34$ with standard errors of $0.3$--$0.5$. Both point estimates lie above every
+headline break-even and above most full-history ones, and at them the optimal leverage is moderate
+($1.4$--$2.2$ under the headline calibration, $1.0$--$1.5$ under the full-history ones). But the
+standard errors are several times the gap between estimate and break-even: telling $+0.10$ from the
+full-history Kelly break-even of $+0.05$ at two standard errors would need a standard error of
+$0.025$, about two centuries of data. Both reserves accept collateral and borrowing, so the book can
+also be held the other way round. Reversing the legs flips the sign of $\nu_{\mathrm{price}}$ and
+changes the carry: over the full history, WETH collateral against WBTC debt has
+$\nu_{\mathrm{price}}=-0.13$ and $c=+1.1\%$, so $\nu=-0.11$. Its Kelly break-even, the mirror image
+of \eqref{eq:kelly-breakeven} with the legs exchanged, is $+0.10$ to $+0.19$ across the calibrations
+and has a positive diffusion part, because WETH is the more volatile leg; the reversed book is thus
+far from paying, even though WETH's higher liquidation threshold ($0.83$ against $0.78$) would allow
+more leverage. A
+relative-drift view therefore chooses the orientation as well as the buffer.
+
+A carry-anchored Bayesian layer turns this into a probability. Take $\nu\sim\mathcal N(c,0.20^2)$,
+the view that relative prices have no predictable drift, and update it with the sample estimate.
+The posterior probability that leverage pays, $\P(\nu>\nu^\star)$, is $48$--$51\%$ for every objective
+under the headline calibration and $30$--$54\%$ under the full-history ones, treating $\nu^\star$ as
+known. Under a flat prior, which takes the sample estimate at face value, it is $60$--$62\%$ and
+$48$--$65\%$. Either way the data leave the question close to open. Maximising the posterior
+expectation of $\E[\log W_T]$ (Bayes--Kelly) has an exact rule at the margin: with posterior
+$\mathcal N(m,s^2)$, lever if and only if $m>\nu^\star_{\mathrm{Kelly}}+\tfrac12Ts^2$. The variance
+term is small ($0.001$ at the headline posterior), so the rule is decided by the posterior mean. The
+carry-anchored prior pulls it to $+0.008$ (headline) and $+0.039$ (full history), just below the
+thresholds $+0.009$ and $+0.046$--$0.049$, and Bayes--Kelly selects the unlevered position under all
+three calibrations. Under the flat prior $m=\hat\nu\approx0.10$ and it levers. The unlevered choice
+therefore reflects the prior's shrinkage toward zero relative drift, not estimation risk as such. Out of sample, the fitted ECF drift also worsens the map's
+liquidation forecasts relative to setting $\nu_{\mathrm{price}}=0$ (Appendix~\ref{sec:full-history}).
+
+\subsection{Did leverage pay? A realised backtest}\label{sec:realised}
+The break-even rule says when leverage pays; whether it did is a question for realised data, and
+one that needs no model. We replay every pair of the cross-section (Section~\ref{sec:carry-crosssection};
+$37$ pairs) hour by hour on the Aave v3 Ethereum history: oracle-implied prices, the collateral's
+supply rate and the debt's borrow rate. Windows run from the first hour at which both reserves are
+live (27 January 2023 for the original reserves, up to 23 September 2024 for cbBTC) to 13 October
+2026. Equity is in dollars. At each roll date the book is reset to initial leverage $L_0$; between
+rolls interest accrues on both legs, and whenever the health factor falls below one at an hourly
+mark a keeper repays half the debt (all of it below $0.95$) and seizes collateral worth the repayment
+plus the reserve's bonus, as on Aave v3. The benchmark holds the collateral unlevered. Rolled books
+are averaged over four roll phases and buy-and-hold books over four start dates $120$ days apart.
+Standard errors are Newey--West on daily excess log returns ($60$-day lag).
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+Roll horizon & $L_0=1.25$ & $L_0=1.5$ & $L_0=2$ & $L_0=3$ \\
+\midrule
+1 day & $-0.038$ \ (4) & $-0.102$ \ (4) & $-0.287$ \ (3) & $-0.768$ \ (0) \\
+30 days & $-0.042$ \ (4) & $-0.113$ \ (4) & $-0.331$ \ (4) & $-0.994$ \ (1) \\
+365 days & $-0.008$ \ (5) & $-0.112$ \ (5) & $-0.559$ \ (3) & $-0.889$ \ (2) \\
+Buy and hold & $-0.017$ \ (12) & $-0.036$ \ (12) & $-0.303$ \ (10) & $-0.451$ \ (7) \\
+\bottomrule
+\end{tabular}
+\caption{Realised excess log growth per year of the levered over the unlevered book: median over
+the $37$ pairs, with the number of pairs in which leverage paid in parentheses. Aave v3 liquidation
+rules, current reserve parameters, no trading costs. Script \texttt{realised\_backtest.py}.}
+\label{tab:realised}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\linewidth]{fig_realised_backtest.pdf}
+\caption{Left: realised excess log growth against initial leverage, $30$-day rolls, one line per
+pair. Right: realised spread drift $\hat\nu$ against the realised Kelly break-even $\hat\nu^\star$,
+both from daily gross returns including interest; above the diagonal a little leverage paid.
+Script \texttt{fig\_realised\_backtest.py}.}
+\label{fig:realised-backtest}
+\end{figure}
+
+Leverage rarely paid (Table~\ref{tab:realised}, Figure~\ref{fig:realised-backtest}). At $L_0=1.25$
+it beat the unlevered book in $4$ of $37$ pairs --- WBTC against USDC, USDT and WETH, and cbBTC against
+WETH, all books long BTC in a window in which BTC rose $3.6$-fold and doubled against ETH --- and
+in none significantly. Of $1{,}332$ pair, leverage and horizon combinations, one has $t>2$ and $338$
+have $t<-2$; the four stablecoin pairs lose significantly at every leverage up to $3\times$ and every
+horizon, because their net carry over the window is negative and nearly deterministic. Losses grow quickly with
+leverage, through volatility drag at every horizon and through liquidations once the book is left
+for a week or more: from $L_0=2.5$ most pairs are liquidated at least once at those horizons, and a
+book rolled at the maximum LTV loses in every pair. A $10$\,bp trading cost per reset leaves these
+numbers almost unchanged, and so does the paper's full-liquidation convention for rolled books up to
+$L_0=2$; for buy-and-hold at high leverage it loses less than Aave's partial liquidations, because
+after one liquidation the residual is held unlevered. Rolling more often does not help: at low leverage the excess is about the same from one
+day to a year. Buy and hold does better, because a static book's leverage falls as it gains and it
+avoids the volatility drag of re-levering, but it still loses in most pairs. Nor is short-term profitability a matter
+of calendar time: at $L_0=2$ and $30$-day rolls, $17\%$ of cross-asset pair-years were positive, almost
+all of them BTC-long books in 2023--24 or ETH-long books against dollars in 2023, and none of the $29$
+in 2025. The window is one cycle --- a bull market
+to the 2025 peaks, then a decline of $53\%$ for BTC and $68\%$ for ETH to mid-2026 --- with one
+dominant cross-asset trend, so these numbers describe this history, not a law. A simple ex-ante rule
+that levers to $2\times$ for a month only after a positive trailing-year spread return lost less than
+always levering in $29$ pairs but beat the unlevered book in only $5$.
+
+The realised break-even confirms the rule and exposes the model. For a daily-rolled book the
+marginal log growth of the first unit of debt is $\E[1-R_2/R_1]$ in daily gross returns, so leverage
+pays at the margin if and only if $\hat\nu>\hat\nu^\star$, the realised counterpart of
+\eqref{eq:kelly-breakeven}; this is a first-order identity, and it sorts all $37$ pairs correctly.
+Its value lies in the comparison with the model. For WBTC/WETH, $\hat\nu^\star=-0.023$ (daily;
+$-0.026$ four-hourly), against the full-history model's $+0.048$. The legs' realised correlation is
+$0.81$, and on $85\%$ of the days with a three-standard-deviation move in either leg both legs move
+by more than one and a half standard deviations in the same direction; the calibrated model, whose jumps are independent, has correlation $0.50$. With only Brownian
+correlation to carry co-movement, the fit cannot match the common jumps: it understates both legs'
+variances (WBTC $0.15$ against $0.21$ per year) and, by much more, their covariance ($0.11$ against
+$0.24$), so the spread variance is overstated ($0.23$ against $0.14$) and the break-even, collateral
+variance minus covariance, turns positive. The same overstatement inflates the model's liquidation
+probabilities and is consistent with their excess over realised frequencies out of sample
+(Appendix~\ref{sec:full-history}). A common jump component --- a third Poisson process
+moving both legs, with double-exponential marks so that the spread's jumps stay in the
+mixed-exponential class of Section~\ref{sec:resolvent}, at the cost of more phases and a larger
+barrier system --- is therefore the most consequential extension of the model.
+
+\subsection{A decision-theoretic extension}\label{sec:extension}
+These results suggest a separate treatment of the sizing problem, which we leave to future work.
+Its question is whether a leveraged position of this kind can be sized from data at all. Four
+pieces would be needed.
+\emph{(i)} A preference-free break-even: the killed law of $Z_T$ and the overshoot law of
+Proposition~\ref{prop:overshoot-law} determine the full distribution of $W_T$, so one can find the
+drift views below which the unlevered position second-order stochastically dominates every levered
+one. Below that view every risk-averse investor agrees, not only the objectives above.
+\emph{(ii)} The CRRA family, which extends Section~\ref{sec:log-wealth} by the binomial series in
+place of the logarithmic one, with the same tilted moments.
+\emph{(iii)} An explicit account of estimation risk in the tradition of
+\citet{Barberis2000}, \citet{KanZhou2007} and \citet{DeMiguel2007}, and of fractional Kelly
+\citep{MacLeanThorpZiemba2011}, with the break-even view $\nu^\star$ as the decision rule: lever only
+if one's relative-drift view, including carry, exceeds it, and size the position by the posterior
+rather than the point estimate.
+\emph{(iv)} A repeated, monthly-rolled version in which liquidation is partial ruin and long-run
+growth is the natural criterion.
+
+% ============================================================
+\section{Conclusion}\label{sec:conclusion}
+% ============================================================
+
+The paper develops a semi-analytic evaluation map for leveraged DeFi long--short positions under
+liquidation and jump risk. A change of numeraire reduces the two-asset barrier problem to one
+dimension, and the Kou structure keeps every admissible moment, the survival probability and the
+exact liquidation recovery within one $3\times3$ barrier system. Bivariate tilts of that system give
+the overshoot law and the exact probability of bad debt, and with them the expected log of terminal
+wealth. Protocol interest enters as a drift shift, and its rate-curve convexity through a $6\times6$
+resolvent. The map is noise-free, fast, and validated against an accuracy-matched simulator.
+Empirically, its one-month liquidation probabilities lie above realised frequencies out of sample,
+systematically so for some predictors, and two of its
+inputs depend materially on how the data are sampled: realised spread volatility at hourly frequency
+is inflated by oracle noise, and the size of the jump-overshoot correction depends on the calibration
+window.
+
+Applied to sizing, the map gives a closed-form break-even drift above which leverage pays. Under
+the calibrated model it is about $0.4$--$11\%$ per year depending on risk attitude and calibration.
+The sample drift lies near or above it, but with standard errors several times the gap, so the data
+cannot tell an investor whether to lever. Ex post, leverage rarely paid: replayed under Aave's
+liquidation rules over 2023--2026, it beat the unlevered position in $4$ of $37$ pairs at modest
+leverage and in none significantly, and higher leverage lost at every holding horizon, through
+volatility drag and, for books left a week or more, liquidations. The realised break-evens sort the pairs correctly but disagree with the model's for
+WBTC/WETH, because the model's independent jumps cannot reproduce the legs' common jumps.
+The map is therefore best used to evaluate a buffer under a stated view or stress scenario, rather
+than to calibrate one, and its most consequential extension is a common jump component. The model
+also abstracts from oracle delays, liquidation execution and dynamic collateral management. Beyond
+the decision-theoretic programme of Section~\ref{sec:extension}, further extensions are an
+endogenous utilization process in place of the exogenous regime chain, the stochastic control
+problem of Remark~\ref{rem:dynamic}, and a market-impact channel that makes the liquidation bonus
+$\ell$ endogenous in the overshoot regime.
+
 \appendices
 
 % ============================================================
@@ -1333,469 +1541,477 @@ Script \texttt{jobs/frontier\_analysis.py}.}
 
 \subsection{Estimator}\label{sec:ecf-estimator}
 
-The bivariate Kou model admits the closed-form Lévy--Khintchine exponent
-$\Psi(u,v)$ derived in Section~\ref{sec:model}, so no numerical density
-inversion is required to compute the model-implied characteristic function
+The model characteristic function over an observation interval $\Delta$ is available in closed form,
 \begin{equation}\label{eq:model-cf}
 \phi_\theta(u,v;\Delta)
 =
-\exp\!\bigl(\Delta\,\Psi_\theta(u,v)\bigr),
+\exp\!\bigl(\Delta\,\Psi_\theta(u,v)\bigr).
 \end{equation}
-where $\Delta$ is the observation interval.
-Given $N$ observed bivariate log-return pairs $(r_{1,n},r_{2,n})_{n=1}^N$,
-the empirical characteristic function is
+Given $N$ bivariate log-returns $(r_{1,n},r_{2,n})$, with empirical characteristic function
 \begin{equation}\label{eq:ecf}
 \widehat{\phi}_N(u,v)
 =
 \frac{1}{N}\sum_{n=1}^N
-\exp\!\bigl(i(u\,r_{1,n}+v\,r_{2,n})\bigr).
+\exp\!\bigl(i(u\,r_{1,n}+v\,r_{2,n})\bigr),
 \end{equation}
-We estimate $\theta$ by minimising the weighted squared distance between
-\eqref{eq:ecf} and \eqref{eq:model-cf} over a discrete frequency grid $\mathcal{G}$:
+we estimate $\theta$ by penalised ECF matching,
 \begin{equation}\label{eq:ecf-objective}
+\begin{aligned}
 \widehat{\theta}
 =
-\arg\min_{\theta\in\Theta}\,
-Q_N(\theta),
-\qquad
-Q_N(\theta)
-=
-\sum_{(u,v)\in\mathcal{G}}
+\arg\min_{\theta\in\Theta}\;
+&\sum_{(u,v)\in\mathcal{G}}
 w(u,v)
-\,\bigl|\widehat{\phi}_N(u,v)-\phi_\theta(u,v;\Delta)\bigr|^2.
+\,\bigl|\widehat{\phi}_N(u,v)-\phi_\theta(u,v;\Delta)\bigr|^2\\
+&+\kappa_\lambda\sum_{i=1}^2\bigl(\log\lambda_i-\log\bar\lambda_i\bigr)^2
++\kappa_\eta\sum_{i=1}^2\sum_{\pm}\bigl(\log\eta_{i,\pm}-\log\bar\eta_{i,\pm}\bigr)^2 .
+\end{aligned}
 \end{equation}
-This is the empirical-characteristic-function approach of
-\citet{Singleton2001}, which is particularly natural for affine and
-Lévy-based asset-pricing models whose characteristic functions are known in
-closed form.
-\citet{FeuervergerMcDunnough1981} establish that ECF estimators over a
-rich grid can attain maximum-likelihood efficiency.
-The procedure avoids evaluating the bivariate transition density, which would
-require a two-dimensional numerical Fourier inversion inside every optimizer
-call.
-For background on DEJD likelihood estimation in the univariate case
-see \citet{RamezaniZeng2007}.
+The first term is the ECF distance of \citet{Singleton2001}, which can attain ML efficiency over a
+rich grid \citep{FeuervergerMcDunnough1981} and avoids a two-dimensional density inversion inside
+every optimizer call (for univariate DEJD likelihood estimation see \citealt{RamezaniZeng2007}). The
+two soft penalties, with $\kappa_\lambda=0.05$ and $\kappa_\eta=0.02$, anchor the intensities to a
+two-moment (variance and fourth-cumulant) estimate $\bar\lambda_i$ and the jump sizes to
+peak-over-threshold mean excesses $\bar\eta_{i,\pm}$. They exist to stop the optimiser sliding along
+the $\lambda$--$\eta$ ridge discussed in Appendix~\ref{sec:ecf-ident} toward very many, very small
+jumps. The fitted jump parameters are therefore partly anchored rather than purely ECF-determined,
+which should be kept in mind when reading them.
 
-\subsection{Frequency grid}\label{sec:ecf-grid}
+\paragraph{Grid.} Frequencies are standardised: a dimensionless base value $a$ maps to the raw
+frequency $a/s$, where $s$ is the robust (IQR) scale of the relevant return series, so the same grid
+serves any sampling interval. Six groups are used: marginal directions for each asset
+(eleven base values from $0.1$ to $10$), same-sign and opposite-sign joint directions on a
+$6\times6$ grid ($a,b\in\{0.25,0.5,1,2,3,5\}$) that identify $\rho$, the spread direction $(s,-s)$
+scaled by the robust scale of $Z$ ($a\in\{0.1,\ldots,5\}$), which matches the characteristic function
+of the liquidation-driving process directly, and a jump-tail group at high base frequencies
+($a\in\{8,12,16,20,25\}$) on the marginal and spread directions. Each point enters with its
+conjugate, giving $234$ points for $13$ parameters. Weights are $w=\exp(-0.02(a^2+b^2))$ in the
+base frequencies, doubled on the spread group.
 
-The parameter vector $\theta$ has $13$ free components; see Table~\ref{tab:params}.
-Identification is most efficient when the frequency grid $\mathcal{G}$
-probes the directions that are informative for different parameter groups.
-We use three groups:
-\begin{itemize}
-  \item $\mathcal{G}_1$ \emph{(marginal directions)}:
-    $\{(u,0):u\in\mathcal{U}\}\cup\{(0,v):v\in\mathcal{U}\}$.
-    These directions identify the marginal Kou parameters of each asset
-    independently.
-  \item $\mathcal{G}_2$ \emph{(joint directions)}:
-    $\{(u,v):u,v\in\mathcal{U}_{\mathrm{joint}}\}$.
-    Cross-frequency pairs identify the Brownian correlation $\rho$.
-  \item $\mathcal{G}_Z$ \emph{(spread direction)}:
-    $\{(s,-s):s\in\mathcal{U}_Z\}$.
-    Along this direction $u\,r_1+v\,r_2=s(r_1-r_2)$, so the
-    estimator directly matches the characteristic function of the
-    log-ratio process $Z=X_1-X_2$ that governs DeFi liquidation.
-    Including $\mathcal{G}_Z$ explicitly ties the calibration to the
-    object that drives barrier crossing.
-\end{itemize}
-The full grid is $\mathcal{G}=\mathcal{G}_1\cup\mathcal{G}_2\cup\mathcal{G}_Z$.
-Default frequency nodes are
-$\mathcal{U}=\{0.25,0.5,0.75,1.0,1.5,2.0,3.0,4.0,5.0\}$,
-$\mathcal{U}_{\mathrm{joint}}=\{0.5,1.0,2.0\}$,
-$\mathcal{U}_Z=\{0.25,0.5,0.75,1.0,1.5,2.0,3.0\}$,
-giving $M=34$ moment conditions for $13$ parameters.
-Weights use Gaussian damping
-$w(u,v)=\exp(-a(u^2+v^2))$ with $a=1$,
-which down-weights high frequencies sensitive to microstructure noise.
-
-\subsection{Reparameterisation and initialisation}\label{sec:ecf-init}
-
-\paragraph{Unconstrained reparameterisation.}
-Constraints in Table~\ref{tab:params} are enforced automatically via the
-change of variables
-\begin{equation}\label{eq:reparam}
-\sigma_i=e^{a_i},\quad
-\lambda_i=e^{b_i},\quad
-p_i=\mathrm{sigmoid}(c_i),\quad
-\eta_{i,+}=\mathrm{sigmoid}(d_i),\quad
-\eta_{i,-}=e^{e_i},\quad
-\rho=\tanh(f),
-\end{equation}
-where sigmoid$(x)=(1+e^{-x})^{-1}$.
-The unconstrained vector $\tau=({\mu_1,a_1,b_1,c_1,d_1,e_1,\mu_2,\ldots,f})$
-is optimized with box bounds in this transformed space.  For asset~2 the code uses
-a scaled sigmoid,
-\[
-\eta_{2,+}=\eta_{2,+}^{\max}\mathrm{sigmoid}(d_2),
-\qquad
-\eta_{2,+}^{\max}=(1-\varepsilon)/K,
-\]
-so that the moment-admissibility condition $K\eta_{2,+}<1$ is enforced directly.
-For asset~1, the sigmoid bound $\eta_{1,+}<1$ keeps the price-jump compensator finite.
-
-\paragraph{Threshold initialiser.}
-The characteristic-function objective is non-linear and non-convex,
-so the optimisation is initialised by a threshold-based decomposition
-following the logic of \citet{Mancini2009} for discretely observed
-jump-diffusions.
-Let $m_i=\mathrm{median}(r_{i,n})$ and let $s_i$ be the IQR robust scale.
-For a frequency-aware threshold constant $c\in[3,5]$, define candidate
-jump observations
-\[
-\mathcal{J}_i=\{n:|r_{i,n}-m_i|>c\,s_i\},
-\qquad
-\mathcal{C}_i=\{1,\ldots,N\}\setminus\mathcal{J}_i.
-\]
-Initial volatility and correlation values use the continuous subset
-$\mathcal{C}_i$, while the jump-size means are anchored by peak-over-threshold
-excess means and the intensities are corrected by a variance/fourth-cumulant
-estimate.  Schematically:
-\begin{align*}
-p_i^{(0)}&=\frac{|\mathcal{J}_{i,+}|}{|\mathcal{J}_i|}
-  \quad\text{clamped to the admissible probability range},\\
-\eta_{i,+}^{(0)},\,\eta_{i,-}^{(0)}&=\text{POT mean-excess estimates},\\
-\lambda_i^{(0)}&=\text{two-moment estimate from variance and fourth cumulant},\\
-\sigma_i^{(0)}&=\mathrm{sd}(r_{i,n}:\,n\in\mathcal{C}_i)/\sqrt{\Delta},
-&
-\rho^{(0)}&=\mathrm{corr}(r_1,r_2)_{n\in\mathcal{C}_1\cap\mathcal{C}_2}.
-\end{align*}
-The initializer is stored in the same drift convention as the final result:
-$\mu_i^{(0)}$ is an annualized expected price-growth drift.  It is initialized
-from the sample log-return drift with a damped mean-jump correction,
-\[
-\mu_i^{(0)}=\bar{r}_i/\Delta
--0.25\,\lambda_i^{(0)}
-\left[p_i^{(0)}\eta_{i,+}^{(0)}-(1-p_i^{(0)})\eta_{i,-}^{(0)}\right],
-\]
-and the corresponding log-process coefficient $\mu_i^{X,(0)}$
-is obtained from \eqref{eq:muX-drift}.
-The threshold filter is not the final estimator.
-It is a warm start that places the optimizer in a sensible region of
-parameter space; see the remark in \citet{Mancini2009}.
-
-\paragraph{Multi-start cloud.}
-Because $Q_N(\tau)$ may have local minima, the optimizer is run from a
-cloud of $n_{\mathrm{start}}$ starting points (default 20).
-Each point perturbs the threshold initialiser by applying a multiplicative
-factor $\exp(U)$, $U\sim\mathrm{Uniform}(-0.4,0.4)$, to each scale
-parameter, and an additive shift $\epsilon\sim\mathrm{Uniform}(-0.15,0.15)$
-to $p_i$ and $\rho$.
-The estimate returned is the unconstrained L-BFGS-B minimiser with the
-lowest objective value across all starts.
+\paragraph{Optimisation.} Constraints are enforced by reparameterisation ($\sigma_i,\lambda_i,\eta_{i,-}$
+via $\exp$; $p_i,\eta_{1,+}$ via sigmoid; $\rho$ via $\tanh$), with
+$\eta_{2,+}=\eta_{2,+}^{\max}\mathrm{sigmoid}(d_2)$, $\eta_{2,+}^{\max}=(1-\varepsilon)/K$, so that
+$K\eta_{2,+}<1$ holds by construction; the headline bounds are $\lambda_i\le5000$,
+$p_i\in[0.001,0.999]$ and $\eta\ge10^{-5}$. The non-convex objective is warm-started by a threshold
+decomposition in the spirit of \citet{Mancini2009}: returns far from the median in robust-scale units
+are flagged as jumps, $\sigma_i$ and $\rho$ come from the remaining observations, and $\mu_i$ from the
+sample drift with a damped mean-jump correction. L-BFGS-B is then run from a multi-start cloud ($30$
+starts for the headline fit): the warm start, a set of ridge-traversing starts that scale $\lambda$ by
+$c$ and $\eta$ by $1/\sqrt c$, and randomly perturbed scenario starts. The lowest objective is kept.
+The implementation is the \texttt{optimal\_long\_short.calibration} package;
+\texttt{jobs/calibrate\_kou.py} demonstrates parameter recovery on synthetic data.
 
 \subsection{Identifiability and model comparison}\label{sec:ecf-ident}
 
-The ECF objective $Q_N(\theta)$ is non-convex.
-Jump-diffusion models possess approximate ridges along directions that
-preserve the total jump variance
-$\lambda_i(p_i\eta_{i,+}^2+(1-p_i)\eta_{i,-}^2)$
-\citep{RamezaniZeng2007}.
-The diffusion volatilities $\sigma_i$ and the Brownian correlation $\rho$
-are well-identified from short samples; jump-size and intensity parameters
-carry larger finite-sample uncertainty unless the observation window
-contains many jump events.
-For hourly cryptocurrency data the expected number of jump observations
-per trading year is $\lambda_i\times 8760$, which is typically in the
-hundreds; daily data with $\lambda_i=2$ yields only $\approx 16$
-identifiable jumps per year.
+Jump-diffusions have approximate ridges along directions preserving total jump variance
+$\lambda_i(p_i\eta_{i,+}^2+(1-p_i)\eta_{i,-}^2)$ \citep{RamezaniZeng2007}. A circular block
+bootstrap (block length $12$, $B=200$, each resample recalibrated with the headline bounds and
+penalties from $8$ starts; Table~\ref{tab:bootstrap}) shows the consequences. Diffusion volatilities
+and correlation are sharp (relative SEs of about $6\%$ for $\sigma_i$ and $2\%$ for $\rho$). The drifts and the jump parameters are not:
+$\hat\mu_1=0.30\pm0.72$, $\hat\mu_2=1.16\pm1.17$, and their difference $-0.86$ has SE $1.06$.
+These are the ECF drift normalizers, not sample drifts (Section~\ref{sec:numerical}), so their
+standard errors measure how loosely the ECF pins the drift parameters rather than the precision of a
+drift estimate. The intensities carry relative SEs near $30\%$, even with the soft
+anchors of \eqref{eq:ecf-objective} holding them toward the moment estimates, and the jump-size
+intervals span a factor of five to six for $\eta_{i,+}$ and about fifteen for $\eta_{i,-}$. The block
+length of two days is short relative to the mean reversion visible at a week in this window, so these
+standard errors may understate the uncertainty. No resample reaches the $\lambda\le5000$ bound. The data
+pin down $\sigma_Z$, not the drift or the jump decomposition.
 
-For model comparison, evaluate $Q_N(\widehat\theta)$ across nested models
-(GBM, Merton, bivariate Kou) together with liquidation-relevant diagnostics:
-empirical versus model $Z$-tail quantiles, empirical versus model
-barrier-crossing frequencies, and simulated versus observed drawdowns of $Z$.
-These are more directly informative for the sizing application than
-standard likelihood-based criteria.
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{lccc}
+\toprule
+Parameter & point & bootstrap SE & $95\%$ CI \\
+\midrule
+$\sigma_1$ & $0.264$ & $0.016$ & $[0.228,\ 0.295]$ \\
+$\sigma_2$ & $0.328$ & $0.019$ & $[0.296,\ 0.370]$ \\
+$\rho$     & $0.847$ & $0.020$ & $[0.800,\ 0.878]$ \\
+$\mu_1$    & $0.302$ & $0.725$ & $[-0.61,\ 1.75]$ \\
+$\mu_2$    & $1.161$ & $1.172$ & $[-0.91,\ 3.58]$ \\
+$\mu_1-\mu_2$ & $-0.858$ & $1.058$ & $[-2.65,\ 1.36]$ \\
+$\lambda_1$ & $358$ & $106$ & $[219,\ 628]$ \\
+$\lambda_2$ & $451$ & $134$ & $[253,\ 770]$ \\
+$p_1$      & $0.770$ & $0.210$ & $[0.24,\ 1.00]$ \\
+$\eta_{1,+}$ & $0.0041$ & $0.0036$ & $[0.0015,\ 0.0085]$ \\
+$\eta_{2,+}$ & $0.0113$ & $0.0041$ & $[0.0031,\ 0.0191]$ \\
+\bottomrule
+\end{tabular}
+\caption{Block-bootstrap standard errors ($B=200$), each resample recalibrated with the headline
+bounds ($\lambda\le5000$) and anchoring penalties. The two drift estimates are correlated ($+0.46$).
+Script \texttt{jobs/bootstrap\_se.py}.}
+\label{tab:bootstrap}
+\end{table}
 
-The implementation is in \texttt{optimal\_long\_short/calibration.py};
-the demo script \texttt{jobs/calibrate\_kou.py} shows parameter
-recovery on synthetic data and produces Figure~\ref{fig:ecf-fit}.
+\emph{In the headline window the fitted jumps are tail-fattening, not rare and large.} Fitting GBM,
+Merton (Gaussian jumps)
+and Kou to the ECF of the spread $Z$ on a common grid, Kou has the smallest in-sample objective
+($1.7\times10^{-6}$ against $1.3\times10^{-5}$ and $3.4\times10^{-4}$), is preferred under a
+BIC-style penalty, and matches the empirical $1\%/99\%$ one-step quantiles ($-1.59\%/{+}1.43\%$
+against $-1.52\%/{+}1.42\%$). But it reproduces the excess kurtosis of about $3$ with \emph{many
+small} jumps --- about $2{,}700$ per year of mean size $0.2$--$0.4\%$ in this univariate fit, and
+$350$--$450$ per year of $0.4$--$1.1\%$ in the bivariate headline fit --- not with rare large moves; flash
+crashes enter only through the scaled experiments of Section~\ref{sec:overshoot} and the
+full-history calibration below. Out of sample (fit on the first $60\%$, score on the last $40\%$),
+Kou's edge over Merton all but vanishes ($1.13$ against $1.14\times10^{-3}$; GBM
+$1.60\times10^{-3}$).
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.85\linewidth]{fig_ecf_fit.pdf}
-\caption{ECF fit along the spread direction $(s,-s)$ for $N=4{,}000$
-synthetic daily log-return observations.
-Left: modulus $|\phi(s,-s)|$; right: phase $\arg\phi(s,-s)$.
-Dots: empirical CF $\widehat\phi_N$; dashed: true model CF;
-solid red: ECF estimate.
-The estimator matches the empirical CF accurately across both
-modulus and phase, confirming that $Q_N(\widehat\theta)\approx 0$.
-Script \texttt{jobs/calibrate\_kou.py}.}
-\label{fig:ecf-fit}
-\end{figure}
+\subsection{Full history, sampling frequency and out-of-sample validation}\label{sec:full-history}
 
-\clearpage
+\paragraph{Data.} The hourly snapshots extend back to the launch of Aave v3 on Ethereum, giving
+$3.7$ years (2023-01-27 to 2026-10-13). A snapshot exists only in hours with market activity, so
+the thin early WBTC market has gaps: $68.5\%$ of 2023 hours carry a real snapshot, against $96\%$ in
+2024 and essentially all hours since. Forward-filled prices would create spurious zero returns and
+catch-up jumps, so each bar takes the last \emph{real} price within it, and returns that span a bar
+without a snapshot are dropped (146 of about 8{,}100 four-hourly returns, none of the daily ones).
+
+\paragraph{Oracle noise and the sampling horizon.} Hourly returns of the oracle-implied spread have
+lag-one autocorrelation of $-0.16$ to $-0.25$ depending on the period, the signature of microstructure noise
+\citep{AitSahaliaMyklandZhang2005}, which inflates hourly volatility by up to about one half. This is why
+the cross-section of Section~\ref{sec:carry-crosssection} uses daily returns, and why the
+calibrations stop at four hours. Even at four hours some of it may remain: the headline model's total
+spread volatility ($0.335$) exceeds the daily realised value over the same window ($0.238$), so part
+of the fitted jump variance may be noise or short-horizon mean reversion, and part reflects the
+independent-jump restriction discussed in Section~\ref{sec:realised}. Relative to four-hourly returns, the variance ratios
+\citep{LoMacKinlay1988} over the full sample are $0.86$ at one day, $0.88$ at one week and $0.92$
+at one month, close to the independent increments the L\'evy model assumes. They vary by period,
+however: $0.33$ at one month in 2023, $1.56$ in 2025, and $0.54$ at one week in the headline window,
+which is unusually mean-reverting.
+
+\paragraph{Full-history calibrations.} Table~\ref{tab:fullhist} compares the headline fit with the
+same pipeline applied to daily bars over the full history and to four-hourly bars from 2024. Both
+longer samples give a larger total spread volatility. The daily fit trades many small jumps for
+fewer, larger ones ($\lambda\approx85$ per year, $\eta_{2,+}\approx3.2\%$), which is what raises the
+overshoot correction to $-11\%$ and the bad-debt probability to $3\times10^{-4}$
+(Section~\ref{sec:overshoot-law}). The ECF drift normalizer $\mu_1-\mu_2$ ranges from $-0.86$ to
+$+0.43$ across the three; it is fitted to de-meaned returns and is not an estimate of the sample
+drift, which Section~\ref{sec:discussion} uses instead.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{lccccccc}
+\toprule
+Calibration & $\sigma_Z$ & model $\bar\sigma_Z$ & $\rho$ & $\lambda_1$ & $\lambda_2$ & $\eta_{2,+}$ & ECF $\mu_1-\mu_2$ \\
+\midrule
+Headline, 4h, $0.38$ y & $0.175$ & $0.335$ & $0.847$ & $358$ & $451$ & $0.011$ & $-0.86$ \\
+Full history, daily, $3.7$ y & $0.196$ & $0.478$ & $0.884$ & $90$ & $81$ & $0.032$ & $-0.37$ \\
+2024 onward, 4h, $2.8$ y & $0.235$ & $0.485$ & $0.794$ & $397$ & $277$ & $0.015$ & $+0.43$ \\
+\bottomrule
+\end{tabular}
+\caption{WBTC/WETH calibrations with the headline pipeline (EWM de-meaning, penalised ECF, APR
+drift adjustment). $\sigma_Z$: diffusive spread volatility; model $\bar\sigma_Z$: total including
+jumps. Script \texttt{jobs/horizon\_analysis.py}.}
+\label{tab:fullhist}
+\end{table}
+
+\paragraph{Liquidation probabilities, in and out of sample.} The headline window was calm for the
+spread: rolling one-month windows in it crossed $-0.07$ only $2\%$ of the time, while from 2024
+onward they did so $36\%$ of the time ($47\%$, $23\%$ and $12\%$ for $h_0=0.05$, $0.10$ and
+$0.15$). Over 2024 onward the three calibrations match these frequencies to within about a
+factor of two, in either direction. The decisive test is out of sample (Table~\ref{tab:barrier}). For each of $33$ months
+from 2024-01, the model is calibrated only on data before the month, predicts the probability that
+the spread falls by $h_0$ within it, and is scored against the realised four-hourly path. The model
+monitors the barrier continuously and the data only every four hours, which by itself makes the
+model's probabilities higher than the observed frequencies; part of the overprediction below is
+this monitoring effect. Three findings follow. The map's probabilities are on average
+\emph{higher} than the realised frequency, by a factor of about $1.3$--$1.6$ (two to three at
+$h_0=0.15$). Treating the $33$ months as independent, the over-prediction is $1.0$ to $2.8$ standard errors
+depending on predictor and buffer. A moving-block bootstrap over months, which respects their serial
+dependence, gives $95\%$ intervals for the bias that exclude zero for the four-hourly carry-only
+predictor at every buffer, but not for the daily fitted-drift one. The bias is therefore systematic
+for some predictors and not established for others. The four-hourly monitoring pushes in this
+direction, and so does the mean reversion of 2024 (one-month variance ratio $0.49$); 2025 trended
+instead ($1.56$). A third cause is structural: with independent jumps, the calibrated model understates
+the legs' covariance and so overstates the spread variance, by about $60\%$ over the full history
+(Section~\ref{sec:realised}).
+Daily calibration does better than four-hourly. And no predictor beats the constant base rate in
+Brier score, so beyond its upward bias the map has no month-to-month skill: a driftless GBM with
+trailing volatility does at least as well as Kou, and the fitted drift worsens the Brier score of
+every Kou forecast.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{3}{c}{mean one-month crossing probability} & Brier score \\
+\cmidrule(lr){2-4}
+Predictor & $h_0=0.05$ & $h_0=0.10$ & $h_0=0.15$ & $h_0=0.10$ \\
+\midrule
+Realised frequency & $0.455$ & $0.273$ & $0.091$ & $0.198$ (base rate) \\
+\midrule
+Kou, daily, 12 months, fitted drift & $0.595$ & $0.357$ & $0.203$ & $0.267$ \\
+Kou, daily, 12 months, carry-only drift & $0.620$ & $0.375$ & $0.207$ & $0.219$ \\
+Kou, 4h, 6 months, fitted drift & $0.585$ & $0.386$ & $0.258$ & $0.323$ \\
+Kou, 4h, 6 months, carry-only drift & $0.678$ & $0.436$ & $0.258$ & $0.226$ \\
+GBM, trailing 30-day volatility & $0.627$ & $0.354$ & $0.184$ & $0.213$ \\
+\bottomrule
+\end{tabular}
+\caption{Out-of-sample backtest of one-month liquidation probabilities, WBTC/WETH, $33$ months
+2024-01 to 2026-09. Each month's predictor uses only earlier data, with the headline pipeline but
+$8$ optimiser starts instead of $30$; the model horizon is $1/12$ year and the realised window $30$ days. ``Carry-only drift'' sets the
+relative price drift to zero and keeps the window's net carry. The base-rate Brier score uses the
+realised frequency as a constant forecast. Script \texttt{jobs/rolling\_backtest.py}.}
+\label{tab:barrier}
+\end{table}
+
+% ============================================================
+\section{Full cross-section}\label{app:cross-section}
+% ============================================================
+
+Table~\ref{tab:carry-xs-full} lists all $37$ ordered pairs surviving the screen of
+Section~\ref{sec:carry-crosssection}; columns as in Table~\ref{tab:carry-xs}. For every cross-asset
+pair $|\mathrm{CB}|\le0.035$; same-underlying pairs reach $0.09$, and among stablecoin pairs USDT/USDC
+reaches $-1.04$ while USDC/USDT is $-0.32$ and USDC/USDe $+0.03$.
+
+\begin{table}[ht]
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llcccc@{\hspace{8pt}}llcccc}
+\toprule
+Coll. & Debt & $\bar\sigma_Z$ & carry & $\mathrm{CB}$ & str. &
+Coll. & Debt & $\bar\sigma_Z$ & carry & $\mathrm{CB}$ & str. \\
+\midrule
+USDC & USDT & 0.0039 & -0.43\% & -0.318 & 8.5\% & WETH & cbBTC & 0.253 & +1.56\% & +0.018 & 0.0\% \\
+USDC & USDe & 0.0039 & +0.05\% & +0.034 & 5.2\% & cbBTC & USDC & 0.375 & -4.54\% & -0.035 & 10.4\% \\
+USDC & WBTC & 0.370 & +3.33\% & +0.026 & 0.0\% & cbBTC & USDT & 0.374 & -4.11\% & -0.032 & 8.5\% \\
+USDC & WETH & 0.514 & +1.17\% & +0.007 & 13.6\% & cbBTC & USDe & 0.374 & -3.63\% & -0.028 & 5.2\% \\
+USDC & cbBTC & 0.375 & +3.37\% & +0.026 & 0.0\% & cbBTC & WBTC & 0.073 & -0.35\% & -0.014 & 0.0\% \\
+USDT & USDC & 0.0039 & -1.42\% & -1.043 & 10.4\% & cbBTC & WETH & 0.253 & -2.51\% & -0.029 & 13.6\% \\
+USDT & USDe & ${<}10^{-4}$ & -0.51\% & --- & 5.2\% & weETH & USDC & 0.524 & -4.54\% & -0.025 & 10.4\% \\
+USDT & WBTC & 0.369 & +2.77\% & +0.022 & 0.0\% & weETH & USDT & 0.523 & -4.11\% & -0.023 & 8.5\% \\
+USDT & WETH & 0.514 & +0.61\% & +0.003 & 13.6\% & weETH & USDe & 0.523 & -3.63\% & -0.020 & 5.2\% \\
+USDT & cbBTC & 0.374 & +2.82\% & +0.022 & 0.0\% & weETH & WBTC & 0.276 & -0.36\% & -0.004 & 0.0\% \\
+WBTC & USDC & 0.370 & -4.54\% & -0.035 & 10.4\% & weETH & WETH & 0.176 & -2.51\% & -0.041 & 13.6\% \\
+WBTC & USDT & 0.369 & -4.11\% & -0.032 & 8.5\% & weETH & cbBTC & 0.274 & -0.31\% & -0.003 & 0.0\% \\
+WBTC & USDe & 0.369 & -3.63\% & -0.028 & 5.2\% & wstETH & USDC & 0.522 & -4.54\% & -0.025 & 10.4\% \\
+WBTC & WETH & 0.238 & -2.51\% & -0.030 & 13.6\% & wstETH & USDT & 0.521 & -4.11\% & -0.023 & 8.5\% \\
+WBTC & cbBTC & 0.073 & -0.30\% & -0.012 & 0.0\% & wstETH & USDe & 0.521 & -3.63\% & -0.020 & 5.2\% \\
+WETH & USDC & 0.514 & -2.67\% & -0.015 & 10.4\% & wstETH & WBTC & 0.246 & -0.35\% & -0.004 & 0.0\% \\
+WETH & USDT & 0.514 & -2.24\% & -0.013 & 8.5\% & wstETH & WETH & 0.078 & -2.51\% & -0.093 & 13.6\% \\
+WETH & USDe & 0.514 & -1.76\% & -0.010 & 5.2\% & wstETH & cbBTC & 0.260 & -0.31\% & -0.003 & 0.0\% \\
+WETH & WBTC & 0.238 & +1.52\% & +0.018 & 0.0\% &  & & & & &  \\
+\bottomrule
+\end{tabular}
+\caption{All $37$ screened Aave v3 collateral--debt pairs, 2026-03-17 to 2026-08-04, $T=1/12$.
+$\bar\sigma_Z$ from daily returns of the oracle-implied price ratio; ``carry'' is $r_s-r_b$; ``str.''
+is the share of hours the debt leg's curve-implied utilization exceeds $U_{\mathrm{opt}}$. Source:
+\texttt{results/pair\_cross\_section\_daily.csv}.}
+\label{tab:carry-xs-full}
+\end{table}
+
+% ============================================================
+\section{Regime-switching carry: the \texorpdfstring{$6\times6$}{6x6} resolvent}\label{app:regime}
+% ============================================================
+
+Let $J_t\in\{1,2\}$ (normal, stressed) be a Markov chain with generator
+$Q=\bigl(\begin{smallmatrix}-q_1 & q_1\\ q_2 & -q_2\end{smallmatrix}\bigr)$ and net carry $c_i$ in
+state $i$. Only the drift switches, so the exponent of $Z$ in state $i$ is
+\begin{equation}\label{eq:psi-regime}
+\psi^i(s)=\psi_Z^{(k)}(s)+c_i\,s,
+\end{equation}
+with diffusion, jump law, phase rates and admissibility bounds unchanged. The killed resolvents
+$\widehat U^i$ started in state $i$ satisfy
+\begin{equation}\label{eq:regime-system}
+(q+q_1-\mathcal L^{1})\widehat U^{1}-q_1\widehat U^{2}=g_k,
+\qquad
+-q_2\widehat U^{1}+(q+q_2-\mathcal L^{2})\widehat U^{2}=g_k ,
+\end{equation}
+and an exponential mode $B\,v(\gamma)e^{\gamma x}$ solves the homogeneous system when $v$ spans the
+kernel of
+$A(\gamma)=\bigl(\begin{smallmatrix} q+q_1-\psi^1(\gamma) & -q_1\\ -q_2 & q+q_2-\psi^2(\gamma)\end{smallmatrix}\bigr)$,
+i.e.\ when $\Delta(\gamma):=\det A(\gamma)=0$.
+
+\begin{proposition}[Regime-switching killed resolvent]\label{prop:regime}
+Both $\psi^i$ share the four poles of $\psi_Z^{(k)}$; writing $\psi^i=N^i/D$ with $\deg D=4$,
+$\deg N^i=6$,
+\[
+\Delta(s)\,D(s)^2=\widetilde N^1(s)\widetilde N^2(s)-q_1q_2D(s)^2,
+\qquad
+\widetilde N^i:=(q+q_i)D-N^i,
+\]
+a degree-$12$ polynomial with, generically, six roots of negative real part. The boundary conditions
+also number six --- absorption and the two downward-phase conditions of Proposition~\ref{prop:Ubar}
+in each state (the coupling terms carry no generator and add no zero-extension residual) --- so
+$B\in\mathbb C^6$ solves, for $i=1,2$ and $d=1,2$,
+\[
+\sum_{m=1}^{6}B_m v^i(\gamma_m) = -\!\sum_{j=0}^{k}P^i_j e^{-jh_0},
+\qquad
+\sum_{m=1}^{6}B_m v^i(\gamma_m)\frac{r_{d,-}}{r_{d,-}+\gamma_m}
+= -\!\sum_{j=0}^{k}P^i_j\frac{r_{d,-}}{r_{d,-}+j}e^{-jh_0},
+\]
+where $A(j)P_j=(c_{k,j},c_{k,j})^\top$. At $q_1=q_2=0$ this is two decoupled copies of
+Proposition~\ref{prop:Ubar}.
+\end{proposition}
+
+\noindent
+The kernel vector $v(\gamma)$ should be taken from the adjugate of $A(\gamma)$: in the decoupled
+limit one adjugate column vanishes while the other selects the state a root belongs to. The
+non-resonance condition becomes $\Delta(j)\neq0$.
+
+\begin{lemma}[Generic invertibility]\label{lem:regime-invertible}
+With the decaying roots labelled analytically in $(q_1,q_2)$ (possible while they remain simple),
+$\det\mathbf M_{\mathrm{bar}}$ is analytic in $(q_1,q_2)$ and at $q_1=q_2=0$ factorises into two
+single-regime determinants, each non-zero by Lemma~\ref{lem:Mbar-inv}; hence the $6\times6$ system
+is invertible off a null set of switching rates.
+\end{lemma}
+
+\noindent
+We treat invertibility at the calibrated $(q_1,q_2)$ as numerically verified: the condition number
+rises only from $81$ to $844$ for real $q\in[0.1,100]$ (we did not tabulate it on the complex
+Talbot contour). The solver reproduces the single-regime answer to
+$10^{-14}$ when $c_1=c_2$ with $q_1\neq q_2$ and to $10^{-15}$ in the decoupled limit ($k=0,1,2$),
+and agrees with a switching Monte Carlo once its discretisation bias is refined away.
+
 % ============================================================
 \section{Proofs}\label{app:proofs}
 % ============================================================
 
 \begin{proof}[Proof of Lemma~\ref{lem:psiZk}]\label{proof:lem:psiZk}
-\textit{Step 1: Laplace transform under $\P^{(k)}$.}
-Because $Z_t = X_{1,t}-X_{2,t}$ and the density on $\mathcal{F}_t$ equals
-$e^{kX_{2,t}-t\Psi(0,-ik)}$,
-\begin{equation}\label{eq:mgf-tilted}
+Using $\E_\P[e^{\alpha X_{1,t}+\beta X_{2,t}}]=e^{t\Psi(-i\alpha,-i\beta)}$,
+\[
 \E_{\P^{(k)}}\!\left[e^{sZ_t}\right]
 =
 e^{-t\Psi(0,-ik)}\,
 \E_\P\!\left[e^{s X_{1,t}+(k-s)X_{2,t}}\right]
 =
-e^{t\left[\Psi(-is,-i(k-s))-\Psi(0,-ik)\right]},
-\end{equation}
-where we used $\E_\P[e^{\alpha X_{1,t}+\beta X_{2,t}}]=e^{t\Psi(-i\alpha,-i\beta)}$.
-Since the Radon--Nikod\'ym density is exponential-linear in $(X_{1,t},X_{2,t})$, Girsanov's theorem
-for L\'evy processes guarantees that $Z$ remains a L\'evy process under $\P^{(k)}$ with exponent
-\begin{equation}\label{eq:psiZk-raw}
-\psi_Z^{(k)}(s) = \Psi\!\left(-is,\,-i(k-s)\right)-\Psi(0,-ik).
-\end{equation}
-
-\textit{Step 2: Expand and simplify.}
-Substituting \eqref{eq:Psi} with $(u,v)=(-is,-i(k-s))$, and noting
-$u^2=-s^2$, $v^2=-(k-s)^2$, $uv=-s(k-s)$, and $\varphi_{J_i}(-i\cdot)=M_i(\cdot)$:
-\begin{equation}\label{eq:Psi-expanded}
-\begin{aligned}
-\Psi(-is,-i(k-s))
-={}&\mu_1^X s + \mu_2^X(k-s)
-+\tfrac12\sigma_1^2 s^2+\tfrac12\sigma_2^2(k-s)^2+\rho\sigma_1\sigma_2 s(k-s)\\
-&+\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-1).
-\end{aligned}
-\end{equation}
-Setting $s=0$ in \eqref{eq:Psi-expanded} gives
-$\Psi(0,-ik)=\mu_2^X k + \tfrac12\sigma_2^2 k^2 + \lambda_2(M_2(k)-1)$.
-Subtracting and collecting terms by type:
-
-\smallskip
-\noindent\textit{Drift.}
-$\mu_1^X s + \mu_2^X(k-s) - \mu_2^X k
-= (\mu_1^X-\mu_2^X)s$.
-
-\smallskip
-\noindent\textit{Diffusion.}
-Expanding $(k-s)^2 = k^2-2ks+s^2$ and $(k-s) = k-s$:
-\begin{align*}
-&\tfrac12\sigma_1^2 s^2+\tfrac12\sigma_2^2(k-s)^2+\rho\sigma_1\sigma_2 s(k-s)
--\tfrac12\sigma_2^2 k^2\\
-&\quad =\tfrac12(\sigma_1^2+\sigma_2^2-2\rho\sigma_1\sigma_2)s^2
--k(\sigma_2^2-\rho\sigma_1\sigma_2)s
-= \tfrac12\sigma_Z^2 s^2 - k(\sigma_2^2-\rho\sigma_1\sigma_2)s.
-\end{align*}
-
-\smallskip
-\noindent\textit{Jumps.}
-$\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-1)-\lambda_2(M_2(k)-1)
-=\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-M_2(k))$.
-
-\smallskip
-Combining, the drift coefficient is
-$\mu_Z^{(k)}:=(\mu_1^X-\mu_2^X)-k(\sigma_2^2-\rho\sigma_1\sigma_2)$,
-which establishes \eqref{eq:psiZk}.
-The eigenrelation \eqref{eq:generator-eigen} follows because for any L\'evy process with
-exponent $\psi$, the generator satisfies $\mathcal{L} e^{sz}=\psi(s)\,e^{sz}$, as can be
-seen by differentiating $\E[e^{sZ_t}]=e^{t\psi(s)}$ with respect to $t$ at $t=0$.
+e^{t\left[\Psi(-is,-i(k-s))-\Psi(0,-ik)\right]}.
+\]
+The density is exponential-linear in $(X_1,X_2)$, so by the Esscher/Girsanov theorem for L\'evy
+processes $Z$ remains L\'evy under $\P^{(k)}$ with exponent
+$\psi_Z^{(k)}(s)=\Psi(-is,-i(k-s))-\Psi(0,-ik)$. Substituting \eqref{eq:Psi} with $u^2=-s^2$,
+$v^2=-(k-s)^2$, $uv=-s(k-s)$ and $\varphi_{J_i}(-i\,\cdot)=M_i(\cdot)$: the drift terms give
+$(\mu_1^X-\mu_2^X)s$; the diffusion terms give
+$\tfrac12\sigma_1^2 s^2+\tfrac12\sigma_2^2(k-s)^2+\rho\sigma_1\sigma_2 s(k-s)-\tfrac12\sigma_2^2k^2
+=\tfrac12\sigma_Z^2s^2-k(\sigma_2^2-\rho\sigma_1\sigma_2)s$; and the jump terms give
+$\lambda_1(M_1(s)-1)+\lambda_2(M_2(k-s)-M_2(k))$. This is \eqref{eq:psiZk}. The eigenrelation
+\eqref{eq:generator-eigen} follows by differentiating $\E[e^{sZ_t}]=e^{t\psi(s)}$ at $t=0$.
 \end{proof}
 
 \begin{proof}[Proof of Lemma~\ref{lem:Upart}]\label{proof:lem:Upart}
-Substitute the forcing expansion into the right-hand side of~\eqref{eq:resolvent}:
-\[
-(q - \mathcal{L}^{(k)})\widehat{U}_{\mathrm{part}}
-= \sum_{j=0}^k c_{k,j}(h_0)\,e^{jz}.
-\]
-Since the sum is finite and $\mathcal{L}^{(k)}$ is linear, it suffices to find, for each $j$, a function $v_j$
-satisfying
-\[
-(q - \mathcal{L}^{(k)})v_j(z) = c_{k,j}(h_0)\,e^{jz}.
-\]
-Propose the exponential ansatz $v_j(z) = A_j\,e^{jz}$. By the eigenrelation~\eqref{eq:generator-eigen},
-\[
-\mathcal{L}^{(k)}[A_j e^{jz}] = A_j\,\psi_Z^{(k)}(j)\,e^{jz},
-\]
-so
-\[
-(q - \mathcal{L}^{(k)})[A_j e^{jz}]
-= A_j\bigl(q - \psi_Z^{(k)}(j)\bigr)e^{jz}.
-\]
-Matching to $c_{k,j}(h_0)\,e^{jz}$ and using Assumption~\ref{ass:six-root}(iii) to ensure
-$q - \psi_Z^{(k)}(j)\neq 0$ gives
-\[
-A_j = \frac{c_{k,j}(h_0)}{q - \psi_Z^{(k)}(j)}.
-\]
-Summing over $j=0,\dots,k$ yields~\eqref{eq:Upart}.
-\end{proof}
-
-\begin{proof}[Proof of Lemma~\ref{lem:Uhom}]\label{proof:lem:Uhom}
-\textit{Step 1: exponential ansatz.} Seek solutions of the form $u(z)=e^{\gamma z}$. By the
-eigenrelation~\eqref{eq:generator-eigen},
-\[
-\mathcal{L}^{(k)}e^{\gamma z} = \psi_Z^{(k)}(\gamma)\,e^{\gamma z},
-\]
-so $(q-\mathcal{L}^{(k)})e^{\gamma z} = (q - \psi_Z^{(k)}(\gamma))e^{\gamma z}$. This vanishes if and only if
-$\gamma$ satisfies the characteristic equation
-\[
-\psi_Z^{(k)}(\gamma) = q.
-\]
-
-\textit{Step 2: root count.} The exponent $\psi_Z^{(k)}$ is the sum of a quadratic term
-$\frac{1}{2}\sigma_Z^2\gamma^2$ (non-degenerate by Assumption~\ref{ass:six-root}(i)) and rational terms from the
-Kou jumps. Clearing denominators yields a degree-six polynomial in $\gamma$, so there are exactly six roots
-$\gamma_1,\dots,\gamma_6$ (counted with multiplicity). Under Assumption~\ref{ass:six-root}(ii) all six are simple
-and split as $\Rea(\gamma_{1,2,3})>0$ and $\Rea(\gamma_{4,5,6})<0$.
-
-\textit{Step 3: admissibility.} On the half-line $z>-h_0$, the solution must remain bounded as $z\to+\infty$.
-Since $e^{\gamma z}\to\infty$ whenever $\Rea(\gamma)>0$, the roots $\gamma_1,\gamma_2,\gamma_3$ are inadmissible.
-Only $\gamma_4,\gamma_5,\gamma_6$ are retained.
-
-\textit{Step 4: centering and general solution.} Writing $e^{\gamma_{m+3}z} = e^{\gamma_{m+3}(z+h_0)}\cdot
-e^{-\gamma_{m+3}h_0}$ and absorbing the constant factor into the free coefficient, the general admissible
-homogeneous solution is
-\[
-\widehat{U}_{\mathrm{hom}}(q,z;h_0) = \sum_{m=1}^3 B_m^{(k)}(q;h_0)\,e^{\gamma_{m+3}(q)(z+h_0)},
-\]
-where $B_1^{(k)},B_2^{(k)},B_3^{(k)}$ are free constants to be determined by the boundary conditions.
+By \eqref{eq:generator-eigen}, $(q-\mathcal L^{(k)})e^{\gamma z}=(q-\psi_Z^{(k)}(\gamma))e^{\gamma z}$.
+Taking $\gamma=j$ for each term of \eqref{eq:forcing-expansion} and dividing by
+$q-\psi_Z^{(k)}(j)\neq0$ (Assumption~\ref{ass:six-root}(iii)) gives \eqref{eq:Upart}. For the
+homogeneous equation, $e^{\gamma z}$ is a solution iff $\psi_Z^{(k)}(\gamma)=q$; clearing the four
+Kou denominators gives a degree-six polynomial whose roots are simple and split three-and-three by
+Assumption~\ref{ass:six-root}(ii). Boundedness as $z\to+\infty$ excludes $\gamma_{1,2,3}$, and
+re-centring $e^{\gamma z}=e^{\gamma(z+h_0)}e^{-\gamma h_0}$ absorbs a constant into $B_m$, giving
+\eqref{eq:Uhom}.
 \end{proof}
 
 \begin{proof}[Proof of Proposition~\ref{prop:Ubar}]\label{proof:prop:Ubar}
-\textit{Step 1: boundary conditions from killing.}
-The killing condition $\widehat{U}(q,z;h_0)=0$ for $z\le-h_0$ imposes, at $z=-h_0^+$,
-\begin{enumerate}[(i)]
-\item $\widehat{U}(q,-h_0^+;h_0)=0$;
-\item $K_{j,-}^{(k)}\!\left[\widehat{U}(q,\cdot\,;h_0)\right](-h_0^+)=0$, \quad $j=1,2$.
-\end{enumerate}
-Condition (i) is continuity at the barrier. Conditions (ii) arise because
-$K_{j,-}^{(k)}[f](z)=\int_{-\infty}^0 f(z+y)\,r_{j,-}^{(k)}e^{r_{j,-}^{(k)}y}\diff y$
-integrates $f$ over landing points $z+y < z$; for $z=-h_0^+$ every landing point satisfies
-$z+y<-h_0$, where $\widehat{U}=0$, so the integral vanishes.
-
-\textit{Step 2: substitute the full solution.}
-Write $\widehat{U}=\widehat{U}_{\mathrm{part}}+\widehat{U}_{\mathrm{hom}}$ and insert into each condition.
-Since the conditions are linear, each splits as
+On $z>-h_0$ write the candidate solution as an exponential sum $F(z)=\sum_\ell a_\ell e^{\beta_\ell z}$,
+whose exponents are the forcing orders $j=0,\dots,k$ (coefficients from \eqref{eq:Upart}) and the
+decaying roots $\gamma_{4,5,6}$ (coefficients $B_m e^{\gamma_{m+3}h_0}$), and set $\widehat U=F$ on
+$z>-h_0$ and $\widehat U=0$ below. The diffusion and upward-jump parts of $\mathcal L^{(k)}$ act on
+$\widehat U$ exactly as on $F$: upward jumps from $z>-h_0$ land above the barrier, and the integrals
+converge because every $\beta_\ell$ lies below $r_{1,+}^{(k)}$ and $r_{2,+}^{(k)}$. The downward-jump
+part sees the killing. For $z>-h_0$,
 \[
-[\text{condition on }\widehat{U}_{\mathrm{hom}}] = -[\text{condition on }\widehat{U}_{\mathrm{part}}].
+\int_{-\infty}^{0}\widehat U(z+y)\,r\,e^{ry}\,\diff y
+=\int_{-(z+h_0)}^{0}F(z+y)\,r\,e^{ry}\,\diff y
+=\sum_\ell a_\ell\,\frac{r}{r+\beta_\ell}\Bigl(e^{\beta_\ell z}-e^{-\beta_\ell h_0}\,e^{-r(z+h_0)}\Bigr),
+\qquad r=r_{j,-}^{(k)},
 \]
-
-\textit{Step 3: condition (i).}
-Evaluating at $z=-h_0$ and using $e^{\gamma_{m+3}(q)\cdot 0}=1$,
-\[
-\widehat{U}_{\mathrm{hom}}(q,-h_0;h_0) = \sum_{m=1}^3 B_m^{(k)} = -\,\widehat{U}_{\mathrm{part}}(q,-h_0;h_0),
-\]
-which is the first row of the system.
-
-\textit{Step 4: conditions (ii).}
-Apply $K_{j,-}^{(k)}$ to $\widehat{U}_{\mathrm{hom}}$. By the phase-operator formula~\eqref{eq:phase-on-exp},
-\[
-K_{j,-}^{(k)}\!\left[e^{\gamma_{m+3}(\cdot+h_0)}\right](-h_0)
-=
-\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_{m+3}(q)}\,e^{\gamma_{m+3}(q)\cdot 0}
-=
-\frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_{m+3}(q)},
-\]
-giving row $j+1$ of the system:
-\[
-\sum_{m=1}^3 \frac{r_{j,-}^{(k)}}{r_{j,-}^{(k)}+\gamma_{m+3}(q)}\,B_m^{(k)}
-=
--K_{j,-}^{(k)}\!\left[\widehat{U}_{\mathrm{part}}(q,\cdot\,;h_0)\right](-h_0).
-\]
-Applying~\eqref{eq:phase-on-exp} to $\widehat{U}_{\mathrm{part}}(q,z;h_0)=\sum_j\frac{c_{k,j}}{q-\psi_Z^{(k)}(j)}e^{jz}$
-yields the explicit entries of $\mathbf{b}^{(k)}$ stated above.
-
-\textit{Step 5: matrix form and solution.}
-The three conditions assemble into
-$\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\,\mathbf{B}^{(k)}=-\mathbf{b}^{(k)}$.
-By Lemma~\ref{lem:Mbar-inv}, $\mathbf{M}_{\mathrm{bar}}^{(k)}(q)$ is invertible, so
-\[
-\mathbf{B}^{(k)}(q;h_0)=-\big(\mathbf{M}_{\mathrm{bar}}^{(k)}(q)\big)^{-1}\mathbf{b}^{(k)}(q;h_0).\qedhere
-\]
+which is valid for every $\beta_\ell\neq-r$ because the range of integration is finite. The first
+terms reproduce \eqref{eq:phase-on-exp}, so by Lemma~\ref{lem:Upart} $(q-\mathcal L^{(k)})\widehat U$
+equals $g_k$ plus residuals proportional to $e^{-r_{j,-}^{(k)}(z+h_0)}$, $j=1,2$. These two functions
+are linearly independent of each other and of $g_k$ under \eqref{eq:nondeg-bar}, so the resolvent
+equation holds on $z>-h_0$ if and only if both coefficients vanish:
+$\sum_\ell a_\ell e^{-\beta_\ell h_0}\,r_{j,-}^{(k)}/(r_{j,-}^{(k)}+\beta_\ell)=0$, $j=1,2$. These are
+rows two and three of the system. Row one is continuity at the barrier,
+$\sum_\ell a_\ell e^{-\beta_\ell h_0}=0$, which holds because $\sigma_Z>0$ makes the barrier regular
+for the diffusion \citep{KouWang2003,Sepp2004,AsmussenAvramPistorius2004}. Splitting each row into
+its homogeneous part (where $e^{\gamma_{m+3}(z+h_0)}=1$ at $z=-h_0$) and its particular part gives
+$\mathbf M_{\mathrm{bar}}^{(k)}\mathbf B^{(k)}=-\mathbf b^{(k)}$, and Lemma~\ref{lem:Mbar-inv} gives
+uniqueness within the exponential ansatz. That this solution is the Laplace transform of the killed
+expectation follows from the standard verification argument for bounded solutions of the resolvent
+equation of a killed L\'evy process \citep{KouWang2003,AsmussenAvramPistorius2004}.
 \end{proof}
 
 \begin{proof}[Proof of Lemma~\ref{lem:Mbar-inv}]\label{proof:lem:Mbar-inv}
-Subtracting row~1 from rows~2 and~3 replaces entry $(i,m)$ for $i=2,3$ by
-$-\gamma_{m+3}(q)/(r_{i-1,-}^{(k)}+\gamma_{m+3}(q))$.
-Pulling out $-1$ from each of these two rows (net sign $(-1)^2=1$) and then factoring
-$\gamma_{m+3}(q)$ from each column gives
+Subtracting row~1 from rows~2 and~3 replaces entry $(i,m)$, $i=2,3$, by
+$-\gamma_{m+3}/(r_{i-1,-}^{(k)}+\gamma_{m+3})$. Removing the two signs and factoring
+$\gamma_{m+3}$ from each column,
 \[
-\det\!\bigl(\mathbf{M}_{\mathrm{bar}}^{(k)}\bigr)
+\det\mathbf{M}_{\mathrm{bar}}^{(k)}
 =
 \gamma_4\gamma_5\gamma_6\;
-\det\!\left(\frac{1}{x_i+\gamma_{j+3}(q)}\right)_{\!1\le i,j\le 3},
+\det\!\left(\frac{1}{x_i+\gamma_{j+3}}\right)_{\!1\le i,j\le 3},
+\qquad x_1:=0,\ x_2:=r_{1,-}^{(k)},\ x_3:=r_{2,-}^{(k)}.
 \]
-where $x_1:=0$, $x_2:=r_{1,-}^{(k)}$, $x_3:=r_{2,-}^{(k)}$.
-The right-hand factor is a Cauchy determinant; the Cauchy formula yields
+By the Cauchy determinant formula,
 \[
 \det\!\left(\frac{1}{x_i+\gamma_{j+3}}\right)
 =
-\frac{\prod_{1\le i<i'\le 3}(x_{i'}-x_i)\cdot
-      \prod_{4\le m<m'\le 6}(\gamma_{m'}-\gamma_m)}
-     {\prod_{i=1}^3\prod_{m=4}^6(x_i+\gamma_m)}.
+\frac{\prod_{i<i'}(x_{i'}-x_i)\,\prod_{4\le m<m'\le 6}(\gamma_{m'}-\gamma_m)}
+     {\prod_{i=1}^3\prod_{m=4}^6(x_i+\gamma_m)},
 \]
-Since $x_1=0$, the factor $\prod_{m=4}^6(x_1+\gamma_m)=\gamma_4\gamma_5\gamma_6$
-cancels with the prefactor, yielding a ratio whose every factor is nonzero:
-$r_{1,-}^{(k)}>0$ since $\eta_{1,-}>0$;
-$r_{2,-}^{(k)}>0$ since $k\eta_{2,+}<1$;
-$(r_{2,-}^{(k)}-r_{1,-}^{(k)})\neq 0$ by~\eqref{eq:nondeg-bar};
-the $\gamma_m$ are pairwise distinct by Assumption~\ref{ass:six-root}(ii);
-and $r_{j,-}^{(k)}+\gamma_m\neq 0$ because $-r_{j,-}^{(k)}$ is a pole of $\psi_Z^{(k)}$,
-so $\psi_Z^{(k)}(-r_{j,-}^{(k)})=\infty\neq q$, hence $\gamma_m\neq -r_{j,-}^{(k)}$.
+and the $x_1=0$ factor $\gamma_4\gamma_5\gamma_6$ cancels the prefactor. Every remaining factor is
+non-zero: $r_{1,-}^{(k)}>0$; $r_{2,-}^{(k)}>0$ since $k\eta_{2,+}<1$; $r_{1,-}^{(k)}\neq
+r_{2,-}^{(k)}$ by \eqref{eq:nondeg-bar} (which is \eqref{eq:nondeg-surv} at $k=0$); the roots are
+distinct by Assumption~\ref{ass:six-root}(ii); and $\gamma_m\neq-r_{j,-}^{(k)}$ because
+$-r_{j,-}^{(k)}$ is a pole of $\psi_Z^{(k)}$, where it cannot equal $q$.
 \end{proof}
 
 \begin{proof}[Proof of Proposition~\ref{prop:survival}]\label{proof:prop:survival}
-\textit{Step 1: resolvent equation.}
-Taking the Laplace transform of the PIDE $\partial_t p_{\mathrm{surv}} = \mathcal{L}^{(0)}p_{\mathrm{surv}}$
-with initial condition $p_{\mathrm{surv}}(0,z;h_0)=1$ and killing condition $p_{\mathrm{surv}}=0$ for $z\le-h_0$,
-exactly as in Section~\ref{sec:resolvent} with $g_k\equiv 1$, gives
-\[
-(q-\mathcal{L}^{(0)})\widehat{U}_{\mathrm{surv}}(q,z;h_0)=1, \qquad z>-h_0.
-\]
-
-\textit{Step 2: particular solution.}
-The constant forcing $f\equiv 1$ is an eigenfunction of $\mathcal{L}^{(0)}$ with eigenvalue
-$\psi_Z^{(0)}(0)=0$, so the particular solution is
-\[
-\widehat{U}_{\mathrm{surv,part}}(q,z) = \frac{1}{q-\psi_Z^{(0)}(0)} = \frac{1}{q}.
-\]
-
-\textit{Step 3: homogeneous solution.}
-By Lemma~\ref{lem:Uhom} applied with $k=0$, the admissible homogeneous solution on $z>-h_0$ is
-\[
-\widehat{U}_{\mathrm{surv,hom}}(q,z;h_0)
-=
-C_1 e^{\gamma_4^{(0)}(q)(z+h_0)}
-+C_2 e^{\gamma_5^{(0)}(q)(z+h_0)}
-+C_3 e^{\gamma_6^{(0)}(q)(z+h_0)},
-\]
-where $\gamma_4^{(0)},\gamma_5^{(0)},\gamma_6^{(0)}$ are the roots of $\psi_Z^{(0)}(\gamma)=q$ with
-$\Rea(\gamma)<0$.
-
-\textit{Step 4: boundary conditions.}
-The killing condition imposes, at $z=-h_0^+$:
-\begin{enumerate}[(i)]
-\item $\widehat{U}_{\mathrm{surv}}(q,-h_0^+;h_0)=0$;
-\item $K_{j,-}^{(0)}[\widehat{U}_{\mathrm{surv}}](-h_0^+)=0$, \quad $j=1,2$,
-\end{enumerate}
-by the same argument as in Proposition~\ref{prop:Ubar}: downward jumps from $-h_0^+$ land in the killed region.
-
-\textit{Step 5: linear system.}
-Substituting the full solution $\widehat{U}_{\mathrm{surv}}=1/q+\widehat{U}_{\mathrm{surv,hom}}$ into each
-condition and applying~\eqref{eq:phase-on-exp} to the homogeneous terms yields
-\[
-\mathbf{M}_{\mathrm{surv}}(q)\,\mathbf{C}(q;h_0) = -\begin{pmatrix}1/q\\1/q\\1/q\end{pmatrix},
-\]
-where the right-hand side entries are
-$K_{j,-}^{(0)}[1/q](-h_0^+)=1/q$ (since $K_{j,-}^{(0)}$ integrates to one against the exponential density).
-By Lemma~\ref{lem:Msurv-inv}, $\mathbf{M}_{\mathrm{surv}}(q)$ is invertible, so the coefficients $\mathbf{C}$ are uniquely determined.
-
-\textit{Step 6: inversion and liquidation probability.}
-Evaluating at $Z_0=0$ and inverting via the Bromwich formula gives $p_{\mathrm{surv}}(T,0;h_0)$. The
-liquidation probability follows from the complement.
+Laplace-transforming $\partial_tp_{\mathrm{surv}}=\mathcal L^{(0)}p_{\mathrm{surv}}$ with
+$p_{\mathrm{surv}}(0,\cdot)=1$ gives $(q-\mathcal L^{(0)})\widehat U_{\mathrm{surv}}=1$. Since
+$\psi_Z^{(0)}(0)=0$, the particular solution is $1/q$; the homogeneous part is \eqref{eq:Uhom} at
+$k=0$. The boundary conditions of Proposition~\ref{prop:Ubar} apply verbatim, with
+$K_{j,-}^{(0)}[1/q]=1/q$ because each kernel integrates to one. This gives
+$\mathbf{M}_{\mathrm{bar}}^{(0)}\mathbf C=-\tfrac1q(1,1,1)^\top$, uniquely solvable by
+Lemma~\ref{lem:Mbar-inv} at $k=0$. Inverting at $z=0$ gives $p_{\mathrm{surv}}$.
 \end{proof}
 
-\begin{proof}[Proof of Lemma~\ref{lem:Msurv-inv}]\label{proof:lem:Msurv-inv}
-The argument is identical to that of Lemma~\ref{lem:Mbar-inv} with $k=0$.
-The phase rates are $r_{1,-}^{(0)}=1/\eta_{1,-}$ and $r_{2,-}^{(0)}=1/\eta_{2,+}$,
-so condition~\eqref{eq:nondeg-surv} is equivalent to $\eta_{1,-}\neq\eta_{2,+}$.
-Each denominator factor is nonzero because $-r_{j,-}^{(0)}$ is a pole of $\psi_Z^{(0)}$,
-hence cannot equal any root $\gamma_m^{(0)}(q)$ of $\psi_Z^{(0)}(\cdot)=q$ for finite $q$.
+\begin{proof}[Proof of Proposition~\ref{prop:overshoot-law}]\label{proof:prop:overshoot-law}
+Let $D_t:=h_0+Z_t>0$ be the distance to the barrier before liquidation. On $\{\tau\le T\}$, almost
+surely exactly one of three things happens at $\tau$: the diffusion carries $Z$ continuously onto the
+barrier ($u=0$, possible because $\sigma_Z>0$); $X_1$ jumps down; or $X_2$ jumps up. Simultaneous
+jumps have probability zero because $N_1$ and $N_2$ are independent. Down-jumps of $X_1$ arrive at
+rate $\lambda_1(1-p_1)$ with sizes exponential at rate $r_1=1/\eta_{1,-}$, independent of the past; a
+jump of size $y$ at time $t<\tau$ liquidates exactly when $y>D_{t-}$, with overshoot $u=y-D_{t-}$. By
+the compensation formula for the Poisson random measure of these jumps, for bounded measurable $f$,
+\[
+\E\!\left[f(u)\,\one_{\{\tau\le T,\ X_1\text{ jump}\}}\right]
+=\E\!\int_0^{T\wedge\tau}\!\lambda_1(1-p_1)\int_{D_{t-}}^{\infty}f(y-D_{t-})\,r_1e^{-r_1y}\,\diff y\,\diff t
+=P_1\int_0^\infty f(u)\,r_1e^{-r_1u}\,\diff u ,
+\]
+with $P_1:=\E\int_0^{T\wedge\tau}\lambda_1(1-p_1)e^{-r_1D_{t-}}\diff t$, after substituting
+$y=D_{t-}+u$. The inner integral factorises because the exponential density satisfies
+$r_1e^{-r_1(D+u)}=e^{-r_1D}\,r_1e^{-r_1u}$. The same argument with rate $r_2=1/\eta_{2,+}$ and
+intensity $\lambda_2p_2$ applies to up-jumps of $X_2$, and continuous crossings contribute
+$P_0f(0)$. The three cases exhaust $\{\tau\le T\}$, so $P_0+P_1+P_2=p_{\mathrm{liq}}(T)$ and
+\eqref{eq:overshoot-law} follows. With $f(u)=e^{-ju}$ the right-hand side is
+$P_0+P_1r_1/(r_1+j)+P_2r_2/(r_2+j)$. The matrix with rows $\bigl(1,r_1/(r_1+j),r_2/(r_2+j)\bigr)$,
+$j=0,1,2$, has determinant proportional to $r_1-r_2$, so it is nonsingular when $r_1\neq r_2$ and the
+weights are determined.
 \end{proof}
+
+% ============================================================
+\section*{Replication}
+% ============================================================
+{\sloppy All results are produced by the \texttt{optimal\_long\_short} Python package: the resolvent and
+moment machinery in \texttt{moments.py}, \texttt{laplace\_resolvent.py}, \texttt{root\_finder.py} and
+\texttt{inversion.py}; exact overshoot recovery in \texttt{overshoot\_recovery.py}; the overshoot law
+and expected log wealth in \texttt{kelly.py}; the regime resolvent in \texttt{regime\_switching.py};
+the sizing grid in \texttt{drift\_bayes.py}; stale-aware full-history panels in
+\texttt{full\_history.py}; and ECF calibration in the \texttt{calibration/} subpackage. Scripts under
+\texttt{jobs/}: \texttt{build\_merged\_4h.py} and \texttt{calibrate\_btc\_eth.py --merged} (headline data
+and Table~\ref{tab:num-params}), \texttt{numerical\_comparison.py} (Table~\ref{tab:results}),
+\texttt{mc\_convergence.py} (Table~\ref{tab:mcconv}),
+\texttt{sensitivity\_analysis.py} (Figure~\ref{fig:sensitivity}), \texttt{overshoot\_table.py}
+(Table~\ref{tab:overshoot}), \texttt{regime\_calibration.py} (Table~\ref{tab:regime}),
+\texttt{breakeven\_drift.py} (Table~\ref{tab:thresholds}, Figure~\ref{fig:buffer-drift}, the
+posteriors of Section~\ref{sec:discussion}), \texttt{kelly\_sizing.py} (the validation of
+Section~\ref{sec:log-wealth}), \texttt{bootstrap\_se.py} (Table~\ref{tab:bootstrap}),
+\texttt{model\_comparison.py} (Appendix~\ref{sec:ecf-ident}), and \texttt{fetch\_universe.py},
+\texttt{horizon\_analysis.py} and \texttt{rolling\_backtest.py} (Appendix~\ref{sec:full-history},
+Tables~\ref{tab:fullhist}--\ref{tab:barrier}; \texttt{backtest\_bias.py} for the significance of
+the over-prediction), and \texttt{realised\_backtest.py} with \texttt{fig\_realised\_backtest.py}
+(Section~\ref{sec:realised}, Table~\ref{tab:realised}, Figure~\ref{fig:realised-backtest}). Data are the Aave v3 Ethereum series under
+\texttt{data/AAVE/} (headline window) and \texttt{data/AAVE\_full/} (full history).\par}
 
 \bibliographystyle{abbrvnat}
-\bibliography{finance}
-
+\bibliography{finance,additions}
 
 \end{document}

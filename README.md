@@ -1,213 +1,159 @@
 # DeFi Long-Short Liquidation Risk
 
-This repository studies leveraged long-short positions on AAVE using a
-bivariate Kou jump-diffusion model.  The current empirical workflow calibrates
-WBTC/WETH dynamics from AAVE v3 Ethereum on-chain data, then uses a
-Laplace-resolvent method to compute liquidation probabilities and conditional
-payoff moments over admissible initial health factors.
+This repository studies leveraged long-short positions on Aave using a
+bivariate Kou jump-diffusion model.  It calibrates WBTC/WETH dynamics from
+Aave v3 Ethereum data, then uses a Laplace-resolvent method to compute
+liquidation probabilities, killed payoff moments, liquidation recovery, and
+carry effects over admissible initial health factors.  The accompanying paper is
+`latex/optimal_long_short.tex`.
 
-The project has two main parts:
+## Merged paper (current)
 
-- `aave-ts/`: TypeScript data fetcher for AAVE v3 Ethereum market/history data.
-- `optimal_long_short/`: Python model, calibration, moments, simulation, and job runners.
+`latex/optimal_long_short_merged.tex` (slides: `latex/optimal_long_short_merged_slides.tex`)
+merges the coauthor's version (Sections 2-5 and Appendix A) with this repository's
+recovery, sizing and empirical work. It supersedes `latex/optimal_long_short.tex`, which
+is kept for reference together with its job table below.
 
-The `jobs/` directory contains thin entry-point scripts only.  Implementation
-lives under `optimal_long_short/job_runners/` and `optimal_long_short/`.
+Its benchmark keeps the drift outside the ECF fit: `jobs/build_benchmark_params.py` writes
+`results/params_WBTC_WETH_benchmark.json` (ECF shape parameters, sample drifts including
+Aave rates). Sections 6-7 and the regime table are reproduced at that benchmark by
+
+```bash
+bash jobs/run_merged_benchmark.sh      # ~50 min; outputs in results/merged/
+python jobs/decision_rules.py          # Table 6 (decision rules)
+```
+
+Sections 8.2-8.4 and the appendices use the same jobs as before
+(`breakeven_drift.py`, `realised_backtest.py`, `fig_realised_backtest.py`,
+`horizon_analysis.py`, `rolling_backtest.py`, `backtest_bias.py`, `bootstrap_se.py`).
+Notebooks 05-06 follow the merged paper and its benchmark.
 
 ## Repository Layout
 
 ```text
 .
-|-- aave-ts/                       # AAVE v3 Ethereum data fetcher
-|   |-- src/run.ts                 # TypeScript CLI entry point
-|   `-- data/AAVE/                 # Parquet history files and manifest.csv
-|-- jobs/                          # Python entry points only
-|-- optimal_long_short/            # Core Python package
-|   |-- calibration/               # ECF calibration, initializers, diagnostics
-|   |-- job_runners/               # Implementations behind jobs/*.py
-|   |-- model_params.py            # Kou parameter convention
-|   |-- moments.py                 # Conditional moments
-|   |-- laplace_resolvent.py       # Laplace-resolvent machinery
-|   |-- risk_report.py             # H0/h0 liquidation reports
-|   `-- drift.py                   # Drift-view helpers and diagnostics
-|-- latex/                         # Paper and generated figures
-|-- results/                       # Calibrated parameter JSON and reports
-`-- requirements.txt               # Python dependencies
+|-- optimal_long_short/        # Python package (installable)
+|   |-- calibration/           # Penalised ECF calibration, grid, initializer
+|   |-- job_runners/           # Implementations behind the original jobs/*.py entry points
+|   |-- kou_model.py           # Bivariate Kou exponent, tilted dynamics of Z = X1 - X2
+|   |-- laplace_resolvent.py   # Particular/homogeneous solutions, 3x3 barrier system
+|   |-- moments.py             # Survival probability and killed/conditional moments
+|   |-- inversion.py           # Talbot Laplace inversion
+|   |-- recovery.py            # Continuous-crossing liquidation recovery
+|   |-- overshoot_recovery.py  # Exact jump-overshoot recovery (bivariate tilt)
+|   |-- carry.py, rate_curve.py, regime_switching.py, screen.py   # Carry section
+|   |-- drift_bayes.py         # Bayesian sizing distribution
+|   |-- kelly.py               # Semi-analytic E[log W_T] (Kelly), overshoot law
+|   |-- full_history.py        # Stale-aware pair panels from the full hourly history
+|   `-- aave_hourly.py         # Aave v3 hourly reserve fetcher (The Graph)
+|-- jobs/                      # Scripts that reproduce the paper's tables/figures
+|-- tests/                     # pytest suite
+|-- notebooks/                 # Package walkthroughs (see notebooks/README.md)
+|-- data/AAVE/                 # Hourly reserve snapshots + the 4h WBTC/WETH panel
+|-- results/                   # Calibrated parameters and job outputs (JSON/CSV)
+|-- latex/                     # Paper, slides, figures
+|-- strategies/                # Separate trading-strategy benchmarks (not used by the paper)
+|-- docs/reviews/              # Referee-style review and revision reports
+`-- aave-ts/                   # Older TypeScript on-chain fetcher (RPC-based)
 ```
 
 ## Setup
 
-Python:
-
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[data,dev]"      # or: pip install -r requirements.txt
 ```
 
-Most Python jobs are run from the repository root:
+Run jobs from the repository root.
+
+## Tests
 
 ```bash
-.venv/bin/python jobs/<job_name>.py
+pytest                    # full suite
+pytest -m "not slow"      # skip the sizing-grid regression (a few minutes)
 ```
 
-AAVE TypeScript fetcher:
+The core tests pin the resolvent against independent quantities: the tilted
+Levy exponent, the no-shorting limit, the closed-form Brownian first-passage
+probability in the vanishing-jump limit, and the k=0 first-passage transform.
+
+## Reproducing the paper
+
+### 1. Data
+
+Hourly reserve snapshots (rates, TVL, balances, utilization) are fetched from
+The Graph by `optimal_long_short/aave_hourly.py` (API key in `.env` as
+`THE_GRAPH_API_KEY`); `jobs/fetch_universe.py` fetches the full universe and the reserve
+configurations into `data/AAVE/`.
+
+The headline WBTC/WETH panel is built from those files:
 
 ```bash
-cd aave-ts
-cp .env.example .env   # set RPC_URL
-npm install
+python jobs/build_merged_4h.py      # -> data/AAVE/merged_wbtc_weth_4h.parquet
 ```
 
-See [aave-ts/README.md](aave-ts/README.md) for the full fetcher CLI, persistence
-schema, supported frequencies, and RPC notes.
+Prices are oracle-implied, `TVL_USD / (token_balance / 10**decimals)`, resampled
+to four hours by taking the last hourly value.  With the default window
+(2026-03-17 16:00 to 2026-08-04 16:00 UTC) this reproduces the stored panel
+exactly.
 
-## Data Workflow
+> Hourly files written before the `price_usd` fix hold `TVL / raw balance`
+> in that column, off by `10**decimals`; log returns are unaffected, and
+> `build_merged_4h.py` recomputes prices from TVL and balance directly.
 
-Fetch aligned AAVE history first.  For free-tier RPC endpoints, keep
-concurrency low and use moderate history frequency:
+### 2. Calibration
 
 ```bash
-cd aave-ts
-npm run run -- --mode=history --assets=WETH,WBTC --days=90 --frequency=6h
+python jobs/calibrate_btc_eth.py --merged   # -> results/params_WBTC_WETH.json, latex/fig_ecf_empirical.pdf
 ```
 
-History fetches are persisted by default to:
+This reproduces the stored headline parameters bit for bit.  Without
+`--merged` the job reads the older `aave-ts/data/AAVE/manifest.csv` pipeline.
 
-```text
-aave-ts/data/AAVE/hist_<id>.parquet
-aave-ts/data/AAVE/manifest.csv
-```
+### 3. Tables and figures
 
-The manifest records fetch parameters, realized block/date ranges, frequency,
-asset, chain, RPC host hash, and the parquet ID.  When multiple assets are
-passed in a single history fetch, the TypeScript fetcher uses the same target
-block schedule across assets, so WBTC/WETH rows can be aligned by block.
+| Script | Paper output |
+|---|---|
+| `jobs/numerical_comparison.py` | Table 3 (Laplace vs Monte Carlo) |
+| `jobs/mc_convergence.py` | Table 4 (bridge-corrected MC) |
+| `jobs/sensitivity_analysis.py` | Figure 1 |
+| `jobs/overshoot_table.py` | Table 5 (jump-overshoot recovery) |
+| `jobs/horizon_analysis.py` (writes `results/pair_cross_section_daily.csv`) | Tables 6, 12 (pair cross-section, daily σ̄_Z), Table 10 (full-history calibrations) |
+| `jobs/regime_calibration.py` | Table 7 (regime-switching carry) |
+| `jobs/breakeven_drift.py` | Table 8 (break-even drift views), Figure 2 (optimal leverage vs drift view), §9 posteriors |
+| `jobs/realised_backtest.py`, `jobs/fig_realised_backtest.py` | §9.3 realised 37-pair backtest (Table 9, Figure 3); writes results/realised_backtest.json, results/realised_backtest_pairs.csv |
+| `jobs/drift_bayes.py` | Legacy capped-grid thresholds (`results/task4_numbers.json`, used by notebooks 05/06; not the paper's break-evens) |
+| `jobs/kelly_sizing.py` | §7.5 Monte Carlo validation of E[log W_T], `latex/fig_kelly.pdf` |
+| `jobs/bootstrap_se.py` | Table 9 (block bootstrap, headline bounds) |
+| `jobs/model_comparison.py` | GBM / Merton / Kou comparison (App. A.2) |
+| `jobs/recalibrate_extended.py --recal` | Extended-sample robustness (Appendix A.2) |
+| `jobs/fetch_universe.py --start 2023-01-27 --out-dir data/AAVE_full` | Full Aave v3 history (input to the two jobs below) |
+| `jobs/horizon_analysis.py` | Full-history calibrations (Table 10), sample drift and SE (§9.3), tail risk (§7.4) |
+| `jobs/rolling_backtest.py` | Table 11 (out-of-sample one-month liquidation backtest, 2024-01 onward) |
 
-## Empirical Calibration
+`bootstrap_se.py` takes `[B] [n_starts] [workers]` and runs in parallel.
 
-The main empirical calibration is WBTC collateral versus WETH borrow:
+### 4. Paper
 
 ```bash
-.venv/bin/python jobs/calibrate_btc_eth.py
+cd latex && latexmk -pdf -interaction=nonstopmode -halt-on-error optimal_long_short.tex
 ```
 
-This reads the latest WBTC and WETH rows from `aave-ts/data/AAVE/manifest.csv`,
-merges their parquet data by block, computes log returns, subtracts an
-exponentially weighted mean, and calibrates bivariate Kou parameters by ECF
-matching.
+## Drift convention
 
-Outputs:
-
-```text
-results/params_WBTC_WETH.json
-latex/fig_ecf_empirical.pdf
-```
-
-The saved JSON includes:
-
-- rate-adjusted calibrated parameters for downstream analysis
-- raw ECF parameters before AAVE rate adjustment
-- AAVE constraints (`b`, maximum LTV, `h0_min`, `H0_min`)
-- last aligned WBTC/WETH prices used as initial prices
-- drift summaries and first-moment diagnostics
-
-## Drift Convention
-
-`KouParams.mu1` and `KouParams.mu2` are annualized price-growth normalizers:
-
-```text
-E[exp(X_i(t))] = exp(mu_i * t)
-```
-
-The characteristic function, moment calculations, Laplace-resolvent machinery,
-and Monte Carlo simulation use the derived log-process drift:
-
-```text
-muX_i = mu_i - 0.5 * sigma_i^2 - lambda_i * E[exp(J_i) - 1]
-```
-
-User views should usually be applied to `mu_i` as price-growth views.  Use
-`optimal_long_short.drift.with_muX_drift_view` only when the view is explicitly
-stated as a log-process drift.
-
-Important empirical caveat: high-frequency ECF calibration can weakly identify
-the first moment.  The fitted `mu_i` values should be treated as model
-normalizers, not out-of-sample return forecasts.  The calibration JSON reports
-empirical first-moment diagnostics to make this visible.
-
-## Analysis Jobs
-
-Run from the repository root.
-
-```bash
-# Calibrate WBTC/WETH from AAVE history
-.venv/bin/python jobs/calibrate_btc_eth.py
-
-# Numerical comparison table: Laplace-resolvent vs Monte Carlo
-.venv/bin/python jobs/numerical_comparison.py
-
-# Parameter sensitivity figure
-.venv/bin/python jobs/sensitivity_analysis.py
-
-# Mean-variance-liquidation frontier figure
-.venv/bin/python jobs/frontier_analysis.py
-
-# CSV report over h0 / H0 grid
-.venv/bin/python jobs/h0_liquidation_report.py
-```
-
-`frontier_analysis.py` and `sensitivity_analysis.py` load
-`results/params_WBTC_WETH.json` by default, including the same calibrated
-parameters, AAVE constraints, initial prices, and one-month horizon used in the
-empirical paper section.  Optional drift views can be passed to frontier jobs
-with `--mu1`, `--mu2`, `--delta-mu1`, and `--delta-mu2`.
-
-## Illustration Notebooks
-
-The executed notebooks in `notebooks/` provide focused package walkthroughs:
-
-- health factor, holdings, and leverage
-- survival probability and integer-order moments
-- sizing frontiers, objectives, and drift views
-- Kou calibration and spread-direction ECF diagnostics
-
-See `notebooks/README.md` for the notebook index and rerun command.
-
-## Paper
-
-The main paper is:
-
-```text
-latex/optimal_long_short.tex
-```
-
-Build it with:
-
-```bash
-cd latex
-latexmk -pdf -interaction=nonstopmode -halt-on-error optimal_long_short.tex
-```
-
-Generated figures used by the paper include:
-
-```text
-latex/fig_ecf_empirical.pdf
-latex/fig_ecf_fit.pdf
-latex/fig_sensitivity.pdf
-latex/fig_frontier.pdf
-```
+`KouParams.mu1`/`mu2` are annualised price-growth rates,
+`E[exp(X_i(t))] = exp(mu_i t)`.  All numerics use the derived log-process drift
+`muX_i = mu_i - 0.5 sigma_i^2 - lambda_i E[exp(J_i) - 1]`.  Apply user views to
+`mu_i` (see `optimal_long_short.drift`).  High-frequency calibration identifies
+the drifts weakly (bootstrap SE of the spread drift is larger than the estimate),
+so the fitted `mu_i` are normalizers, not forecasts.
 
 ## Notes
 
-- `jobs/OLD/`, old notebooks, and some packaging metadata still reflect earlier
-  Hawkes-oriented experiments.  The current empirical pipeline is the
-  AAVE/Kou/Laplace-resolvent workflow described above.
-- The current AAVE fetcher defaults to RPC concurrency `1`, suitable for
-  free-tier endpoints.
-- Historical `eth_call` requires an archive-capable or sufficiently capable RPC
-  endpoint.  If a free endpoint fails for older blocks, reduce `--days`, lower
-  sample count, or use an archive RPC.
+- `data/OLD_AAVE/` is still read by `strategies/ccaave_v3_carry_trade_analysis.ipynb`.
+- `optimal_long_short/carry_optimal_long_short.ipynb` writes
+  `walk_forward_oos_results.csv` next to itself via an absolute path.
 
 ## License
 

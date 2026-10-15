@@ -50,7 +50,8 @@ def main() -> None:
     print(f"Initial prices: WBTC S10={MARKET.S10:.6f}, WETH S20={MARKET.S20:.6f}")
     print(f"Horizon T={T:.6f} yr (1 month = 1/12)")
 
-    H0_LOG_GRID = [round(_CONSTRAINT["h0_min"], 3), 0.10, 0.25, 0.50, 0.75, 1.00, 1.50, 2.00]
+    # 0.07 sits just above the origination minimum h0_min = 0.0662 (paper Table 3).
+    H0_LOG_GRID = [0.07, 0.10, 0.25, 0.50, 0.75, 1.00, 1.50, 2.00]
     H0_NOSHORT = 100.0          # proxy for h0 -> infinity
 
     MC_PATHS = 100_000
@@ -170,6 +171,20 @@ def main() -> None:
     for name, lap, anal in rows:
         err = abs(lap - anal) / abs(anal)
         print(f"{name:<18}  {lap:>14.8f}  {anal:>14.8f}  {err:>12.2e}")
+
+    # Table 3 of the paper is read from this file.
+    import json
+    from optimal_long_short.job_runners.common import REPO_ROOT
+    out = [{"h0": h0, "H0": float(np.exp(h0)),
+            "lap": lap_rows[h0][0], "mc": mc_rows[h0][0],
+            "mean": lap_rows[h0][1], "var": lap_rows[h0][2],
+            "skew": lap_rows[h0][3], "kurt": lap_rows[h0][4],
+            "mc_mean": mc_rows[h0][1], "mc_var": mc_rows[h0][2],
+            "mc_skew": mc_rows[h0][3], "mc_kurt": mc_rows[h0][4],
+            "t_lap": lap_rows[h0][5], "t_mc": mc_rows[h0][5]} for h0 in H0_LOG_GRID]
+    with open(REPO_ROOT / "results" / "a1_results_row.json", "w") as fh:
+        json.dump(out, fh, indent=2, default=float)
+    print("SAVED results/a1_results_row.json")
 
 
 if __name__ == "__main__":

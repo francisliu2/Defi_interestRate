@@ -153,6 +153,33 @@ def load_aave_data() -> tuple[pd.DataFrame, dict]:
     return merged, meta
 
 
+def load_merged_data(path: Path) -> tuple[pd.DataFrame, dict]:
+    """Load the 4h WBTC/WETH panel built by ``jobs/build_merged_4h.py``.
+
+    This is the source of the headline calibration in the paper: the Aave v3
+    oracle-implied prices (reserve TVL / supplied balance) from
+    :mod:`optimal_long_short.aave_hourly`, resampled to four hours.
+    """
+    merged = pd.read_parquet(path).sort_values("datetime").reset_index(drop=True)
+    if len(merged) < 2:
+        raise ValueError("Need at least two WBTC/WETH rows to compute returns")
+    meta = {
+        "frequency": "4h",
+        "dt_years": 4.0 / (24.0 * 365.0),
+        "btc_file": str(path),
+        "eth_file": str(path),
+        "scheduled_latest_block": None,
+        "scheduled_sample_count": int(len(merged)),
+        "initial_prices": {
+            "WBTC": float(merged["close_btc"].iloc[-1]),
+            "WETH": float(merged["close_eth"].iloc[-1]),
+            "datetime": str(merged["datetime"].iloc[-1]),
+            "block": None,
+        },
+    }
+    return merged, meta
+
+
 def compute_returns(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray, str, str]:
     """Log-returns from merged AAVE close prices."""
     r_btc = np.diff(np.log(df["close_btc"].values))
@@ -360,6 +387,10 @@ def save_params(
             "n_obs":      result.n_obs,
             "dt_years":   meta["dt_years"],
             "frequency":  meta["frequency"],
+            "ewm_demean_span": meta["ewm_demean_span"],
+            "latest_ewm_mean_btc": meta["latest_ewm_mean_btc"],
+            "latest_ewm_mean_eth": meta["latest_ewm_mean_eth"],
+            "empirical_first_moments": meta.get("empirical_first_moments", {}),
             "returns_preprocessing": {
                 "method": "log_returns_minus_exponential_weighted_mean",
                 "ewm_span": meta["ewm_demean_span"],
@@ -470,9 +501,21 @@ def save_params(
 # Main
 # ---------------------------------------------------------------------------
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    import argparse
+
+    ap = argparse.ArgumentParser(description="WBTC/WETH bivariate Kou ECF calibration.")
+    ap.add_argument(
+        "--merged", nargs="?", const="data/AAVE/merged_wbtc_weth_4h.parquet", default=None,
+        help="calibrate from the 4h panel built by jobs/build_merged_4h.py (the paper's "
+             "headline source) instead of the aave-ts manifest",
+    )
+    args = ap.parse_args(argv)
     print("Loading AAVE on-chain data …")
-    df, meta = load_aave_data()
+    if args.merged:
+        df, meta = load_merged_data(ROOT / args.merged)
+    else:
+        df, meta = load_aave_data()
     r_btc_raw, r_eth_raw, date0, date1 = compute_returns(df)
     r_btc, ewm_mean_btc = ewm_demean_with_mean(r_btc_raw, EWM_DEMEAN_SPAN)
     r_eth, ewm_mean_eth = ewm_demean_with_mean(r_eth_raw, EWM_DEMEAN_SPAN)
