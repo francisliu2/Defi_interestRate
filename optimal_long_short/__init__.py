@@ -19,5 +19,31 @@ from optimal_long_short.model.drift_service import (  # noqa: F401
     with_muX_drift_view,
     with_price_drift_view,
 )
+from optimal_long_short.carry import (  # noqa: F401
+    CarryLeg,
+    CarryOptimizationResult,
+    CarrySpec,
+    RateSource,
+    apply_carry,
+    conditional_sharpe,
+    depeg_scenario,
+    objective_phi,
+    optimal_carry_h0,
+    resolve_rate,
+    size_for_target_pliq,
+)
+from optimal_long_short.drift_bayes import (  # noqa: F401
+    gaussian_posterior,
+    interior_threshold,
+    optimal_buffer,
+    sizing_distribution,
+    spread_drift_standard_error,
+)
+from optimal_long_short.overshoot_recovery import (  # noqa: F401
+    BivariateTiltedZDynamics,
+    exact_recovery_moments,
+    exact_wealth_moments,
+    joint_hitting_moment,
+)
 from optimal_long_short.model.risk_report import h0_liquidation_moment_report  # noqa: F401
 from optimal_long_short.model.strategy import minimum_feasible_h0  # noqa: F401

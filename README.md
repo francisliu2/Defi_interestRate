@@ -14,6 +14,35 @@ killed payoff moments under a ratio barrier. Initial health-buffer sizing is a
 stylized, objective-specific application of those outputs, not a universal
 optimal-leverage rule or a protocol-level trading strategy.
 
+## Merged paper (current)
+
+`latex/optimal_long_short_merged.tex` (slides: `latex/optimal_long_short_merged_slides.tex`)
+merges the killed-moment paper (`latex/optimal_long_short.tex`, Sections 2-5 and
+Appendix A) with liquidation recovery, the overshoot law and bad debt, expected log wealth,
+decision rules, the break-even drift and a realised 37-pair backtest. The earlier extended
+version is kept as `latex/optimal_long_short_local.tex`.
+
+The merged paper's calibration is `results/params_WBTC_WETH_headline.json` (penalised ECF,
+840 four-hour WBTC/WETH returns, `jobs/calibrate_btc_eth.py --merged` with
+`jobs/build_merged_4h.py`). Its benchmark keeps the drift outside the fit:
+`jobs/build_benchmark_params.py` writes `results/params_WBTC_WETH_benchmark.json` (fitted
+shape parameters, sample drifts including Aave rates).
+
+```bash
+uv run bash jobs/run_merged_benchmark.sh      # Sections 6-7, Table 13; outputs in results/merged/ (~50 min)
+uv run python jobs/decision_rules.py          # Table 6
+uv run python jobs/breakeven_drift.py         # Table 7, Figure 2, posteriors
+uv run python jobs/realised_backtest.py       # Table 8 (needs data/AAVE_full)
+uv run python jobs/fig_realised_backtest.py   # Figure 3
+uv run python jobs/horizon_analysis.py        # Appendix C (full history)
+uv run python jobs/rolling_backtest.py && uv run python jobs/backtest_bias.py   # Table 11
+uv run python jobs/bootstrap_se.py            # Table 9
+```
+
+`data/AAVE_full/` (full Aave v3 history, not committed) is fetched with
+`uv run python jobs/fetch_universe.py --start 2023-01-27 --out-dir data/AAVE_full`
+(needs a The Graph API key). Notebooks 05-06 follow the merged paper.
+
 The project has two main parts:
 
 - `aave-ts/`: TypeScript data fetcher for AAVE v3 Ethereum market/history data.
@@ -37,7 +66,13 @@ lives in the responsibility-specific subpackages under `optimal_long_short/`.
 |   |-- model/                     # Parameters, dynamics, drift service, strategy, sizing, moments, and reports
 |   |-- monte_carlo/               # Simulation engine
 |   |-- strategy/                  # Colleague research assets
-|   `-- utils/helpers.py           # Shared serialization and analysis helpers
+|   |-- utils/helpers.py           # Shared serialization and analysis helpers
+|   |-- recovery.py, overshoot_recovery.py   # Liquidation recovery, exact jump overshoot
+|   |-- kelly.py                   # Overshoot law, bad debt, semi-analytic E[log W_T]
+|   |-- carry.py, rate_curve.py, regime_switching.py, screen.py   # Carry, rate regimes, cross-section
+|   |-- drift_bayes.py, barbell.py # Sizing grid (legacy) and barbell legs
+|   |-- full_history.py            # Stale-aware pair panels from the full hourly history
+|   `-- aave_hourly.py             # Aave v3 hourly reserve fetcher (The Graph)
 |-- latex/                         # Paper and generated figures
 |-- results/                       # Calibrated parameter JSON and reports
 |-- pyproject.toml                 # Package metadata and dependency declarations
