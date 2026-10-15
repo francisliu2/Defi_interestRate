@@ -1,0 +1,95 @@
+% ============================================================
+% SPUN-OUT MATERIAL (removed from optimal_long_short.tex per revision task T2).
+% This "barbell" section was cut from the main manuscript because the keeper leg
+% is not an investable position (liquidation is a latency/MEV/gas race), the
+% weights were normalised per unit of another agent's equity, and the backtest
+% was under-specified and underperformed plain USDC supply. Preserved here
+% verbatim so nothing is lost; the Jensen-gap observation (eq:jensen) was kept
+% in the main text as a remark in the regime-switching subsection.
+% ============================================================
+
+% ============================================================
+\section{A Barbell Long the Two Convexities}\label{sec:barbell}
+% ============================================================
+
+The preceding sections assemble, without setting out to, a complete indictment of the leveraged
+long--short book. Section~\ref{sec:carry-crosssection} shows it collects no premium: every
+volatile collateral pair on Aave carries \emph{negative} net carry, from $-1.8\%$ to $-4.5\%$ per
+year, because the wrapped-BTC and staked-ETH reserves pay almost nothing as collateral while their
+debt legs cost several percent. Yet the same book is \emph{short two convex payoffs}. It is short
+the barrier: the killed payoff $\Pi_T$ forfeits the recovery $R_\tau$ of Section~\ref{sec:recovery}
+at liquidation, a bounded upside sold against a rare near-total loss. And it is short the
+utilization kink: the borrower pays the piecewise-linear rate $r_b(U)$ of
+Section~\ref{sec:carry-regime}, whose slope jumps by more than a factor of $25$ at $U_{\mathrm{opt}}$
+(published $\mathrm{slope}_2$ is $0.60$--$0.80$ for WETH and the stablecoins against a
+first-segment slope an order of magnitude smaller, and $3.0$ for the BTC wrappers), so the borrower
+is short a call on utilization. A position that pays a negative premium to stay short two
+convexities is fragile in exactly Taleb's sense.
+
+The constructive response is to take the other side of both, and both sides are available
+\emph{on-protocol}, with no options market. We place a large allocation $w_{\mathrm{safe}}$ in a
+pure supplier so deeply buffered that the barrier is unreachable --- the $h_0\to\infty$ limit of
+Remark~\ref{rem:no-shorting}, in which the payoff converges to a unit long and $p_{\mathrm{surv}}\to1$
+--- and a small allocation $w_{\mathrm{keep}}=1-w_{\mathrm{safe}}$ that buys the two convexities the
+levered book was short. The construction reuses the machinery already built; it introduces no new
+transforms.
+
+\subsection{The keeper leg: long the barrier}\label{sec:barbell-keeper}
+A liquidator repays a fraction $\phi_c$ of the outstanding debt (Aave's close factor, $0.5$ at the
+boundary) and seizes collateral worth $(1+\lambda)$ times the repayment, so on $\{\tau\le T\}$ the
+keeper collects $\lambda\phi_c V_{2,\tau}$. Normalised per unit of the borrower's initial equity,
+$n_2 S_{2,0}=b/(e^{h_0}-b)$, its expected value is
+\begin{equation}\label{eq:keeper}
+\mathcal K(h_0)\;=\;\lambda\,\phi_c\,\frac{b}{e^{h_0}-b}\;\E\!\left[e^{X_{2,\tau}}\one_{\{\tau\le T\}}\right],
+\end{equation}
+which is \eqref{eq:fp-transform} at $k=1$ --- the \emph{same} first-passage transform that priced the
+recovery $R_\tau$ in Section~\ref{sec:recovery}, evaluated on the same $3\times3$ barrier system.
+What the borrower forfeits at liquidation and what the keeper collects are one object read with
+opposite signs: $R_\tau=V_{2,\tau}(1-b(1+\lambda))/b$ against $\lambda\phi_c V_{2,\tau}$, both
+proportional to $\E[e^{X_{2,\tau}}\one_{\{\tau\le T\}}]$. The keeper leg is therefore priced exactly
+and for free by the transform already validated to $1.7\times10^{-11}$ in
+Section~\ref{sec:recovery}; being long it is being long precisely the liquidation event that kills
+the borrower.
+
+\subsection{The supplier leg: long the kink}\label{sec:barbell-supplier}
+A pure supplier bears no barrier and earns $(1-\phi)\,U\,r_b(U)$, with $\phi$ the reserve factor.
+Because $r_b$ is convex in $U$ --- linear with an upward slope break at $U_{\mathrm{opt}}$ --- so is
+the supplier's rate, and Jensen's inequality makes the value of the kink explicit. Modelling
+utilization as a Jacobi (Wright--Fisher) diffusion
+$dU_t=\kappa(\theta-U_t)\,dt+\sigma\sqrt{U_t(1-U_t)}\,dW_t$, which unlike a CIR fit respects
+$U\le1$, its stationary law is $\mathrm{Beta}(a,b)$ with $a=2\kappa\theta/\sigma^2$,
+$b=2\kappa(1-\theta)/\sigma^2$, and the supplier's expected yield exceeds the yield evaluated at
+mean utilization by the strictly positive gap
+\begin{equation}\label{eq:jensen}
+\mathcal J\;=\;\underbrace{\E\!\big[(1-\phi)\,U\,r_b(U)\big]}_{\text{expected yield}}
+\;-\;\underbrace{(1-\phi)\,\E[U]\,r_b(\E[U])}_{\text{yield at mean }U}\;>\;0 .
+\end{equation}
+The gap $\mathcal J$ is the premium for being long the kink, and it is invisible to any
+deterministic-rate model --- including the carry substitution of Proposition~\ref{prop:carry},
+which by construction evaluates the curve at a single $U$ and so prices $\mathcal J$ at zero. This is
+the precise sense in which Section~\ref{sec:carry-crosssection}'s ``deterministic carry is inert''
+is a statement about the \emph{first} moment only: the second-order curvature the borrower pays for,
+the supplier is paid for, and the barbell moves it from the liability to the asset side. The two legs
+are implemented in \texttt{optimal\_long\_short.barbell} (\texttt{keeper\_leg}, \texttt{supplier\_leg}),
+the keeper leg calling the identical inverter as \texttt{recovery}.
+
+\subsection{Empirical behaviour}\label{sec:barbell-empirical}
+A historical backtest on Aave v3 Ethereum (Jan 2023--Jun 2026, $1{,}222$ daily observations, USDC
+supply against WETH borrow) compares a $90/10$ barbell against the naive carry book and three
+conventional alternatives. The naive carry trade is liquidated to a total loss over the window
+(cumulative return $-100\%$, maximum drawdown $-100\%$); the barbell instead delivers a positive
+cumulative $+15.1\%$ with its drawdown structurally bounded at $-2.6\%$, the best Calmar ratio in the
+comparison ($1.66$). This is the qualitative signature the construction predicts: the safe leg floors
+the loss while the two convex legs supply small, steady, positively skewed gains.
+
+Two honest caveats attach, both consistent with the paper's thesis rather than against it. First,
+the keeper leg's payoff inherits the continuous-crossing optimism of Remark~\ref{rem:overshoot}: a
+jump that overshoots the barrier leaves the liquidated borrower with bad debt, and a keeper who is
+not first in the queue collects less than \eqref{eq:keeper} returns, so $\mathcal K$ is an upper
+bound. Second, on a \emph{risk-adjusted} basis the barbell does not clear the on-chain hurdle: over
+this window the mean USDC supply rate was $4.80\%$, and no strategy in the comparison --- the barbell
+included, at a $4.3\%$ annualised return --- earned a positive Sharpe against simply supplying USDC.
+The barbell wins on tail geometry (bounded drawdown, positive Calmar, positive skew), not on excess
+mean return. That is the correct reading of a convexity-harvesting trade in a regime where the
+risk-free itself is a healthy on-chain yield: it is bought for what it does in the left tail, and it
+is the disciplined answer to the fragility the rest of the paper diagnoses.

@@ -1,0 +1,263 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage[table]{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black}
+
+\newcommand{\good}{\cellcolor{green!12}}
+\newcommand{\bad}{\cellcolor{red!12}}
+\newcommand{\meh}{\cellcolor{yellow!15}}
+\newcommand{\yes}{\textcolor{green!45!black}{\textbf{yes}}}
+\newcommand{\no}{\textcolor{red!60!black}{\textbf{no}}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\title{\textbf{Trading Results Audit: Strategies, Pairs, and Paper Coverage}\\[4pt]
+\large DeFi Long--Short / Carry Framework (\code{Defi\_interestRate})}
+\author{Prepared as a coverage and sanity check of the empirical trading work}
+\date{2026-09-13}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent This note answers three questions about the trading work in the
+repository: (i) \emph{are the trading results OK?}, (ii) \emph{which strategies
+were tried, on which pairs?}, and (iii) \emph{does the final paper}
+(\code{latex/optimal\_long\_short.tex}) \emph{include the most relevant use
+case(s)?} The short answers: the results are internally coherent and deliver a
+clean, honest \emph{negative} result (the naive leveraged carry book is a bad
+trade). The Sharpe convention has now been fixed (Section~\ref{sec:sharpefix}):
+the benchmark previously scored every strategy against a hardcoded flat $5\%$
+and mixed an arithmetic Sharpe numerator with a geometric Sortino numerator.
+After correcting both --- risk-free set to the realised on-chain USDC supply
+rate, and Sharpe/Sortino/Omega placed on one consistent excess series --- the
+Sharpe ratios stay negative, but now for a \emph{genuine economic reason}: the
+mean USDC supply rate over the window was $4.80\%$, and \emph{no} strategy beat
+simply supplying USDC. Eight distinct strategies were run across a 37-pair cross-section, with
+almost all backtesting on \code{USDC}(supply)/\code{WETH}(borrow) and the
+analytics on \code{WBTC}/\code{WETH}. The final paper contains the diagnostic
+use cases (sizing, carry-inert cross-section, regime switching, depeg, recovery)
+but \textbf{omits the single most actionable use case --- the Taleb barbell ---}
+which the historical benchmark identifies as the best strategy on a tail-risk
+basis. The paper's negative result is present; its constructive answer is not.
+\end{abstract}
+
+\section{Are the trading results OK?}
+
+\paragraph{Verdict.} \emph{Directionally yes, with one methodological caveat that
+must be resolved before publication.} The results are consistent with the
+paper's thesis and with the pre-registered cross-section: the leveraged
+long--short / carry book on Aave is structurally short two convexities (the
+liquidation barrier and the utilisation kink) and collects negative net carry on
+every ETH/BTC-collateral pair, so it should --- and does --- lose money once
+liquidations are counted. That is a genuine, valuable finding, not a bug.
+
+\paragraph{What is solid.}
+\begin{itemize}
+  \item \textbf{The negative result reproduces out of sample.} In the
+  walk-forward file (\code{optimal\_long\_short/walk\_forward\_oos\_results.csv},
+  19 non-overlapping 45-day entries, 2023-11 $\to$ 2026-02) the naive carry leg
+  is liquidated in 5/19 windows and posts large negative PnL in several more; the
+  barbell and pure-supply legs stay small and bounded.
+  \item \textbf{The cross-section is unambiguous.} In
+  \code{results/pair\_cross\_section.csv}, \emph{every} ETH- and BTC-collateral
+  pair has negative net carry (roughly $-1.8\%$ to $-4.5\%$/yr); only stable/stable
+  legs (e.g.\ \code{USDC/USDe}) show marginally positive carry. This is the
+  structural premise of the whole framework and it holds across all 37 pairs.
+  \item \textbf{The Monte-Carlo carry study is coherent.}
+  \code{results/aave\_carry\_trade\_metrics.csv} (CIR vs.\ CIR+Jump, 10\,000 paths)
+  gives $\sim$6.7--6.9\% liquidation probability with $\sim$91--96\% of surviving
+  paths profitable --- a sensible ``small edge, fat left tail'' shape.
+\end{itemize}
+
+\paragraph{The Sharpe convention (now fixed --- see Section~\ref{sec:sharpefix}).}
+\begin{itemize}
+  \item \textbf{Every strategy has a negative Sharpe ratio} in the 5-strategy
+  historical benchmark (Table~\ref{tab:benchmark}), \emph{including} strategies
+  with positive cumulative return (the barbell: $+15.1\%$ cumulative, $+4.3\%$
+  annualised). The original code had two defects: it benchmarked against a flat
+  hardcoded $5\%$ risk-free, and it computed the Sharpe numerator arithmetically
+  while computing the Sortino numerator geometrically. Both are fixed. The
+  surprise: the correction \emph{does not} flip the signs --- the realised mean
+  USDC supply rate was $4.80\%$, so the flat $5\%$ was nearly right, and the
+  negative Sharpes are economically real: \textbf{no leveraged strategy beat the
+  $\sim$$4.8\%$ risk-free of simply supplying USDC}. This is a sharper finding
+  than the original, not a bug artifact. (Sortino moved materially, e.g.\ barbell
+  $-0.65 \to -0.08$, because the inconsistent numerator is gone.)
+  \item \textbf{The carry blow-up is a total wipeout} ($-100\%$ cumulative,
+  Sharpe $-3.31$, max drawdown $-100\%$). That is a knockout artifact (equity
+  hits zero once, path ends), which is \emph{correct} as a statement that the
+  trade can be ruined, but it should be reported as ``ruin probability / time to
+  ruin,'' not as a return series, since a $-100\%$ return dominates every summary
+  statistic it enters.
+  \item \textbf{Sign conventions on the risk columns are inconsistent}
+  (e.g.\ \code{VaR 95\%} is reported as $-5.44$ for the barbell, i.e.\ a gain,
+  but as $+5886$ for carry). Standardise before publishing.
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Historical benchmark, Aave V3 Ethereum, Jan 2023 -- Jun 2026
+(1{,}222 daily obs, \$100k). Source: \code{strategy\_benchmark\_executed.ipynb},
+\textbf{Sharpe/Sortino recomputed with the corrected convention}
+(rf = on-chain USDC supply, $4.80\%$ mean). The negative Sharpes are real: no
+strategy beats the risk-free supply rate; the barbell/momentum win only on
+tail-risk (Calmar).}
+\label{tab:benchmark}
+\small
+\begin{tabular}{lrrrrrrr}
+\toprule
+Strategy & Cum.\ Ret. & Ann.\ Ret. & Ann.\ Vol. & Sharpe & Sortino & Max DD & Calmar \\
+\midrule
+\rowcolor{red!10} Current Carry Trade & $-100.0\%$ & $-100.0\%$ & $224.8\%$ & $-3.31$ & $-1.20$ & $-100.0\%$ & $-1.00$ \\
+\rowcolor{green!10} Taleb Barbell      & $+15.1\%$  & $+4.3\%$   & $1.1\%$   & $-0.40$ & $-0.08$ & $-2.6\%$   & $+1.66$ \\
+Pure Supply \& Demand                  & $-73.8\%$  & $-33.0\%$  & $44.9\%$  & $-0.76$ & $-0.44$ & $-79.6\%$  & $-0.41$ \\
+Black--Litterman                       & $-4.1\%$   & $-1.2\%$   & $25.5\%$  & $-0.10$ & $-0.09$ & $-27.0\%$  & $-0.05$ \\
+Momentum \& Factor Rotation            & $+13.8\%$  & $+3.9\%$   & $2.9\%$   & $-0.25$ & $-0.33$ & $-3.1\%$   & $+1.28$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{The Sharpe convention fix}\label{sec:sharpefix}
+The metric helper (\code{compute\_metrics} in \code{strategy\_benchmark.ipynb})
+was corrected in two ways, and the notebook re-executed:
+\begin{enumerate}
+  \item \textbf{Risk-free = on-chain USDC supply rate.} The book is
+  USDC-denominated, so the opportunity cost is what idle capital earns supplying
+  USDC on Aave, not a flat exogenous $5\%$. A per-day \code{RF\_DAILY} series is
+  built from the realised supply APR (geometric annual$\to$daily) and used as the
+  excess-return base, aligned to each strategy's dates.
+  \item \textbf{Consistent numerators.} Sharpe, Sortino and Omega now use the
+  \emph{same} per-period excess series $r-r_f$ and the same arithmetic
+  $\sqrt{365}$ annualisation. Previously Sharpe used an arithmetic excess mean
+  while Sortino used a geometric $(\text{CAGR}-r_f)$ numerator --- an internal
+  inconsistency that made the two ratios non-comparable.
+\end{enumerate}
+Net effect: Sharpe barely moves (the flat $5\%$ was coincidentally close to the
+$4.80\%$ realised supply rate), Sortino moves materially, and the qualitative
+conclusion is unchanged and now defensible.
+
+\noindent\textbf{Bottom line.} The economics are right and the negative result
+is real and well-supported. With the Sharpe convention now fixed, the honest
+reading is: over Jan 2023--Jun 2026 \emph{no} leveraged strategy out-earned the
+$\sim$$4.8\%$ risk-free of just supplying USDC on a risk-adjusted basis; the
+barbell and momentum rotation are the only two that preserve capital (positive
+Calmar, bounded drawdown) and are the sensible choices for a tail-averse
+allocator. The one remaining cosmetic item is the VaR sign convention (negative
+= gain for the near-riskless strategies), which is confusing but not a bug.
+
+\section{Strategies tried and on which pairs}
+
+\subsection*{Analytic / model use cases (in the framework)}
+\begin{longtable}{p{4.2cm}p{4.4cm}p{4.6cm}}
+\toprule
+\textbf{Use case} & \textbf{Where} & \textbf{Pair(s)} \\
+\midrule
+\endhead
+Unit-exposure long--short sizing (survival prob.\ + killed moments) &
+\code{strategy.py}, \code{risk\_report.py} &
+\code{WBTC} coll.\ / \code{WETH} debt \\
+Carry-adjusted sizing ($\mu_i \to \mu_i + r$) &
+\code{carry.py} &
+Any Aave pair; headline \code{WBTC}/\code{WETH} \\
+Carry cross-section (deterministic carry inert) &
+\code{screen.py}, \code{results/pair\_cross\_section.csv} &
+\textbf{37 ordered pairs} over \{USDC, USDT, USDe, WBTC, WETH, cbBTC, weETH, wstETH\} \\
+Regime-switching carry ($6\times6$ resolvent) &
+\code{regime\_switching.py} &
+\code{WBTC}/\code{WETH} \\
+Collateral-depeg sensitivity &
+\code{jobs/*}, \code{usdc\_depeg\_sensitivity.png} &
+Stable-collateral legs \\
+Liquidation recovery / bad-debt &
+\code{recovery.py} &
+\code{WBTC}/\code{WETH} \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Backtested / simulated trading strategies}
+\begin{longtable}{p{3.7cm}p{5.0cm}p{4.5cm}}
+\toprule
+\textbf{Strategy} & \textbf{Mechanism} & \textbf{Pair(s) / universe} \\
+\midrule
+\endhead
+1. Current carry trade & \code{USDC} supply + \code{WETH} borrow, LTV 70\% & \code{USDC}/\code{WETH} \\
+2. Taleb barbell & 90\% safe supply + 10\% carry; supplier + keeper convexity legs & \code{USDC}/\code{WETH} (\code{barbell.py}) \\
+3. Pure supply \& demand & On-chain utilisation signal, LTV 50\% & \code{USDC} (supply) \\
+4. Black--Litterman & TVL-weighted Bayesian carry, weekly rebalance & \code{USDC}, \code{DAI}, \code{USDT}, \code{WETH} \\
+5. Momentum \& factor rotation & 4 assets $\times$ 5 factors, weekly top-2 & \code{USDC}, \code{DAI}, \code{USDT}, \code{WETH} \\
+6. CIR / CIR+Jump carry MC & 10k-path rate simulation, liq.\ stats & \code{USDC}/\code{WETH} \\
+7. Walk-forward OOS & carry vs.\ supply vs.\ barbell, 45-day rolls & \code{USDC}/\code{WETH} \\
+\bottomrule
+\end{longtable}
+
+\noindent\textbf{Pair coverage summary.} Model analytics: headline
+\code{WBTC}/\code{WETH} plus a full 37-pair Aave cross-section. Trading
+backtests: almost entirely \code{USDC}(supply)/\code{WETH}(borrow), with
+\code{DAI}/\code{USDT} added only as diversifiers in strategies 4--5. \emph{No
+backtest is run on the BTC-collateral pairs that the paper analyses}, so the
+analytic headline pair and the traded pair differ --- worth reconciling.
+
+\section{Does the final paper include the most relevant use case(s)?}
+
+The final paper is \code{latex/optimal\_long\_short.tex}. Its sections cover:
+Introduction; Problem Setup; Asset Dynamics (Kou); Moments via Measure Change;
+Resolvent Equations; Numerical Results + sensitivity; Liquidation Recovery;
+Carry-Adjusted Sizing (incl.\ the inert cross-section, the regime-switching
+$6\times6$ extension, and collateral-depeg); Conclusion (the negative,
+``no interior optimum'' result); and the ECF calibration appendix.
+
+\begin{table}[htbp]
+\centering
+\caption{Use-case coverage in the final paper.}
+\label{tab:coverage}
+\small
+\begin{tabular}{p{6.8cm}c p{4.2cm}}
+\toprule
+\textbf{Use case} & \textbf{In \code{optimal\_long\_short.tex}?} & \textbf{Note} \\
+\midrule
+Long--short sizing / survival / moments & \yes & Core of the paper \\
+Carry as effective drift & \yes & \S\,``Carry-Adjusted Sizing'' \\
+Carry cross-section (carry inert) & \yes & 37 pairs \\
+Regime-switching carry ($6\times6$) & \yes & \\
+Collateral-depeg sensitivity & \yes & \\
+Liquidation recovery / bad debt & \yes & Optimistic bound (see critique) \\
+The negative result (no interior optimum) & \yes & The paper's best feature \\
+\midrule
+\rowcolor{red!8}\textbf{Taleb barbell} (constructive answer) & \no & \textbf{Only in code/notebook} \\
+\rowcolor{red!8}5-strategy historical benchmark & \no & Only in notebook \\
+\rowcolor{red!8}Walk-forward OOS validation & \no & Only in CSV \\
+\rowcolor{red!8}CIR/JCIR carry Monte Carlo & \no & Only in CSV/plots \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The most relevant use case is missing.} The paper's central thesis is
+a \emph{negative} one: the leveraged long--short book is structurally a bad
+trade. The \textbf{barbell} (\code{barbell.py}) is the direct constructive
+response --- it longs exactly the two convexities the levered book is short (the
+barrier via a keeper leg, the utilisation kink via a supplier leg) --- and the
+historical benchmark ranks it \emph{first} on Calmar (1.66) and tail metrics,
+with a bounded $-2.6\%$ max drawdown versus the carry trade's $-100\%$. It is
+the single most actionable output of the whole project, and it appears \emph{only}
+in code and an executed notebook, never in the paper. This mirrors the standing
+critique in \code{CRITICAL\_REPORT.md} \S3.4: the paper diagnoses that
+mean--variance gives no interior optimum but never evaluates the growth-optimal /
+convexity-harvesting alternative that would.
+
+\paragraph{Recommendation.} Add one section to
+\code{optimal\_long\_short.tex} --- ``From the negative result to a tradable
+barbell'' --- that (i) states the two short-convexity exposures formally, (ii)
+prices the supplier and keeper legs with the existing first-passage transform,
+and (iii) reports the tail-risk-dominant backtest, \emph{after} fixing the
+Sharpe/VaR convention bug flagged in Section~1. Without it, the paper delivers
+the diagnosis but withholds the cure that the codebase already computes.
+
+\end{document}
